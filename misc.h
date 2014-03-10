@@ -30,13 +30,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region_descriptor.h"
 
 template<typename T>
-cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<SegRegion>& regions, std::function<T(const SegRegion& region)> func)
+cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<DisparityRegion>& regions, std::function<T(const DisparityRegion& region)> func)
 {
 	return regionWiseSet<T>(task.base.size(), regions, func);
 }
 
 template<typename T>
-cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<SegRegion>& regions, const std::size_t exclude, T defaultValue, std::function<T(const SegRegion& region)> func)
+cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<DisparityRegion>& regions, const std::size_t exclude, T defaultValue, std::function<T(const DisparityRegion& region)> func)
 {
 	cv::Mat_<T> result = cv::Mat_<T>(task.base.size(), defaultValue);
 
@@ -52,7 +52,7 @@ cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<SegRegion>
 }
 
 template<typename T>
-cv::Mat regionWiseImage(StereoSingleTask& task, std::vector<SegRegion>& regions, std::function<T(const SegRegion& region)> func)
+cv::Mat regionWiseImage(StereoSingleTask& task, std::vector<DisparityRegion>& regions, std::function<T(const DisparityRegion& region)> func)
 {
 	return getValueScaledImage<T, unsigned char>(regionWiseSet<T>(task, regions, func));
 }

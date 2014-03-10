@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 
 class RegionContainer;
-class SegRegion;
+class DisparityRegion;
 class fusion_work_data;
 class StereoSingleTask;
 

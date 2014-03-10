@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTreeWidgetItem>
 #include <memory>
 
-class SegRegion;
+class DisparityRegion;
 class RegionContainer;
 class InitialDisparityConfig;
 
@@ -44,9 +44,9 @@ class RegionWidget : public QWidget
 	
 public:
 	explicit RegionWidget(QWidget *parent = 0);
-	void warpTree(int index, SegRegion& baseRegion, std::vector<SegRegion>& other_regions , QTreeWidget *tree, int dispMin, int currentDisparity);
-	void mutualDisparity(SegRegion& baseRegion, RegionContainer &base, RegionContainer& match, QTreeWidget *tree, int dispMin);
-	void neighborTree(std::vector<SegRegion>& regionsBase, int index, int dispMin);
+	void warpTree(int index, DisparityRegion& baseRegion, std::vector<DisparityRegion>& other_regions , QTreeWidget *tree, int dispMin, int currentDisparity);
+	void mutualDisparity(DisparityRegion& baseRegion, RegionContainer &base, RegionContainer& match, QTreeWidget *tree, int dispMin);
+	void neighborTree(std::vector<DisparityRegion>& regionsBase, int index, int dispMin);
 	void setData(std::shared_ptr<RegionContainer>& base, std::shared_ptr<RegionContainer>& match, int index, InitialDisparityConfig *config, bool delta);
 	void setInverted(bool inverted);
 	~RegionWidget();

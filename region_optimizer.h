@@ -38,7 +38,7 @@ inline T abs_pott(const T& v1, const T& v2, const T& trunc)
 }
 
 class RegionContainer;
-class SegRegion;
+class DisparityRegion;
 class InitialDisparityConfig;
 class StereoTask;
 
@@ -52,7 +52,7 @@ class disparity_hypothesis
 {
 public:
 	disparity_hypothesis() {}
-	disparity_hypothesis(cv::Mat& occmap, const SegRegion& baseRegion, short disparity, const std::vector<SegRegion>& left_regions, const std::vector<SegRegion> &right_regions, int pot_trunc, int dispMin);
+	disparity_hypothesis(cv::Mat& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion> &right_regions, int pot_trunc, int dispMin);
 	disparity_hypothesis abs_delta(const disparity_hypothesis& base) const;
 	disparity_hypothesis delta(const disparity_hypothesis& base) const;
 
@@ -74,18 +74,18 @@ public:
 	config_term base;
 
 	std::function<float(const disparity_hypothesis&)> base_eval;
-	std::function<float(const SegRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval;
+	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval;
 
 	std::function<float(const disparity_hypothesis&)> base_eval2;
-	std::function<float(const SegRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval2;
+	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval2;
 
 	std::function<float(const disparity_hypothesis&)> base_eval_refine;
-	std::function<float(const SegRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval_refine;
+	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval_refine;
 
 };
 
 std::vector<std::size_t> regionSplitUp(RegionContainer& base, RegionContainer& match);
-void optimize(RegionContainer& base, RegionContainer& match, std::function<float(const disparity_hypothesis&)> stat_eval, std::function<float(const SegRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
+void optimize(RegionContainer& base, RegionContainer& match, std::function<float(const disparity_hypothesis&)> stat_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
 void refreshOptimizationBaseValues(RegionContainer& left, RegionContainer& match, std::function<float(const disparity_hypothesis&)> base_eval, int delta);
 void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement= 0);
 

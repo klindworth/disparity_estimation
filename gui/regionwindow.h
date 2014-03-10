@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 
 class RegionContainer;
-class SegRegion;
+class DisparityRegion;
 class DebugMatStore;
 class InitialDisparityConfig;
 
@@ -68,8 +68,8 @@ private slots:
 	void on_pbResetOptimization_clicked();
 
 private:
-	void refreshImages(std::vector<SegRegion> markLeft, bool markLeftOnRight, std::vector<SegRegion> markRight, bool markRightOnLeft);
-	void fillTree(int index, SegRegion& baseRegion, std::vector<SegRegion>& other_regions , QTreeWidget *tree);
+	void refreshImages(std::vector<DisparityRegion> markLeft, bool markLeftOnRight, std::vector<DisparityRegion> markRight, bool markRightOnLeft);
+	void fillTree(int index, DisparityRegion& baseRegion, std::vector<DisparityRegion>& other_regions , QTreeWidget *tree);
 	Ui::RegionWindow *ui;
 	std::shared_ptr<RegionContainer> m_left, m_right;
 	DebugMatStore *m_store;

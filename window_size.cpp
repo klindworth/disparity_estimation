@@ -56,7 +56,7 @@ inline int countLabels(cv::Mat window, int clabel)
 	return labelcount;
 }
 
-inline float countLabelsDisp(cv::Mat window, int clabel, const std::vector<SegRegion>& regions)
+inline float countLabelsDisp(cv::Mat window, int clabel, const std::vector<DisparityRegion>& regions)
 {
 	assert(window.isContinuous());
 	int cdisparity = regions[clabel].disparity;
@@ -73,7 +73,7 @@ inline float countLabelsDisp(cv::Mat window, int clabel, const std::vector<SegRe
 	return std::max(1.0f-disp_error/(float)total, 0.0f);
 }
 
-inline float compareEntropies_old(cv::Mat_<float>& log_table, cv::Mat label_window, int clabel, const std::vector<SegRegion>& regions, cv::Mat img_window)
+inline float compareEntropies_old(cv::Mat_<float>& log_table, cv::Mat label_window, int clabel, const std::vector<DisparityRegion>& regions, cv::Mat img_window)
 {
 	assert(label_window.total() == img_window.total());
 	fast_array<unsigned short, 34> counter_own, counter_foreign;
@@ -99,7 +99,7 @@ inline float compareEntropies_old(cv::Mat_<float>& log_table, cv::Mat label_wind
 	return entropy_own/entropy_foreign;
 }
 
-cv::Mat findWindowSizeEntropy(const cv::Mat& image, const cv::Mat& labels, const float& threshold, const int& minsize, const int& maxsize, const std::vector<SegRegion>& regions, std::function<float(cv::Mat_<float>&, cv::Mat, int, const std::vector<SegRegion>&, cv::Mat)> func)
+cv::Mat findWindowSizeEntropy(const cv::Mat& image, const cv::Mat& labels, const float& threshold, const int& minsize, const int& maxsize, const std::vector<DisparityRegion>& regions, std::function<float(cv::Mat_<float>&, cv::Mat, int, const std::vector<DisparityRegion>&, cv::Mat)> func)
 {
 	cv::Mat_<float> log_table;
 	fill_entropytable_unnormalized(log_table, maxsize*maxsize);
@@ -173,7 +173,7 @@ cv::Mat findWindowSizeEntropy(const cv::Mat& image, const cv::Mat& labels, const
 	return result;
 }
 
-cv::Mat findWindowSize(cv::Mat& labels, const float& threshold, const int& minsize, const int& maxsize, const std::vector<SegRegion>& regions, std::function<float(cv::Mat, int, const std::vector<SegRegion>& regions)> func)
+cv::Mat findWindowSize(cv::Mat& labels, const float& threshold, const int& minsize, const int& maxsize, const std::vector<DisparityRegion>& regions, std::function<float(cv::Mat, int, const std::vector<DisparityRegion>& regions)> func)
 {
 	cv::Mat result = cv::Mat::zeros(labels.size(), CV_8UC2);
 	const int onesidesizeMin = (minsize-1)/2;

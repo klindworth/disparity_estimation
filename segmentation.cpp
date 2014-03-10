@@ -252,7 +252,7 @@ cv::Mat getWrongColorSegmentationImage(cv::Mat& labels, int labelcount)
 cv::Mat getWrongColorSegmentationImage(RegionContainer& container)
 {
 	std::srand(0);
-	return regionWiseSet<cv::Vec3b>(container.task, container.regions, [&](const SegRegion&){
+	return regionWiseSet<cv::Vec3b>(container.task, container.regions, [&](const DisparityRegion&){
 		cv::Vec3b ccolor;
 		ccolor[0] = std::rand() % 256;
 		ccolor[1] = std::rand() % 256;
@@ -488,9 +488,9 @@ bool mssuperpixel_segmentation::refinementPossible() {
 	return true;
 }*/
 
-void defuse(std::vector<SegRegion>& fused_regions, cv::Mat& newlabels, int newsegcount, const fusion_work_data& data)
+void defuse(std::vector<DisparityRegion>& fused_regions, cv::Mat& newlabels, int newsegcount, const fusion_work_data& data)
 {
-	std::vector<SegRegion> regions(newsegcount);// = getRegionVector(newlabels, newsegcount);
+	std::vector<DisparityRegion> regions(newsegcount);// = getRegionVector(newlabels, newsegcount);
 	fillRegionDescriptors(regions.begin(), regions.end(), newlabels);
 
 	const std::size_t regions_count = regions.size();

@@ -38,7 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <functional>
 #include <random>
 
-disparity_hypothesis::disparity_hypothesis(cv::Mat& occmap, const SegRegion& baseRegion, short disparity, const std::vector<SegRegion>& left_regions, const std::vector<SegRegion>& right_regions, int pot_trunc, int dispMin)
+disparity_hypothesis::disparity_hypothesis(cv::Mat& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, int pot_trunc, int dispMin)
 {
 	//occ
 	std::vector<RegionInterval> filtered = getFilteredPixelIdx(occmap.cols, baseRegion.lineIntervals, disparity);
@@ -53,12 +53,12 @@ disparity_hypothesis::disparity_hypothesis(cv::Mat& occmap, const SegRegion& bas
 		occ_avg = 1; //TODO: find a better solution to this
 
 	//neighbors
-	neighbor_pot = getNeighborhoodsAverage(left_regions, baseRegion.neighbors, [&](const SegRegion& cregion){return (float) abs_pott((int)cregion.disparity, -disparity, pot_trunc);});
+	neighbor_pot = getNeighborhoodsAverage(left_regions, baseRegion.neighbors, [&](const DisparityRegion& cregion){return (float) abs_pott((int)cregion.disparity, -disparity, pot_trunc);});
 
-	neighbor_color_pot = getColorWeightedNeighborhoodsAverage(baseRegion.average_color, 15.0f, left_regions, baseRegion.neighbors, [&](const SegRegion& cregion){return (float) abs_pott((int)cregion.disparity, (int)disparity, pot_trunc);}).first;
+	neighbor_color_pot = getColorWeightedNeighborhoodsAverage(baseRegion.average_color, 15.0f, left_regions, baseRegion.neighbors, [&](const DisparityRegion& cregion){return (float) abs_pott((int)cregion.disparity, (int)disparity, pot_trunc);}).first;
 
 	//lr
-	lr_pot = getOtherRegionsAverage(right_regions, baseRegion.other_regions[disparity-dispMin], [&](const SegRegion& cregion){return (float)abs_pott((int)disparity, -cregion.disparity, pot_trunc);});
+	lr_pot = getOtherRegionsAverage(right_regions, baseRegion.other_regions[disparity-dispMin], [&](const DisparityRegion& cregion){return (float)abs_pott((int)disparity, -cregion.disparity, pot_trunc);});
 
 	//misc
 	assert(disparity-dispMin >= 0);
@@ -116,7 +116,7 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 	const short dispMin = base.task.dispMin;
 	const short dispRange = base.task.dispMax - base.task.dispMin + 1;
 
-	for(SegRegion& baseRegion : base.regions)
+	for(DisparityRegion& baseRegion : base.regions)
 	{
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
@@ -144,7 +144,7 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 	}
 }
 
-void optimize(RegionContainer& base, RegionContainer& match, std::function<float(const disparity_hypothesis&)> base_eval, std::function<float(const SegRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
+void optimize(RegionContainer& base, RegionContainer& match, std::function<float(const disparity_hypothesis&)> base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
 {
 	refreshOptimizationBaseValues(base, match, base_eval, delta);
 	refreshOptimizationBaseValues(match, base, base_eval, delta);
@@ -161,7 +161,7 @@ void optimize(RegionContainer& base, RegionContainer& match, std::function<float
 	#pragma omp parallel for default(none) shared(base, match, prop_eval, delta) private(random_dist, random_gen, temp_results)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		SegRegion& baseRegion = base.regions[j];
+		DisparityRegion& baseRegion = base.regions[j];
 		temp_results = cv::Mat_<float>(crange, 1, 5500.0f);
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
@@ -189,9 +189,9 @@ void optimize(RegionContainer& base, RegionContainer& match, std::function<float
 
 void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement)
 {
-	for(SegRegion& cregion : left.regions)
+	for(DisparityRegion& cregion : left.regions)
 		cregion.damping_history = 0;
-	for(SegRegion& cregion : right.regions)
+	for(DisparityRegion& cregion : right.regions)
 		cregion.damping_history = 0;
 
 	//optimize L/R

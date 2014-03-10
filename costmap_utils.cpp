@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <numeric>
 
-void analyzeDisparityRange2(SegRegion& region)
+void analyzeDisparityRange2(DisparityRegion& region)
 {
 	cv::Mat temp = region.disparity_costs.reshape(0,1);
 	region.stats.minima_ranges.clear();

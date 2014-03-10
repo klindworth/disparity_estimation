@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "slidingEntropy.h"
 
 template<int quantizer>
-inline float compareEntropies(const cv::Mat_<float>& log_table, const cv::Mat& plabel_window, int clabel, const std::vector<SegRegion>& regions, const cv::Mat& pimg_window)
+inline float compareEntropies(const cv::Mat_<float>& log_table, const cv::Mat& plabel_window, int clabel, const std::vector<DisparityRegion>& regions, const cv::Mat& pimg_window)
 {
 	cv::Mat label_window = plabel_window.clone();
 	cv::Mat img_window = pimg_window.clone();
@@ -72,7 +72,7 @@ inline float compareEntropies(const cv::Mat_<float>& log_table, const cv::Mat& p
 		return 0.0f;
 }
 
-inline float compareLabels(const cv::Mat_<float>&, const cv::Mat& plabel_window, int clabel, const std::vector<SegRegion>& regions, const cv::Mat&)
+inline float compareLabels(const cv::Mat_<float>&, const cv::Mat& plabel_window, int clabel, const std::vector<DisparityRegion>& regions, const cv::Mat&)
 {
 	cv::Mat label_window = plabel_window.clone();
 	assert(label_window.isContinuous());
@@ -97,7 +97,7 @@ inline float compareLabels(const cv::Mat_<float>&, const cv::Mat& plabel_window,
 	return pos_labels/(float)total;
 }
 
-cv::Mat findWindowSizeEntropy(const cv::Mat& image, const cv::Mat& labels, const float& threshold, const int& minsize, const int& maxsize, const std::vector<SegRegion>& regions, std::function<float(cv::Mat_<float>&, cv::Mat, int, const std::vector<SegRegion>&, cv::Mat)> func);
+cv::Mat findWindowSizeEntropy(const cv::Mat& image, const cv::Mat& labels, const float& threshold, const int& minsize, const int& maxsize, const std::vector<DisparityRegion>& regions, std::function<float(cv::Mat_<float>&, cv::Mat, int, const std::vector<DisparityRegion>&, cv::Mat)> func);
 void showWindowSizes(cv::Mat& sizes);
 
 #endif // WINDOW_SIZE_H

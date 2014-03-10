@@ -43,7 +43,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparity_utils.h"
 #include "region_descriptor_algorithms.h"
 
-SegRegion::SegRegion()
+DisparityRegion::DisparityRegion()
 {
 	old_dilation = -1;
 	dilation = 0;
@@ -89,7 +89,7 @@ std::vector<RegionInterval> getFilteredPixelIdx(int width, const std::vector<Reg
 	return filtered;
 }
 
-float getOtherRegionsAverage(const std::vector<SegRegion>& container, const std::vector<MutualRegion>& cdisp, std::function<float(const SegRegion&)> func)
+float getOtherRegionsAverage(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, std::function<float(const DisparityRegion&)> func)
 {
 	float result = 0.0f;
 	for(const MutualRegion& cval : cdisp)
@@ -99,7 +99,7 @@ float getOtherRegionsAverage(const std::vector<SegRegion>& container, const std:
 	return result;
 }
 
-std::pair<float,float> getOtherRegionsAverageCond(const std::vector<SegRegion>& container, const std::vector<MutualRegion>& cdisp, std::function<float(const SegRegion&)> func, std::function<float(const SegRegion&)> cond_eval)
+std::pair<float,float> getOtherRegionsAverageCond(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, std::function<float(const DisparityRegion&)> func, std::function<float(const DisparityRegion&)> cond_eval)
 {
 	float result = 0.0f;
 	float cond_true = 0.0f;
@@ -114,7 +114,7 @@ std::pair<float,float> getOtherRegionsAverageCond(const std::vector<SegRegion>& 
 	return std::make_pair(result/cond_true, cond_true);
 }
 
-float getNeighborhoodsAverage(const std::vector<SegRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const SegRegion&)> func)
+float getNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func)
 {
 	float result = 0.0f;
 	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
@@ -124,7 +124,7 @@ float getNeighborhoodsAverage(const std::vector<SegRegion>& container, const std
 	return result/neighbors.size();
 }
 
-float getWeightedNeighborhoodsAverage(const std::vector<SegRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const SegRegion&)> func)
+float getWeightedNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func)
 {
 	float result = 0.0f;
 	float sum_weight = 0.0f;
@@ -136,7 +136,7 @@ float getWeightedNeighborhoodsAverage(const std::vector<SegRegion>& container, c
 	return result/sum_weight;
 }
 
-std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& base_color, double color_trunc, const std::vector<SegRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const SegRegion&)> func)
+std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& base_color, double color_trunc, const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func)
 {
 	float result = 0.0f;
 	float sum_weight = 0.0f;
@@ -151,7 +151,7 @@ std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& bas
 	return std::make_pair(result/sum_weight, sum_weight);
 }
 
-inline void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, SegRegion& region, const short dispMin, const short dispMax)
+inline void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, DisparityRegion& region, const short dispMin, const short dispMax)
 {
 	const int dispRange = dispMax-dispMin + 1;
 	region.other_regions = std::vector<std::vector<MutualRegion>>(dispRange);
@@ -175,7 +175,7 @@ inline void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, 
 	}
 }
 
-void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, std::vector<SegRegion>& regions, const short dispMin, const short dispMax)
+void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, std::vector<DisparityRegion>& regions, const short dispMin, const short dispMax)
 {
 	const int dispRange = dispMax-dispMin + 1;
 	const std::size_t regions_count = regions.size();
@@ -186,7 +186,7 @@ void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, std::ve
 	}
 }
 
-void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, std::vector<SegRegion>& regions, StereoSingleTask& task, int delta)
+void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, std::vector<DisparityRegion>& regions, StereoSingleTask& task, int delta)
 {
 	//const int dispRange = dispMax-dispMin + 1;
 	const std::size_t regions_count = regions.size();
@@ -202,7 +202,7 @@ void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, std::ve
 	}
 }
 
-void refreshBoundingBoxes(const cv::Mat& labels, std::vector<SegRegion>& regions)
+void refreshBoundingBoxes(const cv::Mat& labels, std::vector<DisparityRegion>& regions)
 {
 	refreshBoundingBoxes(regions.begin(), regions.end(), labels);
 }
@@ -272,19 +272,19 @@ bool checkNeighborhoodInvariant(std::vector<T> &regions, std::size_t regions_cou
 	return true;
 }
 
-bool checkLabelsIntervalsInvariant(const std::vector<SegRegion>& regions, const cv::Mat& labels, int segcount)
+bool checkLabelsIntervalsInvariant(const std::vector<DisparityRegion>& regions, const cv::Mat& labels, int segcount)
 {
 	return checkLabelsIntervalsInvariant(regions.begin(), regions.begin() + segcount, labels);
 }
 
-void generateStats(std::vector<SegRegion>& regions, const StereoSingleTask& task, const int delta)
+void generateStats(std::vector<DisparityRegion>& regions, const StereoSingleTask& task, const int delta)
 {
-	parallel_region(regions, [&](SegRegion& region) {
+	parallel_region(regions, [&](DisparityRegion& region) {
 		generateStats(region, task, delta);
 	});
 }
 
-void generateStats(SegRegion& region, const StereoSingleTask& task, int delta)
+void generateStats(DisparityRegion& region, const StereoSingleTask& task, int delta)
 {
 	auto range = getSubrange(region.base_disparity, delta, task);
 	int len = range.second - range.first + 1;
@@ -298,19 +298,19 @@ void generateStats(SegRegion& region, const StereoSingleTask& task, int delta)
 	delete[] derived;
 }
 
-void calculate_all_average_colors(const cv::Mat& image, std::vector<SegRegion>& regions)
+void calculate_all_average_colors(const cv::Mat& image, std::vector<DisparityRegion>& regions)
 {
 	calculate_all_average_colors(image, regions.begin(), regions.end());
 }
 
 cv::Mat getDisparityBySegments(const RegionContainer& container)
 {
-	return regionWiseSet<short>(container.task, container.regions, [](const SegRegion& cregion){return cregion.disparity;});
+	return regionWiseSet<short>(container.task, container.regions, [](const DisparityRegion& cregion){return cregion.disparity;});
 }
 
 cv::Mat getDisparityBySegments(const RegionContainer& container, const std::size_t exclude)
 {
-	return regionWiseSet<short>(container.task, container.regions, exclude, 0, [](const SegRegion& cregion){return cregion.disparity;});
+	return regionWiseSet<short>(container.task, container.regions, exclude, 0, [](const DisparityRegion& cregion){return cregion.disparity;});
 }
 
 void refreshWarpedIdx(RegionContainer& container)
@@ -319,7 +319,7 @@ void refreshWarpedIdx(RegionContainer& container)
 	#pragma omp parallel for default(none) shared(container)
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
-		SegRegion& cregion = container.regions[i];
+		DisparityRegion& cregion = container.regions[i];
 		cregion.warped_interval.clear();
 		cregion.warped_interval.reserve(cregion.lineIntervals.size());
 		cregion.warped_interval = getFilteredPixelIdx(container.task.base.cols, cregion.lineIntervals, cregion.disparity);
@@ -333,7 +333,7 @@ void refreshWarpedIdx(RegionContainer& container)
 	}
 }
 
-MutualRegion SegRegion::getMutualRegion(std::size_t idx, std::size_t disparity_idx)
+MutualRegion DisparityRegion::getMutualRegion(std::size_t idx, std::size_t disparity_idx)
 {
 	assert(disparity_idx < other_regions.size());
 	auto it = std::find_if(other_regions[disparity_idx].begin(), other_regions[disparity_idx].end(), [=](const MutualRegion& creg){return (creg.index == idx);});

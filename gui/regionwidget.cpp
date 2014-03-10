@@ -51,7 +51,7 @@ void RegionWidget::setInverted(bool inverted)
 	ui->plot->setInverted(inverted);
 }
 
-void RegionWidget::warpTree(int index, SegRegion& baseRegion, std::vector<SegRegion>& other_regions , QTreeWidget *tree, int dispMin, int currentDisparity)
+void RegionWidget::warpTree(int index, DisparityRegion& baseRegion, std::vector<DisparityRegion>& other_regions , QTreeWidget *tree, int dispMin, int currentDisparity)
 {
 	tree->clear();
 	QStringList headers;
@@ -66,7 +66,7 @@ void RegionWidget::warpTree(int index, SegRegion& baseRegion, std::vector<SegReg
 	//for(auto it = baseRegion.other_labels.begin(); it != baseRegion.other_labels.end(); ++it)
 	for(MutualRegion& cregion : baseRegion.other_regions[currentDisparity-dispMin])
 	{
-		SegRegion& matchRegion = other_regions[cregion.index];
+		DisparityRegion& matchRegion = other_regions[cregion.index];
 		double mutual_percent = cregion.percent;//(double)it->second / baseRegion.other_labels.total();
 		disp_average += mutual_percent * matchRegion.disparity;
 		if(std::abs(matchRegion.disparity + currentDisparity) < 4)
@@ -104,9 +104,9 @@ void RegionWidget::warpTree(int index, SegRegion& baseRegion, std::vector<SegReg
 	ui->lblAverageDisparity->setText("Average: " + QString::number(disp_average) + ", L/R passed: " + QString::number(disp_lr_norm*100, 'f', 2) + "%, Non-LR-Average: " + QString::number(mean_non_lr) + " , stddev: " + QString::number(stddev) );
 }
 
-void RegionWidget::mutualDisparity(SegRegion& baseRegion, RegionContainer& base, RegionContainer& match, QTreeWidget *tree, int dispMin)
+void RegionWidget::mutualDisparity(DisparityRegion& baseRegion, RegionContainer& base, RegionContainer& match, QTreeWidget *tree, int dispMin)
 {
-	std::vector<SegRegion>& other_regions = match.regions;
+	std::vector<DisparityRegion>& other_regions = match.regions;
 	cv::Mat disp = getDisparityBySegments(base);
 	cv::Mat occmap = occlusionStat<short>(disp, 1.0);
 	//cv::imshow("occ_test", getValueScaledImage<unsigned char, unsigned char>(occmap));
@@ -126,11 +126,11 @@ void RegionWidget::mutualDisparity(SegRegion& baseRegion, RegionContainer& base,
 		short currentDisp = i + dispMin;
 		disparity_hypothesis hyp(occmap, baseRegion, currentDisp, base.regions, other_regions, pot_trunc, dispMin);
 
-		float avg_disp = getOtherRegionsAverage(other_regions, *it, [](const SegRegion& cregion){return (float)cregion.disparity;});
+		float avg_disp = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return (float)cregion.disparity;});
 		float occ = 0.0;//getOtherRegionsAverage(other_regions, *it, [](const SegRegion& cregion){return cregion.occ_value;});
-		float stddev = getOtherRegionsAverage(other_regions, *it, [](const SegRegion& cregion){return cregion.stats.stddev;});
-		float disp_pot = getOtherRegionsAverage(other_regions, *it, [&](const SegRegion& cregion){return (float)std::min(std::abs(currentDisp+cregion.disparity), 10);});
-		float e_other = getOtherRegionsAverage(other_regions, *it, [&](const SegRegion& cregion){return cregion.optimization_energy(-currentDisp-m_matchDispMin);});
+		float stddev = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
+		float disp_pot = getOtherRegionsAverage(other_regions, *it, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(currentDisp+cregion.disparity), 10);});
+		float e_other = getOtherRegionsAverage(other_regions, *it, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-currentDisp-m_matchDispMin);});
 
 		//ratings
 		float stddev_dev = baseRegion.stats.stddev-stddev;
@@ -166,7 +166,7 @@ void RegionWidget::mutualDisparity(SegRegion& baseRegion, RegionContainer& base,
 	}
 }
 
-void RegionWidget::neighborTree(std::vector<SegRegion>& regionsBase, int index, int dispMin)
+void RegionWidget::neighborTree(std::vector<DisparityRegion>& regionsBase, int index, int dispMin)
 {
 	ui->treeNeighbors->clear();
 	QStringList headers2;
@@ -221,8 +221,8 @@ void RegionWidget::setData(std::shared_ptr<RegionContainer>& base, std::shared_p
 	m_baseDispMin = m_base->task.dispMin;
 	m_matchDispMin = m_match->task.dispMin;
 
-	std::vector<SegRegion>& regionsBase = m_base->regions;
-	std::vector<SegRegion>& regionsMatch = m_match->regions;
+	std::vector<DisparityRegion>& regionsBase = m_base->regions;
+	std::vector<DisparityRegion>& regionsMatch = m_match->regions;
 
 	stat_t* pixelAnalysis = &(regionsBase[index].stats);
 	QString info = QString("min: %1, max: %2, mean: %3, stddev: %4, range: %5, confidence: %6,\n maxima: %7, badmaxima: %8, disparity: %9, confidence2: %10, occ_val: %11, dilate: %12,\n confidence_range: %13, minima_variance: %14,base_disp: %15, confidence3: %16").arg(pixelAnalysis->min).arg(pixelAnalysis->max).arg(pixelAnalysis->mean).arg(pixelAnalysis->stddev).arg(pixelAnalysis->max-pixelAnalysis->min).arg(pixelAnalysis->confidence).arg(pixelAnalysis->minima.size()).arg(pixelAnalysis->bad_minima.size()).arg(pixelAnalysis->disparity_idx).arg(pixelAnalysis->confidence2).arg(pixelAnalysis->occ_val).arg(regionsBase[index].dilation).arg(pixelAnalysis->confidence_range).arg(pixelAnalysis->confidence_variance).arg(regionsBase[index].base_disparity).arg(regionsBase[index].confidence3);
