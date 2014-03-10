@@ -27,18 +27,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MISC_H
 
 #include "genericfunctions.h"
+#include "region_descriptor.h"
 
 template<typename T>
 cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<SegRegion>& regions, std::function<T(const SegRegion& region)> func)
 {
-	cv::Mat_<T> result = cv::Mat_<T>(task.base.size(), 0);
-
-	const int regions_count = regions.size();
-	#pragma omp parallel for default(none) shared(result, regions, func)
-	for(int i = 0; i < regions_count; ++i)
-		intervals::setRegionValue<T>(result, regions[i].region.lineIntervals, func(regions[i]));
-
-	return result;
+	return regionWiseSet<T>(task.base.size(), regions, func);
 }
 
 template<typename T>
@@ -51,7 +45,7 @@ cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<SegRegion>
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
 		if(i != exclude)
-			intervals::setRegionValue<T>(result, regions[i].region.lineIntervals, func(regions[i]));
+			intervals::setRegionValue<T>(result, regions[i].lineIntervals, func(regions[i]));
 	}
 
 	return result;
@@ -61,6 +55,12 @@ template<typename T>
 cv::Mat regionWiseImage(StereoSingleTask& task, std::vector<SegRegion>& regions, std::function<T(const SegRegion& region)> func)
 {
 	return getValueScaledImage<T, unsigned char>(regionWiseSet<T>(task, regions, func));
+}
+
+template<typename T, typename reg_type>
+cv::Mat regionWiseImage(cv::Size size, std::vector<reg_type>& regions, std::function<T(const reg_type& region)> func)
+{
+	return getValueScaledImage<T, unsigned char>(regionWiseSet<T, reg_type>(size, regions, func));
 }
 
 #endif // MISC_H

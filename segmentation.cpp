@@ -31,7 +31,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "intervals_algorithms.h"
 #include "genericfunctions.h"
 #include "misc.h"
-#include "configrun.h"
+#include "region_descriptor.h"
+#include "region_descriptor_algorithms.h"
 //include "slic_adaptor.h"
 
 //include "msImageProcessor.h"
@@ -102,16 +103,17 @@ int cachedSegmentation(StereoSingleTask& task, cv::Mat& labels, std::shared_ptr<
  * @param segcount Number of active segments
  * @param check_func Function to check if the combination of segments fullfills conditions
  */
-void fusion(fusion_work_data& data, std::vector<SegRegion>& regions, cv::Mat& labels, std::size_t idx, std::size_t fusion_idx, std::function<bool(const SegRegion& master_seg, const SegRegion& slave_seg, const SegRegion& fusion_seg)> check_func)
+template<typename T>
+void fusion(fusion_work_data& data, std::vector<T>& regions, std::size_t idx, std::size_t fusion_idx, std::function<bool(const T& master_seg, const T& slave_seg, const T& fusion_seg)> check_func)
 {
-	SegRegion& cregion = regions[idx];
+	T& cregion = regions[idx];
 	data.visited[idx] = 1;
 	for(std::pair<std::size_t, std::size_t>& cpair : cregion.neighbors)
 	{
 		std::size_t neighbor = cpair.first;
 		if(neighbor != fusion_idx && data.active[neighbor])
 		{
-			SegRegion& cneighbor = regions[neighbor];
+			T& cneighbor = regions[neighbor];
 			if(check_func(cregion, cneighbor, regions[fusion_idx]))
 			{
 				assert(data.active[fusion_idx]);
@@ -122,13 +124,14 @@ void fusion(fusion_work_data& data, std::vector<SegRegion>& regions, cv::Mat& la
 				data.active[neighbor] = 0;
 
 				if(!(data.visited[neighbor]))
-					fusion(data, regions, labels, neighbor, fusion_idx, check_func);
+					fusion(data, regions, neighbor, fusion_idx, check_func);
 			}
 		}
 	}
 }
 
-void fuse(fusion_work_data& data, std::vector<SegRegion>& regions, cv::Mat& labels)
+template<typename T>
+void fuse(fusion_work_data& data, std::vector<T>& regions, cv::Mat& labels)
 {
 	const std::size_t regions_count = regions.size();
 	#pragma omp parallel for default(none) shared(regions, data)
@@ -144,10 +147,10 @@ void fuse(fusion_work_data& data, std::vector<SegRegion>& regions, cv::Mat& labe
 			for(std::size_t slave_idx : data.fused[master_idx])
 			{
 				assert(!data.active[slave_idx]);
-				SegRegion& cregion = regions[slave_idx];
-				std::copy(cregion.region.lineIntervals.begin(), cregion.region.lineIntervals.end(), std::back_inserter(regions[master_idx].region.lineIntervals));
-				regions[master_idx].size += cregion.size;
-				cregion.size = 0;
+				T& cregion = regions[slave_idx];
+				std::copy(cregion.lineIntervals.begin(), cregion.lineIntervals.end(), std::back_inserter(regions[master_idx].lineIntervals));
+				regions[master_idx].m_size += cregion.m_size;
+				cregion.m_size = 0;
 			}
 		}
 	}
@@ -155,13 +158,13 @@ void fuse(fusion_work_data& data, std::vector<SegRegion>& regions, cv::Mat& labe
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
 		if(data.active[i])
-			assert(regions[i].size > 0);
+			assert(regions[i].m_size > 0);
 		else
 		{
-			if(regions[i].size != 0)
+			if(regions[i].m_size != 0)
 			{
 				std::cout << i << std::endl;
-				std::cout << "size: "  << regions[i].size << std::endl;
+				std::cout << "size: "  << regions[i].m_size << std::endl;
 				std::cout << "master: " << data.fused_with[i] << std::endl;
 				std::cout << "master-active: " << (int)data.active[data.fused_with[i]] << std::endl;
 				std::copy(data.fused[data.fused_with[i]].begin(), data.fused[data.fused_with[i]].end(), std::ostream_iterator<int>(std::cout));
@@ -172,15 +175,19 @@ void fuse(fusion_work_data& data, std::vector<SegRegion>& regions, cv::Mat& labe
 			//
 	}
 
-	regions.erase(std::remove_if(regions.begin(), regions.end(), [](const SegRegion& cregion){return (cregion.size == 0);}), regions.end());
+	regions.erase(std::remove_if(regions.begin(), regions.end(), [](const T& cregion){return (cregion.m_size == 0);}), regions.end());
 
 	//regenerate labels image, sort region intervals
+	/*parallel_region(regions.begin(), regions.end(), [&](RegionDescriptor region) {
+		std::sort(region.lineIntervals.begin(), region.lineIntervals.end());
+		intervals::setRegionValue<int>(labels, region.lineIntervals, i);
+	});*/
 	const std::size_t regions_count2 = regions.size();
 	#pragma omp parallel for default(none) shared(labels, regions)
 	for(std::size_t i = 0; i < regions_count2; ++i)
 	{
-		std::sort(regions[i].region.lineIntervals.begin(), regions[i].region.lineIntervals.end());
-		intervals::setRegionValue<int>(labels, regions[i].region.lineIntervals, i);
+		std::sort(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end());
+		intervals::setRegionValue<int>(labels, regions[i].lineIntervals, i);
 	}
 
 	//assert(checkLabelsIntervalsInvariant(regions, labels, regions.size()));
@@ -189,15 +196,17 @@ void fuse(fusion_work_data& data, std::vector<SegRegion>& regions, cv::Mat& labe
 	generate_neighborhood(labels, regions);
 }
 
-void runFusion(cv::Mat& labels, std::vector<SegRegion>& regions, std::function<bool(const SegRegion& master_seg, const SegRegion& slave_seg, const SegRegion& fusion_seg)> check_func)
+template<typename T>
+void runFusion(cv::Mat& labels, std::vector<T>& regions, std::function<bool(const T& master_seg, const T& slave_seg, const T& fusion_seg)> check_func)
 {
-	fusion_work_data data(regions);
 	std::size_t segcount = regions.size();
+	fusion_work_data data(segcount);
+
 	for(std::size_t i = 0; i < segcount; ++i)
 	{
 		data.visit_reset();
 		if(data.active[i])
-			fusion(data, regions, labels, i, i, check_func);
+			fusion(data, regions, i, i, check_func);
 		/*else
 		{
 			int last_j = i;
@@ -210,7 +219,7 @@ void runFusion(cv::Mat& labels, std::vector<SegRegion>& regions, std::function<b
 	fuse(data, regions, labels);
 	std::cout << "fusion finished, regions: " << regions.size() << std::endl;
 
-	refreshBoundingBoxes(labels, regions);
+	refreshBoundingBoxes(regions.begin(), regions.end(), labels);
 	generate_neighborhood(labels, regions);
 }
 
@@ -395,7 +404,8 @@ std::string meanshift_segmentation::cacheName() const
 
 int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat& labels) {
 	int regions_count = slicSuperpixels(image, labels, settings.superpixel_size, settings.superpixel_compactness);
-	std::vector<SegRegion> regions = getRegionVector(labels, regions_count);
+	std::vector<RegionDescriptor> regions(regions_count);
+	fillRegionDescriptors(regions.begin(), regions.end(), labels);
 
 	superpixel = labels.clone();
 	regions_count_superpixel = regions_count;
@@ -430,7 +440,7 @@ int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat& labels)
 	//cv::imshow("ms", getWrongColorSegmentationImage(msResult, mscount));
 	std::cout << "mscount: " << mscount << std::endl;
 
-	std::shared_ptr<fusion_work_data> data = std::shared_ptr<fusion_work_data>( new fusion_work_data(regions) );
+	std::shared_ptr<fusion_work_data> data = std::shared_ptr<fusion_work_data>( new fusion_work_data(regions.size()) );
 	int *src_ptr = msResult.ptr<int>(0);
 	std::vector<int> mapping(mscount, -1);
 	for(int i = 0; i < slic_size.first; ++i)
@@ -480,7 +490,8 @@ bool mssuperpixel_segmentation::refinementPossible() {
 
 void defuse(std::vector<SegRegion>& fused_regions, cv::Mat& newlabels, int newsegcount, const fusion_work_data& data)
 {
-	std::vector<SegRegion> regions = getRegionVector(newlabels, newsegcount);
+	std::vector<SegRegion> regions(newsegcount);// = getRegionVector(newlabels, newsegcount);
+	fillRegionDescriptors(regions.begin(), regions.end(), newlabels);
 
 	const std::size_t regions_count = regions.size();
 	std::vector<std::size_t> inverse_mapping;

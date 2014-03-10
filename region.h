@@ -47,19 +47,18 @@ public:
 	float percent;
 };
 
-class SegRegion
+class SegRegion : public RegionDescriptor
 {
 public:
-	RegionDescriptor region;
+	SegRegion();
 	std::vector<RegionInterval> warped_interval;
 	std::vector<std::vector< MutualRegion >> other_regions;
 	cv::Mat_<float> disparity_costs;
 	cv::Mat_<float> confidence;
 	cv::Mat_<float> optimization_energy;
-	std::vector<std::pair<std::size_t, std::size_t>> neighbors;
+
 
 	stat_t stats;
-	int size;
 	float entropy;
 	short disparity;
 	short base_disparity;
@@ -73,11 +72,8 @@ public:
 	//std::array<int, 5> occlusion;
 	//float occ_value;
 
-	cv::Vec3d average_color;
-
 	float confidence3;
 
-	cv::Mat getRegionMask(int margin) const;
 	MutualRegion getMutualRegion(std::size_t idx, std::size_t disparity_idx);
 };
 
@@ -92,25 +88,18 @@ public:
 template<typename T>
 inline void parallel_region(std::vector<SegRegion>& regions, T func)
 {
-	const std::size_t regions_count = regions.size();
-	#pragma omp parallel for default(none) shared(regions, func)
-	for(std::size_t i = 0; i < regions_count; ++i)
-		func(regions[i]);
+	parallel_region(regions.begin(), regions.end(), func);
 }
 
-
-std::vector<SegRegion> getRegionVector(const cv::Mat &labels, int regions_count);
 cv::Mat getDisparityBySegments(const RegionContainer &container);
 
 void refreshBoundingBoxes(const cv::Mat& labels, std::vector<SegRegion>& regions);
 
-void generate_neighborhood(cv::Mat& labels, std::vector<SegRegion>& regions);
 int reenumerate(cv::Mat& labels, int old_count);
-void replace_neighbor_idx(std::vector<SegRegion>& regions, std::size_t old_idx, std::size_t new_idx);
+void replace_neighbor_idx(std::vector<RegionDescriptor>& regions, std::size_t old_idx, std::size_t new_idx);
 
 void generateStats(std::vector<SegRegion>& regions, const StereoSingleTask& task, const int delta);
 void generateStats(SegRegion& region, const StereoSingleTask& task, int delta);
-
 
 void labelLRCheck(const cv::Mat &labelsBase, const cv::Mat &labelsMatch, std::vector<SegRegion>& regions, const short dispMin, const short dispMax);
 void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, std::vector<SegRegion>& regions, StereoSingleTask& task, int delta);
@@ -125,9 +114,8 @@ std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& bas
 void calculate_all_average_colors(const cv::Mat &image, std::vector<SegRegion> &regions);
 
 std::vector<RegionInterval> getFilteredPixelIdx(int width, const std::vector<RegionInterval> &pixel_idx, int d);
-cv::Mat getRegionAsMat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d);
+
 void setMask(const cv::Mat &mask, std::vector<RegionInterval>& pixel_idx, int py, int px, int height, int width);
-int getSizeOfRegion(const std::vector<RegionInterval>& intervals);
+
 bool checkLabelsIntervalsInvariant(const std::vector<SegRegion>& regions, const cv::Mat& labels, int segcount);
-bool checkNeighborhoodInvariant(std::vector<SegRegion>& regions, std::size_t regions_count);
 #endif // REGION_H

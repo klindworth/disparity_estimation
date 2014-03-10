@@ -28,6 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/core/core.hpp>
 
+#include "stereotask.h"
+
 template<typename disparity_type, typename T>
 void foreach_warped_pixel(const cv::Mat& disparity, float scaling, T func)
 {
@@ -143,6 +145,37 @@ cv::Mat_<short> wta_disparity(cv::Mat base, data_type data, int dispMin, int dis
 	}
 
 	return result;
+}
+
+inline std::pair<short,short> getSubrange(short baseDisparity, short delta, const StereoSingleTask& task)
+{
+	if(delta == 0)
+		return std::make_pair(task.dispMin, task.dispMax);
+	else
+	{
+		short start = std::max(baseDisparity - delta, task.dispMin);
+		short end   = std::min(baseDisparity + delta, task.dispMax);
+
+		return std::make_pair(start, end);
+	}
+}
+
+inline std::pair<short,short> getSubrangeIdx(short baseDisparity, short delta, const StereoSingleTask& task)
+{
+	auto range = getSubrange(baseDisparity, delta, task);
+	range.first -= task.dispMin;
+	range.second -= task.dispMin;
+	return range;
+	/*short start = std::max(baseDisparity - delta, task.dispMin) - task.dispMin;
+	short end   = std::min(baseDisparity + delta, task.dispMax) - task.dispMin;
+
+	return std::make_pair(start, end);*/
+}
+
+inline bool gotDisparity(short disparity, short baseDisparity, short delta, const StereoSingleTask& task)
+{
+	auto range = getSubrange(baseDisparity, delta, task);
+	return disparity >= range.first && range.second <= range.second;
 }
 
 cv::Mat createDisparity(const cv::Mat &cost_map_org, int dispMin, int subsample);

@@ -133,11 +133,11 @@ std::shared_ptr<segmentation_algorithm> getSegmentationClass(const segmentation_
 class fusion_work_data
 {
 public:
-	fusion_work_data(std::vector<SegRegion>& regions) :
-		visited(std::vector<unsigned char>(regions.size(), 0)),
-		active(std::vector<unsigned char>(regions.size(), 1)),
-		fused(std::vector<std::vector<std::size_t>>(regions.size())),
-		fused_with(std::vector<std::size_t>(regions.size(), 0))
+	fusion_work_data(std::size_t size) :
+		visited(std::vector<unsigned char>(size, 0)),
+		active(std::vector<unsigned char>(size, 1)),
+		fused(std::vector<std::vector<std::size_t>>(size)),
+		fused_with(std::vector<std::size_t>(size, 0))
 	{
 	}
 
@@ -152,10 +152,10 @@ public:
 	std::vector<std::size_t> fused_with;
 };
 
-void runFusion(cv::Mat& labels, std::vector<SegRegion>& regions, std::function<bool(const SegRegion& master_seg, const SegRegion& slave_seg, const SegRegion& fusion_seg)> check_func);
+//void runFusion(cv::Mat& labels, std::vector<SegRegion>& regions, std::function<bool(const SegRegion& master_seg, const SegRegion& slave_seg, const SegRegion& fusion_seg)> check_func);
 cv::Mat getWrongColorSegmentationImage(cv::Mat& labels, int labelcount);
 cv::Mat getWrongColorSegmentationImage(RegionContainer& container);
-void fuse(fusion_work_data& data, std::vector<SegRegion>& regions, cv::Mat& labels);
+//void fuse(fusion_work_data& data, std::vector<SegRegion>& regions, cv::Mat& labels);
 //int mean_shift_segmentation(const cv::Mat& src, cv::Mat& labels_dst, int spatial_variance, float color_variance, int minsize);
 //int ms_slic(const cv::Mat& image, cv::Mat& labels, const segmentation_settings &config);
 

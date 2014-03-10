@@ -27,6 +27,33 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "region.h"
 
+void getRegionAsMatInternal(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d, cv::Mat& dst, int elemSize)
+{
+	unsigned char *dst_ptr = dst.data;
+	for(const RegionInterval& cinterval : pixel_idx)
+	{
+		int x = cinterval.lower + d;
+		assert(x < src.size[1]);
+		assert(x >= 0);
+		int length = cinterval.length();
+		assert(x + length <= src.size[1]);
+		const unsigned char* src_ptr = src.data + cinterval.y * elemSize * src.size[1] + x * elemSize;
+		memcpy(dst_ptr, src_ptr, elemSize*length);
+		dst_ptr += length*elemSize;
+	}
+}
+
+cv::Mat getRegionAsMat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d)
+{
+	int length = getSizeOfRegion(pixel_idx);
+
+	int dim3 = src.dims == 2 ? 1 : src.size[2];
+	cv::Mat region(length, dim3, src.type());
+	getRegionAsMatInternal(src, pixel_idx, d, region, dim3*src.elemSize());
+
+	return region;
+}
+
 cv::Mat RegionDescriptor::getMask(int margin)
 {
 	assert(bounding_box.width > 0 && bounding_box.height > 0);
@@ -47,7 +74,27 @@ cv::Mat RegionDescriptor::getAsMat(const cv::Mat& src, int d)
 	return getRegionAsMat(src, lineIntervals, d);
 }
 
+
+int getSizeOfRegion(const std::vector<RegionInterval>& intervals)
+{
+	int length = 0;
+	for(const RegionInterval& cinterval : intervals)
+		length += cinterval.length();
+
+	return length;
+}
+
 int RegionDescriptor::size() const
 {
 	return getSizeOfRegion(lineIntervals);
+}
+
+void calculate_average_color(RegionDescriptor& region, const cv::Mat& lab_image)
+{
+	cv::Mat values = getRegionAsMat(lab_image, region.lineIntervals, 0);
+	cv::Scalar means = cv::mean(values);
+
+	region.average_color[0] = means[0];
+	region.average_color[1] = means[1];
+	region.average_color[2] = means[2];
 }

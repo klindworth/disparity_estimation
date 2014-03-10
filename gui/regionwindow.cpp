@@ -73,7 +73,7 @@ void RegionWindow::setData(std::shared_ptr<RegionContainer>& left, std::shared_p
 			QStringList currentItem;
 			currentItem << QString::number(i);
 			currentItem << QString::number(baseRegion.disparity);
-			currentItem << QString::number(baseRegion.size);
+			currentItem << QString::number(baseRegion.m_size);
 
 			ui->treeSegments->addTopLevelItem(new QTreeWidgetItem(currentItem));
 
@@ -131,7 +131,7 @@ cv::Mat createModifiedImage(cv::Mat& gray_image, std::vector<SegRegion>& regions
 	for(SegRegion& cregion : regions)
 	{
 		//markRegionColor(color_image, cregion.pixel_idx, disparityApplied ? cregion.disparity : 0);
-		markRegionColor(color_image, cregion.region.lineIntervals, disparityApplied ? cregion.disparity : 0);
+		markRegionColor(color_image, cregion.lineIntervals, disparityApplied ? cregion.disparity : 0);
 	}
 
 	return color_image;
@@ -143,10 +143,10 @@ cv::Mat createModifiedImage(cv::Mat& gray_image, std::vector<SegRegion>& regions
 	cv::cvtColor(gray_image, color_image, CV_GRAY2BGR);
 
 	for(SegRegion& cregion : regionsLeft)
-		markRegionColor(color_image, cregion.region.lineIntervals, disparityApplied ? cregion.disparity : 0);
+		markRegionColor(color_image, cregion.lineIntervals, disparityApplied ? cregion.disparity : 0);
 
 	for(SegRegion& cregion : regionsRight)
-		markRegionColor(color_image, cregion.region.lineIntervals, disparityAppliedRight ? cregion.disparity : 0);
+		markRegionColor(color_image, cregion.lineIntervals, disparityAppliedRight ? cregion.disparity : 0);
 
 	return color_image;
 }

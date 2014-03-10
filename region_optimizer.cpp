@@ -41,7 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 disparity_hypothesis::disparity_hypothesis(cv::Mat& occmap, const SegRegion& baseRegion, short disparity, const std::vector<SegRegion>& left_regions, const std::vector<SegRegion>& right_regions, int pot_trunc, int dispMin)
 {
 	//occ
-	std::vector<RegionInterval> filtered = getFilteredPixelIdx(occmap.cols, baseRegion.region.lineIntervals, disparity);
+	std::vector<RegionInterval> filtered = getFilteredPixelIdx(occmap.cols, baseRegion.lineIntervals, disparity);
 	cv::Mat occ_region = getRegionAsMat(occmap, filtered, disparity);
 	int occ_sum = 0;
 	for(int j = 0; j < occ_region.size[0]; ++j)

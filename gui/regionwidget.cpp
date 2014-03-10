@@ -80,7 +80,7 @@ void RegionWidget::warpTree(int index, SegRegion& baseRegion, std::vector<SegReg
 		matchItem << QString::number(cregion.index);
 		matchItem << QString::number(std::abs(matchRegion.disparity + currentDisparity));
 		matchItem << QString::number(matchRegion.disparity);
-		matchItem << QString::number(matchRegion.size);
+		matchItem << QString::number(matchRegion.m_size);
 		//matchItem << QString::number(matchRegion.other_labels.value(index));
 		//matchItem << QString::number(cregion.pixelcount);
 		matchItem << "na";
@@ -244,7 +244,7 @@ void RegionWidget::setData(std::shared_ptr<RegionContainer>& base, std::shared_p
 	ui->lblIndex->setText("Index: " + QString::number(index));
 	ui->lblDisparity->setText("Disparity: " + QString::number(regionsBase[index].disparity));
 	ui->lblEntropy->setText("Entropy: " + QString::number(regionsBase[index].entropy));
-	ui->lblPixelcount->setText("Pixelcount: " + QString::number(regionsBase[index].size));
+	ui->lblPixelcount->setText("Pixelcount: " + QString::number(regionsBase[index].m_size));
 
 
 	warpTree(index, regionsBase[index], regionsMatch, ui->treeConnected, dispMin, regionsBase[index].disparity);

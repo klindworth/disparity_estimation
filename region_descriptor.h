@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/core/core.hpp>
 #include "intervals.h"
+#include "intervals_algorithms.h"
 
 class RegionDescriptor
 {
@@ -38,6 +39,39 @@ public:
 	cv::Mat getMask(int margin);
 	cv::Mat getAsMat(const cv::Mat& src, int d);
 	int size() const;
+
+	int m_size;
+
+	std::vector<std::pair<std::size_t, std::size_t>> neighbors;
+
+	cv::Vec3d average_color;
+
+	cv::Mat getRegionMask(int margin) const;
 };
+
+template<typename Iterator, typename T>
+inline void parallel_region(Iterator begin, Iterator end, T func)
+{
+	const std::size_t regions_count = std::distance(begin, end);
+	#pragma omp parallel for default(none) shared(begin, func)
+	for(std::size_t i = 0; i < regions_count; ++i)
+		func(*(begin + i));
+}
+
+template<typename T, typename reg_type>
+cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, std::function<T(const reg_type& region)> func)
+{
+	cv::Mat_<T> result(size, 0);
+
+	parallel_region(regions.begin(), regions.end(), [&](const reg_type& region) {
+		intervals::setRegionValue<T>(result, region.lineIntervals, func(region));
+	});
+
+	return result;
+}
+
+cv::Mat getRegionAsMat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d);
+int getSizeOfRegion(const std::vector<RegionInterval>& intervals);
+void calculate_average_color(RegionDescriptor& region, const cv::Mat& lab_image);
 
 #endif // REGION_DESCRIPTOR_H

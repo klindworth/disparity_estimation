@@ -59,7 +59,8 @@ HEADERS  += \
     segmentation.h \
     region_descriptor.h \
     region_metrics.h \
-    refinement.h
+    refinement.h \
+    region_descriptor_algorithms.h
 
 FORMS    += \
     gui/matstoreviewer.ui \

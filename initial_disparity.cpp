@@ -40,9 +40,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "configrun.h"
 #include "misc.h"
 #include "segmentation.h"
-
+#include "region_descriptor.h"
 #include "region_metrics.h"
 #include "refinement.h"
+#include "region_descriptor_algorithms.h"
 
 #include <iterator>
 #include <cstdlib>
@@ -55,15 +56,15 @@ std::vector<RegionInterval> getDilatedRegion(SegRegion& cregion, unsigned int di
 	{
 		std::vector<RegionInterval> dil_pixel_idx;
 		cv::Mat strucElem = cv::Mat(1+2*dilate_grow,1+2*dilate_grow, CV_8UC1, cv::Scalar(1));
-		cv::Mat mask = cregion.region.getMask(dilate_grow);
+		cv::Mat mask = cregion.getMask(dilate_grow);
 		cv::dilate(mask, mask, strucElem);
 
-		setMask(mask, dil_pixel_idx, cregion.region.bounding_box.y - dilate_grow, cregion.region.bounding_box.x - dilate_grow, base.size[0], base.size[1]);
+		setMask(mask, dil_pixel_idx, cregion.bounding_box.y - dilate_grow, cregion.bounding_box.x - dilate_grow, base.size[0], base.size[1]);
 		//TODO: refresh bounding boxes
 		return dil_pixel_idx;
 	}
 	else
-		return cregion.region.lineIntervals;
+		return cregion.lineIntervals;
 }
 
 void getRegionEntropy(cv::Mat& base, SegRegion &cregion)
@@ -74,8 +75,8 @@ void getRegionEntropy(cv::Mat& base, SegRegion &cregion)
 
 	fast_array<unsigned int, bins+2> counter_array;
 	cv::Mat_<float> entropy_table;
-	fill_entropytable_unnormalized(entropy_table, cregion.size*7);
-	cv::Mat base_region = getRegionAsMat(base_quant, cregion.region.lineIntervals, 0);
+	fill_entropytable_unnormalized(entropy_table, cregion.m_size*7);
+	cv::Mat base_region = getRegionAsMat(base_quant, cregion.lineIntervals, 0);
 
 	calculate_soft_histogramm(counter_array, base_region.data, base_region.total());
 	cregion.entropy = calculate_entropy_unnormalized<float>(counter_array, entropy_table, bins);
@@ -96,8 +97,8 @@ void getAllRegionEntropies(cv::Mat& base, std::vector<SegRegion>& regions)
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
 		cv::Mat_<float> entropy_table;
-		fill_entropytable_unnormalized(entropy_table, regions[i].size*7);
-		cv::Mat base_region = getRegionAsMat(base_quant, regions[i].region.lineIntervals, 0);
+		fill_entropytable_unnormalized(entropy_table, regions[i].m_size*7);
+		cv::Mat base_region = getRegionAsMat(base_quant, regions[i].lineIntervals, 0);
 
 		calculate_soft_histogramm(counter_array, base_region.data, base_region.total());
 		regions[i].entropy = calculate_entropy_unnormalized<float>(counter_array, entropy_table, bins);
@@ -111,7 +112,7 @@ void calculateRegionDisparity(StereoSingleTask& task, const cv::Mat& base, const
 	const std::size_t regions_count = regions.size();
 
 	auto it = std::max_element(regions.begin(), regions.end(), [](const SegRegion& lhs, const SegRegion& rhs) {
-		return lhs.size < rhs.size;
+		return lhs.m_size < rhs.m_size;
 	});
 
 	cost_type cost_agg(base, match, it->size * 10);
@@ -152,7 +153,7 @@ void calculate_region_disparity(StereoSingleTask& task, const cv::Mat& base, con
 			regions[i].disparity_offset = range.first;
 			if(d>= range.first && d <= range.second)
 			{
-				std::vector<RegionInterval> filtered = filter_region(regions[i].region.lineIntervals, d, occ, base.size[1]);
+				std::vector<RegionInterval> filtered = filter_region(regions[i].lineIntervals, d, occ, base.size[1]);
 
 				cv::Mat diff_region = getRegionAsMat(diff, filtered, std::min(0, d));
 				float sum = cv::norm(diff_region, cv::NORM_L1);
@@ -180,7 +181,8 @@ void fillRegionContainer(RegionContainer& result, StereoSingleTask& task, std::s
 
 	int regions_count = cachedSegmentation(task, result.labels, algorithm);
 
-	result.regions = getRegionVector(result.labels, regions_count);
+	result.regions = std::vector<SegRegion>(regions_count);//getRegionVector(result.labels, regions_count);
+	fillRegionDescriptors(result.regions.begin(), result.regions.end(), result.labels);
 	//cv::Mat test = getWrongColorSegmentationImage(result.labels, regions_count);
 	cv::Mat test = getWrongColorSegmentationImage(result);
 	matstore.addMat(test, "segtest");
@@ -298,8 +300,8 @@ std::vector<ValueRegionInterval<short> > getIntervalDisparityBySegments(const Re
 	{
 		if(i != exclude)
 		{
-			result.reserve(result.size() + container.regions[i].region.lineIntervals.size());
-			for(const RegionInterval& cinterval : container.regions[i].region.lineIntervals)
+			result.reserve(result.size() + container.regions[i].lineIntervals.size());
+			for(const RegionInterval& cinterval : container.regions[i].lineIntervals)
 				result.push_back(ValueRegionInterval<short>(cinterval, container.regions[i].disparity));
 		}
 	}

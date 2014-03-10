@@ -29,7 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 #include <string>
 #include <iosfwd>
-#include "stereotask.h"
 
 //saves a matrix to a binary file
 void matToFile(const cv::Mat& input , const std::string &filename);
@@ -205,37 +204,6 @@ cv::Mat getValueScaledImage(const cv::Mat& image)
 		*dst_ptr++ = (*src_ptr++ - min) * scale;
 	}
 	return result;
-}
-
-inline std::pair<short,short> getSubrange(short baseDisparity, short delta, const StereoSingleTask& task)
-{
-	if(delta == 0)
-		return std::make_pair(task.dispMin, task.dispMax);
-	else
-	{
-		short start = std::max(baseDisparity - delta, task.dispMin);
-		short end   = std::min(baseDisparity + delta, task.dispMax);
-
-		return std::make_pair(start, end);
-	}
-}
-
-inline std::pair<short,short> getSubrangeIdx(short baseDisparity, short delta, const StereoSingleTask& task)
-{
-	auto range = getSubrange(baseDisparity, delta, task);
-	range.first -= task.dispMin;
-	range.second -= task.dispMin;
-	return range;
-	/*short start = std::max(baseDisparity - delta, task.dispMin) - task.dispMin;
-	short end   = std::min(baseDisparity + delta, task.dispMax) - task.dispMin;
-
-	return std::make_pair(start, end);*/
-}
-
-inline bool gotDisparity(short disparity, short baseDisparity, short delta, const StereoSingleTask& task)
-{
-	auto range = getSubrange(baseDisparity, delta, task);
-	return disparity >= range.first && range.second <= range.second;
 }
 
 void derivedMat(const cv::Mat &input, cv::Mat& grad_x, cv::Mat& grad_y, bool blur);
