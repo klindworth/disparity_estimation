@@ -82,7 +82,7 @@ class RegionContainer
 public:
 	StereoSingleTask task;
 	std::vector<DisparityRegion> regions;
-	cv::Mat labels;
+	cv::Mat_<int> labels;
 };
 
 template<typename T>

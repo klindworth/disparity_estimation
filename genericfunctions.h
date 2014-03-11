@@ -187,7 +187,7 @@ cv::Mat slidingWindow(const cv::Mat& image, unsigned int windowsize)
 }
 
 template<typename src_t, typename dst_t>
-cv::Mat getValueScaledImage(const cv::Mat& image)
+cv::Mat_<dst_t> getValueScaledImage(const cv::Mat& image)
 {
 	double dmin, dmax;
 	cv::minMaxIdx(image, &dmin, &dmax);

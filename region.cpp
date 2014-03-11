@@ -24,17 +24,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "region.h"
-#include "fast_array.h"
-#include "slidingEntropy.h"
+#include "genericfunctions.h"
 #include "sparse_counter.h"
 
 #include <iterator>
-
-#include <opencv2/highgui/highgui.hpp>
-
-
-#include "costmap_creators.h"
-
 #include <cstdlib>
 
 #include "intervals.h"
@@ -116,24 +109,12 @@ std::pair<float,float> getOtherRegionsAverageCond(const std::vector<DisparityReg
 
 float getNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func)
 {
-	float result = 0.0f;
-	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
-	{
-		result += func(container[cpair.first]);
-	}
-	return result/neighbors.size();
+	return getNeighborhoodsAverage(container, neighbors, 0.0f, func);
 }
 
 float getWeightedNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func)
 {
-	float result = 0.0f;
-	float sum_weight = 0.0f;
-	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
-	{
-		result += cpair.second*func(container[cpair.first]);
-		sum_weight += cpair.second;
-	}
-	return result/sum_weight;
+	return getWeightedNeighborhoodsAverage(container, neighbors, 0.0f, func);
 }
 
 std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& base_color, double color_trunc, const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func)

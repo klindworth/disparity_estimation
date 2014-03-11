@@ -30,7 +30,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 
 class RegionContainer;
-class DisparityRegion;
 class fusion_work_data;
 class StereoSingleTask;
 
@@ -56,7 +55,7 @@ public:
 	 * @param labels cv::Mat image with int as datatype. Counting from zero, out parameter
 	 * @return Number of segments
 	 */
-	virtual int operator()(const cv::Mat& image, cv::Mat& labels) = 0;
+	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels) = 0;
 
 	/**
 	 * @brief cacheAllowed Returns, if caching for this segmentation algorithm is allowed
@@ -95,7 +94,7 @@ private:
 class crslic_segmentation : public segmentation_algorithm {
 public:
 	crslic_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
-	virtual int operator()(const cv::Mat& image, cv::Mat& labels);
+	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels);
 	virtual std::string cacheName() const;
 
 private:
@@ -105,7 +104,7 @@ private:
 /*class meanshift_segmentation : public segmentation_algorithm {
 public:
 	meanshift_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
-	virtual int operator()(const cv::Mat& image, cv::Mat& labels);
+	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels);
 	virtual std::string cacheName() const;
 
 private:
@@ -115,7 +114,7 @@ private:
 class mssuperpixel_segmentation : public segmentation_algorithm {
 public:
 	mssuperpixel_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
-	virtual int operator()(const cv::Mat& image, cv::Mat& labels);
+	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels);
 	virtual std::string cacheName() const;
 	virtual bool cacheAllowed() const;
 	virtual bool refinementPossible();
@@ -153,7 +152,7 @@ public:
 };
 
 //void runFusion(cv::Mat& labels, std::vector<SegRegion>& regions, std::function<bool(const SegRegion& master_seg, const SegRegion& slave_seg, const SegRegion& fusion_seg)> check_func);
-cv::Mat getWrongColorSegmentationImage(cv::Mat& labels, int labelcount);
+cv::Mat getWrongColorSegmentationImage(cv::Mat_<int>& labels, int labelcount);
 cv::Mat getWrongColorSegmentationImage(RegionContainer& container);
 //void fuse(fusion_work_data& data, std::vector<SegRegion>& regions, cv::Mat& labels);
 //int mean_shift_segmentation(const cv::Mat& src, cv::Mat& labels_dst, int spatial_variance, float color_variance, int minsize);
@@ -162,7 +161,7 @@ cv::Mat getWrongColorSegmentationImage(RegionContainer& container);
 const cv::FileNode& operator>>(const cv::FileNode& stream, segmentation_settings& config);
 cv::FileStorage& operator<<(cv::FileStorage& stream, const segmentation_settings& config);
 
-int cachedSegmentation(StereoSingleTask& task, cv::Mat& labels, std::shared_ptr<segmentation_algorithm>& algorithm);
+int cachedSegmentation(StereoSingleTask& task, cv::Mat_<int>& labels, std::shared_ptr<segmentation_algorithm>& algorithm);
 
 
 #endif // SEGMENTATION_H

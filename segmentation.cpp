@@ -44,7 +44,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "contourRelaxation/ContourRelaxation.h"
 #include "contourRelaxation/InitializationFunctions.h"
 
-int cachedSegmentation(StereoSingleTask& task, cv::Mat& labels, std::shared_ptr<segmentation_algorithm>& algorithm)
+int cachedSegmentation(StereoSingleTask& task, cv::Mat_<int>& labels, std::shared_ptr<segmentation_algorithm>& algorithm)
 {
 	int regions_count = 0;
 	if(algorithm->cacheAllowed())
@@ -223,7 +223,7 @@ void runFusion(cv::Mat& labels, std::vector<T>& regions, std::function<bool(cons
 	generate_neighborhood(labels, regions);
 }
 
-cv::Mat getWrongColorSegmentationImage(cv::Mat& labels, int labelcount)
+cv::Mat getWrongColorSegmentationImage(cv::Mat_<int>& labels, int labelcount)
 {
 	std::vector<cv::Vec3b> colors;
 	colors.reserve(labelcount);
@@ -242,7 +242,7 @@ cv::Mat getWrongColorSegmentationImage(cv::Mat& labels, int labelcount)
 	cv::Mat result(labels.size(), CV_8UC3);
 
 	cv::Vec3b *dst_ptr = result.ptr<cv::Vec3b>(0);
-	int *src_ptr = labels.ptr<int>(0);
+	int *src_ptr = labels[0];
 
 	for(std::size_t i = 0; i < labels.total(); ++i)
 		*dst_ptr++ = colors[*src_ptr++];
@@ -348,7 +348,7 @@ std::string slic_segmentation::cacheName() const
 }*/
 
 
-int crslic_segmentation::operator()(const cv::Mat& image, cv::Mat& labels)
+int crslic_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels)
 {
 	float directCliqueCost = 0.3;
 	unsigned int const iterations = 3;
@@ -381,7 +381,7 @@ int crslic_segmentation::operator()(const cv::Mat& image, cv::Mat& labels)
 		crslic_obj.setGrayvalueData(image.clone());
 
 	crslic_obj.relax(labels_temp, directCliqueCost, diagonalCliqueCost, iterations, labels);
-	return 1+*(std::max_element(labels.begin<int>(), labels.end<int>()));
+	return 1+*(std::max_element(labels.begin(), labels.end()));
 }
 
 std::string crslic_segmentation::cacheName() const
@@ -391,7 +391,7 @@ std::string crslic_segmentation::cacheName() const
 	return stream.str();
 }
 
-/*int meanshift_segmentation::operator()(const cv::Mat& image, cv::Mat& labels) {
+/*int meanshift_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
 	return mean_shift_segmentation(image, labels, settings.spatial_var, settings.color_var, 20);
 }
 
@@ -402,7 +402,7 @@ std::string meanshift_segmentation::cacheName() const
 	return stream.str();
 }
 
-int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat& labels) {
+int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
 	int regions_count = slicSuperpixels(image, labels, settings.superpixel_size, settings.superpixel_compactness);
 	std::vector<RegionDescriptor> regions(regions_count);
 	fillRegionDescriptors(regions.begin(), regions.end(), labels);
@@ -488,9 +488,10 @@ bool mssuperpixel_segmentation::refinementPossible() {
 	return true;
 }*/
 
-void defuse(std::vector<DisparityRegion>& fused_regions, cv::Mat& newlabels, int newsegcount, const fusion_work_data& data)
+template<typename T>
+void defuse(std::vector<T>& fused_regions, cv::Mat_<int>& newlabels, int newsegcount, const fusion_work_data& data)
 {
-	std::vector<DisparityRegion> regions(newsegcount);// = getRegionVector(newlabels, newsegcount);
+	std::vector<T> regions(newsegcount);// = getRegionVector(newlabels, newsegcount);
 	fillRegionDescriptors(regions.begin(), regions.end(), newlabels);
 
 	const std::size_t regions_count = regions.size();

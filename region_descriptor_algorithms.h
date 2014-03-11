@@ -2,6 +2,8 @@
 #define REGION_DESCRIPTOR_ALGORITHMS_H
 
 #include "genericfunctions.h"
+#include "region_descriptor.h"
+#include "intervals_algorithms.h"
 
 /**
  * Fills a vector of RegionDescriptors with the correct lineIntervals and sizes
@@ -145,6 +147,36 @@ void calculate_all_average_colors(const cv::Mat& image, Iterator begin, Iterator
 	{
 		calculate_average_color(region, lab_double_image);
 	});
+}
+
+template<typename T, typename reg_type>
+cv::Mat_<unsigned char> regionWiseImage(cv::Size size, std::vector<reg_type>& regions, std::function<T(const reg_type& region)> func)
+{
+	return getValueScaledImage<T, unsigned char>(regionWiseSet<T, reg_type>(size, regions, func));
+}
+
+template<typename T, typename reg_type>
+T getNeighborhoodsAverage(const std::vector<reg_type>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, const T& initVal, std::function<T(const reg_type&)> func)
+{
+	T result = initVal;
+	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
+	{
+		result += func(container[cpair.first]);
+	}
+	return result/(int)neighbors.size();
+}
+
+template<typename T, typename reg_type>
+T getWeightedNeighborhoodsAverage(const std::vector<reg_type>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, const T& initVal, std::function<T(const reg_type&)> func)
+{
+	T result = initVal;
+	float sum_weight = 0.0f;
+	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
+	{
+		result += cpair.second*func(container[cpair.first]);
+		sum_weight += cpair.second;
+	}
+	return result/sum_weight;
 }
 
 #endif // REGION_DESCRIPTOR_ALGORITHMS_H

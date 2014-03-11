@@ -57,10 +57,4 @@ cv::Mat regionWiseImage(StereoSingleTask& task, std::vector<DisparityRegion>& re
 	return getValueScaledImage<T, unsigned char>(regionWiseSet<T>(task, regions, func));
 }
 
-template<typename T, typename reg_type>
-cv::Mat regionWiseImage(cv::Size size, std::vector<reg_type>& regions, std::function<T(const reg_type& region)> func)
-{
-	return getValueScaledImage<T, unsigned char>(regionWiseSet<T, reg_type>(size, regions, func));
-}
-
 #endif // MISC_H
