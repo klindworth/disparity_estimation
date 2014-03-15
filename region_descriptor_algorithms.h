@@ -5,6 +5,27 @@
 #include "region_descriptor.h"
 #include "intervals_algorithms.h"
 
+template<typename Iterator, typename T>
+inline void parallel_region(Iterator begin, Iterator end, T func)
+{
+	const std::size_t regions_count = std::distance(begin, end);
+	#pragma omp parallel for default(none) shared(begin, func)
+	for(std::size_t i = 0; i < regions_count; ++i)
+		func(*(begin + i));
+}
+
+template<typename T, typename reg_type>
+cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, std::function<T(const reg_type& region)> func)
+{
+	cv::Mat_<T> result(size, 0);
+
+	parallel_region(regions.begin(), regions.end(), [&](const reg_type& region) {
+		intervals::setRegionValue<T>(result, region.lineIntervals, func(region));
+	});
+
+	return result;
+}
+
 /**
  * Fills a vector of RegionDescriptors with the correct lineIntervals and sizes
  */

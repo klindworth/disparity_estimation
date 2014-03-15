@@ -42,30 +42,6 @@ DisparityRegion::DisparityRegion()
 	dilation = 0;
 }
 
-void setMask(const cv::Mat& mask, std::vector<RegionInterval>& pixel_idx, int py, int px, int height, int width)
-{
-	pixel_idx.clear();
-
-	int y_max = std::min(std::min(mask.rows, height), height-py);
-	int x_max = std::min(std::min(mask.cols, width), width-px);
-
-	int x_min = std::max(0, -px); // x+pxy >= 0
-	int y_min = std::max(0, -py);
-
-	assert(y_max >= 0 && x_max >= 0);
-
-	auto factory = [&](int y, int lower, int upper, unsigned char value) {
-		if(value == 255)
-		{
-			assert(y-y_min < height-py && lower+px+x_min >= 0 && y+py+y_min >= 0 && upper+px+x_min > 0 && upper+x_min <= width-px);
-			pixel_idx.push_back(RegionInterval(y+py+y_min, lower+px+x_min, upper+px+x_min));
-		}
-	};
-
-	cv::Mat_<unsigned char> mask2 = mask(cv::Range(y_min, y_max), cv::Range(x_min, x_max));
-	intervals::convertDifferential<unsigned char>(mask2, factory);
-}
-
 std::vector<RegionInterval> getFilteredPixelIdx(int width, const std::vector<RegionInterval> &pixel_idx, int d)
 {
 	std::vector<RegionInterval> filtered;

@@ -26,7 +26,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SLIDINGGRADIENT_H
 #define SLIDINGGRADIENT_H
 
-#include <opencv2/core/core.hpp>
+namespace cv {
+class Mat;
+}
 
 class StereoSingleTask;
 

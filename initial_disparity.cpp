@@ -50,23 +50,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <memory>
 
-std::vector<RegionInterval> getDilatedRegion(DisparityRegion& cregion, unsigned int dilate_grow, cv::Mat base)
-{
-	if(dilate_grow > 0)
-	{
-		std::vector<RegionInterval> dil_pixel_idx;
-		cv::Mat strucElem = cv::Mat(1+2*dilate_grow,1+2*dilate_grow, CV_8UC1, cv::Scalar(1));
-		cv::Mat mask = cregion.getMask(dilate_grow);
-		cv::dilate(mask, mask, strucElem);
-
-		setMask(mask, dil_pixel_idx, cregion.bounding_box.y - dilate_grow, cregion.bounding_box.x - dilate_grow, base.size[0], base.size[1]);
-		//TODO: refresh bounding boxes
-		return dil_pixel_idx;
-	}
-	else
-		return cregion.lineIntervals;
-}
-
 void getRegionEntropy(cv::Mat& base, DisparityRegion &cregion)
 {
 	const int quantizer = 4;

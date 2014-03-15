@@ -26,9 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef INTERVALS_H
 #define INTERVALS_H
 
-#include <opencv2/core/core.hpp>
 #include <assert.h>
-#include <iostream>
 
 class RegionInterval
 {
@@ -113,20 +111,6 @@ public:
 inline bool operator==(const RegionInterval& lhs, const RegionInterval& rhs)
 {
 	return (lhs.y == rhs.y) && (lhs.lower == rhs.lower) && (lhs.upper == rhs.upper);
-}
-
-template<typename charT, typename traits>
-inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const RegionInterval& interval)
-{
-	stream << "(y: " << interval.y << ", x: " << interval.lower << "-" << interval.upper << ") ";
-	return stream;
-}
-
-template<typename charT, typename traits, typename T>
-inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const ValueRegionInterval<T>& interval)
-{
-	stream << "(y: " << interval.y << ", x: " << interval.lower << "-" << interval.upper << ", value: " << interval.value << ") ";
-	return stream;
 }
 
 #endif // INTERVALS_H

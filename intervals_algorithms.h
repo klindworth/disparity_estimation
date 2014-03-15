@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "intervals.h"
 
+#include <iostream>
 #include <opencv2/core/core.hpp>
 #include <functional>
 
@@ -244,7 +245,20 @@ void convertMinimaRanges(const cv::Mat_<value_type>& values, InserterIterator in
 	convertGeneric<value_type>(values, factory, cmp_func);
 }
 
+}
 
+template<typename charT, typename traits>
+inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const RegionInterval& interval)
+{
+	stream << "(y: " << interval.y << ", x: " << interval.lower << "-" << interval.upper << ") ";
+	return stream;
+}
+
+template<typename charT, typename traits, typename T>
+inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const ValueRegionInterval<T>& interval)
+{
+	stream << "(y: " << interval.y << ", x: " << interval.lower << "-" << interval.upper << ", value: " << interval.value << ") ";
+	return stream;
 }
 
 #endif // INTERVALS_ALGORITHMS_H

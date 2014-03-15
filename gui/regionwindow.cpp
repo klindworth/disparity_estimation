@@ -36,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "initial_disparity.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
+#include <iostream>
 
 RegionWindow::RegionWindow(QWidget *parent) :
 	QMainWindow(parent),

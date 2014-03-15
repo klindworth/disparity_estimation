@@ -26,7 +26,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SLIDINGHIMIGRADIENT_H
 #define SLIDINGHIMIGRADIENT_H
 
-#include <opencv2/core/core.hpp>
+namespace cv {
+	class Mat;
+}
 #include <functional>
 
 class StereoSingleTask;

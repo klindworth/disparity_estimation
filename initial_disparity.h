@@ -26,9 +26,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef INITIAL_DISPARITY_H
 #define INITIAL_DISPARITY_H
 
-#include <opencv2/core/core.hpp>
+#include <vector>
 #include <functional>
 #include <memory>
+
+namespace cv {
+	class Mat;
+}
 
 class StereoTask;
 class StereoSingleTask;
@@ -38,6 +42,7 @@ class RefinementConfig;
 class RegionContainer;
 class segmentation_algorithm;
 class RegionInterval;
+class RegionDescriptor;
 
 void fillRegionContainer(RegionContainer& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm);
 void getRegionEntropy(cv::Mat& base, DisparityRegion &cregion);
@@ -47,6 +52,5 @@ void generateRegionInformation(RegionContainer& left, RegionContainer& right);
 //void getRegionDisparity(SegRegion& pixel_idx, const cv::Mat &base, const cv::Mat &match, int dispMin, int dispMax, unsigned int dilate_grow);
 std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config, const RefinementConfig& refconfig, std::shared_ptr<segmentation_algorithm>& algorithm, int subsampling);
 std::pair<cv::Mat, cv::Mat> segment_based_disparity_lss(StereoTask& task, const InitialDisparityConfig &config, std::shared_ptr<segmentation_algorithm>& algorithm);
-std::vector<RegionInterval> getDilatedRegion(DisparityRegion& cregion, unsigned int dilate_grow, cv::Mat base);
 
 #endif // INITIAL_DISPARITY_H
