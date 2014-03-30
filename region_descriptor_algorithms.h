@@ -29,16 +29,15 @@ cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, s
 /**
  * Fills a vector of RegionDescriptors with the correct lineIntervals and sizes
  */
-template<typename Iterator>
-void fillRegionDescriptors(Iterator begin, Iterator end, const cv::Mat& labels)
+template<typename Iterator, typename label_type>
+void fillRegionDescriptors(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
 {
-	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, int value) {
+	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, label_type value) {
 		assert(value < std::distance(begin, end) && value >= 0);
 		(*(begin + value)).lineIntervals.push_back(RegionInterval(y, lower, upper));
 	};
 
-	const cv::Mat_<int> labels_typed = labels;
-	intervals::convertDifferential<int>(labels_typed, factory);
+	intervals::convertDifferential<label_type>(labels, factory);
 
 	parallel_region(begin, end, [&](RegionDescriptor& region){
 		//compute size
@@ -49,7 +48,7 @@ void fillRegionDescriptors(Iterator begin, Iterator end, const cv::Mat& labels)
 	refreshBoundingBoxes(begin, end, labels);
 }
 
-inline std::vector<std::pair<std::size_t, std::size_t> >::iterator find_neighbor(std::vector<std::pair<std::size_t, std::size_t> >& container, std::size_t val)
+inline neighbor_vector::iterator find_neighbor(neighbor_vector& container, std::size_t val)
 {
 	return std::find_if(container.begin(), container.end(), [=](const std::pair<std::size_t, std::size_t>& cpair){return cpair.first == val;});
 }
@@ -57,7 +56,6 @@ inline std::vector<std::pair<std::size_t, std::size_t> >::iterator find_neighbor
 template<typename T>
 inline void save_neighbors(std::vector<T>& regions, std::size_t val1, std::size_t val2)
 {
-	typedef std::vector<std::pair<std::size_t, std::size_t> > neighbor_vector;
 	if(val1 != val2)
 	{
 		neighbor_vector& reg1 = regions[val1].neighbors;
@@ -77,8 +75,8 @@ inline void save_neighbors(std::vector<T>& regions, std::size_t val1, std::size_
 	}
 }
 
-template<typename T>
-void generate_neighborhood(cv::Mat &labels, std::vector<T> &regions)
+template<typename T, typename label_type>
+void generate_neighborhood(const cv::Mat_<label_type> &labels, std::vector<T> &regions)
 {
 	for(T& cregion : regions)
 		cregion.neighbors.clear();
@@ -86,17 +84,17 @@ void generate_neighborhood(cv::Mat &labels, std::vector<T> &regions)
 	for(int i = 0; i < labels.rows; ++i)
 	{
 		for(int j = 1; j < labels.cols; ++j)
-			save_neighbors(regions, labels.at<int>(i,j), labels.at<int>(i, j-1));
+			save_neighbors(regions, labels(i,j), labels(i, j-1));
 	}
 	for(int i = 1; i < labels.rows; ++i)
 	{
 		for(int j = 0; j < labels.cols; ++j)
-			save_neighbors(regions, labels.at<int>(i,j), labels.at<int>(i-1, j));
+			save_neighbors(regions, labels(i,j), labels(i-1, j));
 	}
 }
 
-template<typename Iterator>
-void refreshBoundingBoxes(Iterator begin, Iterator end, const cv::Mat& labels)
+template<typename Iterator, typename label_type>
+void refreshBoundingBoxes(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
 {
 	parallel_region(begin, end, [&](RegionDescriptor& region){
 		region.bounding_box.x = labels.cols;
@@ -105,12 +103,12 @@ void refreshBoundingBoxes(Iterator begin, Iterator end, const cv::Mat& labels)
 		region.bounding_box.width = 0;
 	});
 
-	const int* clabel = labels.ptr<int>(0);
+	const label_type* clabel = labels[0];
 	for(int y = 0; y < labels.rows; ++y)
 	{
 		for(int x = 0; x < labels.cols; ++x)
 		{
-			int i = *clabel++;//labels.at<int>(y,x);
+			label_type i = *clabel++;//labels.at<int>(y,x);
 			cv::Rect& crect = (*(begin + i)).bounding_box;
 
 			assert(i < std::distance(begin, end) && i >= 0);
@@ -128,8 +126,12 @@ void refreshBoundingBoxes(Iterator begin, Iterator end, const cv::Mat& labels)
 	});
 }
 
-template<typename Iterator>
-bool checkLabelsIntervalsInvariant(Iterator begin, Iterator end, const cv::Mat& labels)
+/**
+ * Checks, if the sum of all sizes equals the image size and if the numbers in the labels matrix
+ *  equals the position of the corresponding RegionDescriptor
+ */
+template<typename Iterator, typename label_type>
+bool checkLabelsIntervalsInvariant(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
 {
 	int pixelcount = 0;
 	for(Iterator it = begin; it != end; ++it)
@@ -143,7 +145,7 @@ bool checkLabelsIntervalsInvariant(Iterator begin, Iterator end, const cv::Mat& 
 		{
 			for(int x = cinterval.lower; x < cinterval.upper; ++x)
 			{
-				int val = labels.at<int>(cinterval.y, x);
+				label_type val = labels(cinterval.y, x);
 				assert(val == std::distance(begin, it));
 				if(val != std::distance(begin, it))
 					return false;
@@ -155,6 +157,44 @@ bool checkLabelsIntervalsInvariant(Iterator begin, Iterator end, const cv::Mat& 
 		return false;
 	else
 		return true;
+}
+
+/**
+ * Checks if all neighbor ids are existing regions, and it checks if the neighboring region has the
+ * region as its neighbor. It parameter regions_count doesn't have to be equal to regions.size(),
+ * if it's lower it means only the first regions_count regions will be checked
+ */
+template<typename T>
+bool checkNeighborhoodInvariant(const std::vector<T> &regions, std::size_t regions_count)
+{
+	for(std::size_t i = 0; i < regions_count; ++i)
+	{
+		const RegionDescriptor& cregion = regions[i];
+		const std::size_t neigh_count = cregion.neighbors.size();
+
+		for(std::size_t j = 0; j < neigh_count; ++j)
+		{
+			std::size_t c_idx = cregion.neighbors[j].first;
+
+			assert(c_idx < regions_count);
+
+			const RegionDescriptor& cneighbor = regions[c_idx];
+
+			bool found = false;
+			const std::size_t inner_neigh_count = cneighbor.neighbors.size();
+			for(std::size_t k = 0; k < inner_neigh_count; ++k)
+			{
+				if(cneighbor.neighbors[k].first == i)
+				{
+					found = true;
+					break;
+				}
+			}
+
+			assert(found);
+		}
+	}
+	return true;
 }
 
 template<typename Iterator>
@@ -177,7 +217,7 @@ cv::Mat_<unsigned char> regionWiseImage(cv::Size size, std::vector<reg_type>& re
 }
 
 template<typename T, typename reg_type>
-T getNeighborhoodsAverage(const std::vector<reg_type>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, const T& initVal, std::function<T(const reg_type&)> func)
+T getNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, std::function<T(const reg_type&)> func)
 {
 	T result = initVal;
 	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
@@ -188,7 +228,7 @@ T getNeighborhoodsAverage(const std::vector<reg_type>& container, const std::vec
 }
 
 template<typename T, typename reg_type>
-T getWeightedNeighborhoodsAverage(const std::vector<reg_type>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, const T& initVal, std::function<T(const reg_type&)> func)
+T getWeightedNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, std::function<T(const reg_type&)> func)
 {
 	T result = initVal;
 	float sum_weight = 0.0f;

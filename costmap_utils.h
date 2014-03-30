@@ -28,8 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/core/core.hpp>
 
-#include "fast_array.h"
-
 class RegionInterval;
 class DisparityRegion;
 
@@ -54,7 +52,6 @@ cv::Mat deriveCostmap(const cv::Mat &cost_map);
 void derivePartialCostmap(const float *cost_map, float *result, int len);
 void analyzeDisparityRange(stat_t& cstat, const float *src_ptr, const float *derived_ptr, int range);
 void analyzeDisparityRange2(DisparityRegion& region);
-DataStore2D<stat_t> analyzeCostmap(const cv::Mat &src);
 
 //sums all values up in a window and saves the sum in the middlepoint (like boxfilter - but here for 3D matrix)
 cv::Mat windowSum(cv::Mat& cost_map_old, int windowsize);

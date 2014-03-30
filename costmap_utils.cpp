@@ -192,31 +192,6 @@ void analyzeDisparityRange(stat_t& cstat, const float* src_ptr, const float* der
 	cstat.disparity_idx = min_disp;
 }
 
-DataStore2D<stat_t> analyzeCostmap(const cv::Mat& src)
-{
-	assert(src.dims == 3);
-
-	//cv::Mat derivedCost = deriveCostmap(src);
-
-	DataStore2D<stat_t> stat_store(src.size[0], src.size[1]);
-
-	float *derivedCost = new float[src.size[2]-1];
-
-	for(int i = 0; i < src.size[0]; ++i)
-	{
-		for(int j = 0; j < src.size[1]; ++j)
-		{
-			stat_store(i,j) = stat_t();
-			derivePartialCostmap(src.ptr<float>(i,j,0), derivedCost, src.size[2]);
-			analyzeDisparityRange(stat_store(i,j), src.ptr<float>(i,j,0), derivedCost, src.size[2]);
-		}
-	}
-
-	delete[] derivedCost;
-
-	return stat_store;
-}
-
 void derivePartialCostmap(const float* cost_map, float *result, int len)
 {
 	for(int k = 1; k < len; ++k)

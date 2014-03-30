@@ -93,7 +93,7 @@ inline void parallel_region(std::vector<DisparityRegion>& regions, T func)
 
 cv::Mat getDisparityBySegments(const RegionContainer &container);
 
-void refreshBoundingBoxes(const cv::Mat& labels, std::vector<DisparityRegion>& regions);
+void refreshBoundingBoxes(const cv::Mat_<int>& labels, std::vector<DisparityRegion>& regions);
 
 int reenumerate(cv::Mat& labels, int old_count);
 void replace_neighbor_idx(std::vector<RegionDescriptor>& regions, std::size_t old_idx, std::size_t new_idx);
@@ -115,7 +115,5 @@ void calculate_all_average_colors(const cv::Mat &image, std::vector<DisparityReg
 
 std::vector<RegionInterval> getFilteredPixelIdx(int width, const std::vector<RegionInterval> &pixel_idx, int d);
 
-void setMask(const cv::Mat &mask, std::vector<RegionInterval>& pixel_idx, int py, int px, int height, int width);
-
-bool checkLabelsIntervalsInvariant(const std::vector<DisparityRegion>& regions, const cv::Mat& labels, int segcount);
+bool checkLabelsIntervalsInvariant(const std::vector<DisparityRegion>& regions, const cv::Mat_<int>& labels, int segcount);
 #endif // REGION_H

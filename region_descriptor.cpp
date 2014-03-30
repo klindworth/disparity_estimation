@@ -57,7 +57,7 @@ cv::Mat getRegionAsMat(const cv::Mat& src, const std::vector<RegionInterval> &pi
 	return region;
 }
 
-cv::Mat RegionDescriptor::getMask(int margin)
+cv::Mat RegionDescriptor::getMask(int margin) const
 {
 	assert(bounding_box.width > 0 && bounding_box.height > 0);
 
@@ -113,7 +113,7 @@ std::vector<RegionInterval> getDilatedRegion(RegionDescriptor& cregion, unsigned
 		return cregion.lineIntervals;
 }
 
-cv::Mat RegionDescriptor::getAsMat(const cv::Mat& src, int d)
+cv::Mat RegionDescriptor::getAsMat(const cv::Mat& src, int d) const
 {
 	return getRegionAsMat(src, lineIntervals, d);
 }

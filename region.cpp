@@ -159,7 +159,7 @@ void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, std::ve
 	}
 }
 
-void refreshBoundingBoxes(const cv::Mat& labels, std::vector<DisparityRegion>& regions)
+void refreshBoundingBoxes(const cv::Mat_<int>& labels, std::vector<DisparityRegion>& regions)
 {
 	refreshBoundingBoxes(regions.begin(), regions.end(), labels);
 }
@@ -196,40 +196,7 @@ void replace_neighbor_idx(std::vector<RegionDescriptor>& regions, std::size_t ol
 	}
 }
 
-template<typename T>
-bool checkNeighborhoodInvariant(std::vector<T> &regions, std::size_t regions_count)
-{
-	for(std::size_t i = 0; i < regions_count; ++i)
-	{
-		RegionDescriptor& cregion = regions[i];
-		const std::size_t neigh_count = cregion.neighbors.size();
-
-		for(std::size_t j = 0; j < neigh_count; ++j)
-		{
-			std::size_t c_idx = cregion.neighbors[j].first;
-
-			assert(c_idx < regions_count);
-
-			RegionDescriptor& cneighbor = regions[c_idx];
-
-			bool found = false;
-			const std::size_t inner_neigh_count = cneighbor.neighbors.size();
-			for(std::size_t k = 0; k < inner_neigh_count; ++k)
-			{
-				if(cneighbor.neighbors[k].first == i)
-				{
-					found = true;
-					break;
-				}
-			}
-
-			assert(found);
-		}
-	}
-	return true;
-}
-
-bool checkLabelsIntervalsInvariant(const std::vector<DisparityRegion>& regions, const cv::Mat& labels, int segcount)
+bool checkLabelsIntervalsInvariant(const std::vector<DisparityRegion>& regions, const cv::Mat_<int>& labels, int segcount)
 {
 	return checkLabelsIntervalsInvariant(regions.begin(), regions.begin() + segcount, labels);
 }

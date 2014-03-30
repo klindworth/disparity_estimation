@@ -120,6 +120,20 @@ cv::Mat serializeRow(const cv::Mat& input, int y, int windowsize, bool enable_pa
 	return result;
 }
 
+template<typename data_type, typename thres_type, typename func_type>
+void foreignThresholdInternal(cv::Mat& image, const cv::Mat& thresValues, func_type func)
+{
+	for(int i = 0; i < image.rows; ++i)
+	{
+		data_type* data = image.ptr<data_type>(i);
+		const thres_type* dataThres = thresValues.ptr<thres_type>(i);
+		for(int j = 0; j < image.cols; ++j)
+		{
+			func(*dataThres++, data);
+			++data;
+		}
+	}
+}
 
 //sets all points of a foreign matrix to zero, when the value is above the threshold
 template<typename data_type, typename thres_type>
@@ -129,33 +143,17 @@ void foreignThreshold(cv::Mat& image, const cv::Mat& thresValues, thres_type thr
 
 	if(!inverted)
 	{
-		for(int i = 0; i < image.rows; ++i)
-		{
-			data_type* data = image.ptr<data_type>(i);
-			const thres_type* dataThres = thresValues.ptr<thres_type>(i);
-			for(int j = 0; j < image.cols; ++j)
-			{
-				if(*dataThres > threshold)
-					*data = 0;
-				++data;
-				++dataThres;
-			}
-		}
+		foreignThresholdInternal<data_type, thres_type>(image, thresValues, [=](thres_type val, data_type* data) {
+			if(val > threshold)
+				*data = 0;
+		});
 	}
 	else
 	{
-		for(int i = 0; i < image.rows; ++i)
-		{
-			data_type* data = image.ptr<data_type>(i);
-			const thres_type* dataThres = thresValues.ptr<thres_type>(i);
-			for(int j = 0; j < image.cols; ++j)
-			{
-				if(*dataThres < threshold)
-					*data = 0;
-				++data;
-				++dataThres;
-			}
-		}
+		foreignThresholdInternal<data_type, thres_type>(image, thresValues, [=](thres_type val, data_type* data) {
+			if(val < threshold)
+				*data = 0;
+		});
 	}
 }
 

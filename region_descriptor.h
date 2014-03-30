@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 
 class RegionInterval;
+typedef std::vector<std::pair<std::size_t, std::size_t> > neighbor_vector;
 
 class RegionDescriptor
 {
@@ -36,22 +37,23 @@ public:
 	std::vector<RegionInterval> lineIntervals;
 	cv::Rect bounding_box;
 
-	cv::Mat getMask(int margin);
-	cv::Mat getAsMat(const cv::Mat& src, int d);
+	cv::Mat getMask(int margin) const;
+	cv::Mat getAsMat(const cv::Mat& src, int d) const;
 	int size() const;
 
 	int m_size;
 
-	std::vector<std::pair<std::size_t, std::size_t>> neighbors;
+	neighbor_vector neighbors;
 
 	cv::Vec3d average_color;
 
-	cv::Mat getRegionMask(int margin) const;
+
 };
 
 cv::Mat getRegionAsMat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d);
 int getSizeOfRegion(const std::vector<RegionInterval>& intervals);
 void calculate_average_color(RegionDescriptor& region, const cv::Mat& lab_image);
 std::vector<RegionInterval> getDilatedRegion(RegionDescriptor &cregion, unsigned int dilate_grow, cv::Mat base);
+void setMask(const cv::Mat &mask, std::vector<RegionInterval>& pixel_idx, int py, int px, int height, int width);
 
 #endif // REGION_DESCRIPTOR_H
