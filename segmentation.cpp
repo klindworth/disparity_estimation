@@ -33,9 +33,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "misc.h"
 #include "region_descriptor.h"
 #include "region_descriptor_algorithms.h"
-//include "slic_adaptor.h"
+#include "slic_adaptor.h"
+#include "ms_cv.h"
 
-//include "msImageProcessor.h"
+#include "msImageProcessor.h"
 
 #include <stdexcept>
 #include <fstream>
@@ -131,7 +132,7 @@ void fusion(fusion_work_data& data, std::vector<T>& regions, std::size_t idx, st
 }
 
 template<typename T>
-void fuse(fusion_work_data& data, std::vector<T>& regions, cv::Mat& labels)
+void fuse(fusion_work_data& data, std::vector<T>& regions, cv::Mat_<int>& labels)
 {
 	const std::size_t regions_count = regions.size();
 	#pragma omp parallel for default(none) shared(regions, data)
@@ -261,7 +262,7 @@ cv::Mat getWrongColorSegmentationImage(RegionContainer& container)
 	});
 }
 
-/*int segmentImage2(cv::Mat& src, cv::Mat& labels_dst, int spatial_variance, float color_variance)
+int segmentImage2(cv::Mat& src, cv::Mat& labels_dst, int spatial_variance, float color_variance)
 {
 	msImageProcessor proc;
 	proc.DefineImage(src.data, (src.channels() == 3 ? COLOR : GRAYSCALE), src.rows, src.cols);
@@ -275,10 +276,11 @@ cv::Mat getWrongColorSegmentationImage(RegionContainer& container)
 	return regions_count;
 }
 
-int ms_slic(const cv::Mat& image, cv::Mat& labels, const segmentation_settings& config)
+int ms_slic(const cv::Mat& image, cv::Mat_<int>& labels, const segmentation_settings& config)
 {
 	int regions_count = slicSuperpixels(image, labels, config.superpixel_size, config.superpixel_compactness);
-	std::vector<SegRegion> regions = getRegionVector(labels, regions_count);
+	std::vector<DisparityRegion> regions(regions_count);
+	fillRegionDescriptors(regions.begin(), regions.end(), labels);
 
 	calculate_all_average_colors(image, regions);
 
@@ -310,7 +312,7 @@ int ms_slic(const cv::Mat& image, cv::Mat& labels, const segmentation_settings& 
 	//cv::imshow("ms", getWrongColorSegmentationImage(msResult, mscount));
 	std::cout << "mscount: " << mscount << std::endl;
 
-	fusion_work_data data(regions);
+	fusion_work_data data(regions.size());
 	int *src_ptr = msResult.ptr<int>(0);
 	std::vector<int> mapping(mscount, -1);
 	for(int i = 0; i < slic_size.first; ++i)
@@ -336,7 +338,7 @@ int ms_slic(const cv::Mat& image, cv::Mat& labels, const segmentation_settings& 
 	return regions.size();
 }
 
-int slic_segmentation::operator()(const cv::Mat& image, cv::Mat& labels) {
+int slic_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
 	return slicSuperpixels(image, labels, settings.superpixel_size, settings.superpixel_compactness);
 }
 
@@ -345,7 +347,72 @@ std::string slic_segmentation::cacheName() const
 	std::stringstream stream;
 	stream << "superpixel_" << settings.superpixel_size;
 	return stream.str();
-}*/
+}
+
+int ms_cr(const cv::Mat& image, cv::Mat_<int>& labels, const segmentation_settings& config)
+{
+	crslic_segmentation seg_obj(config);
+	int regions_count = seg_obj(image, labels);
+	//int regions_count = slicSuperpixels(image, labels, config.superpixel_size, config.superpixel_compactness);
+	//std::vector<SegRegion> regions = getRegionVector(labels, regions_count);
+	std::vector<DisparityRegion> regions(regions_count);//getRegionVector(result.labels, regions_count);
+	fillRegionDescriptors(regions.begin(), regions.end(), labels);
+
+	calculate_all_average_colors(image, regions);
+
+	std::pair<int,int> slic_size = get_slic_seeds(image.cols, image.rows, config.superpixel_size);
+	cv::Mat slic_image_lab(slic_size.first, slic_size.second, CV_64FC3);
+	cv::Vec3d *dst_ptr = slic_image_lab.ptr<cv::Vec3d>(0);
+
+	std::cout << "slic_size : width:" << slic_size.second << ", height: " << slic_size.first << std::endl;
+	std::cout << "complete: " << slic_image_lab.total() << std::endl;
+	std::cout << "regions: " << regions.size() << std::endl;
+
+	int yex = labels.rows / (slic_size.first);
+	int xex = labels.cols / (slic_size.second);
+
+	for(int i = 0; i < slic_size.first; ++i)
+	{
+		for(int j = 0; j < slic_size.second; ++j)
+		{
+			int idx = labels.at<int>(i*yex+yex/2,j*xex+xex/2);
+			*dst_ptr++ = regions[idx].average_color;
+		}
+	}
+
+	checkLabelsIntervalsInvariant(regions, labels, regions.size());
+
+	cv::Mat slic_image = lab_to_bgr(slic_image_lab);
+	cv::Mat msResult;
+	int mscount = segmentImage2(slic_image, msResult, config.spatial_var, config.color_var);
+	//cv::imshow("ms", getWrongColorSegmentationImage(msResult, mscount));
+	std::cout << "mscount: " << mscount << std::endl;
+
+	fusion_work_data data(regions.size()); //TODO check
+	int *src_ptr = msResult.ptr<int>(0);
+	std::vector<int> mapping(mscount, -1);
+	for(int i = 0; i < slic_size.first; ++i)
+	{
+		for(int j = 0; j < slic_size.second; ++j)
+		{
+			int idx = labels.at<int>(i*yex+yex/2,j*xex+xex/2);
+			int label = *src_ptr++;
+			if(mapping[label] == -1)
+				mapping[label] = idx;
+			else if(idx != mapping[label] && data.active[idx])
+			{
+				int fusion_idx = mapping[label];
+				data.fused_with[idx] = fusion_idx;
+				data.active[idx] = false;
+				data.fused[fusion_idx].push_back(idx);
+			}
+		}
+	}
+
+	fuse(data, regions, labels);
+
+	return regions.size();
+}
 
 
 int crslic_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels)
@@ -391,7 +458,7 @@ std::string crslic_segmentation::cacheName() const
 	return stream.str();
 }
 
-/*int meanshift_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
+int meanshift_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
 	return mean_shift_segmentation(image, labels, settings.spatial_var, settings.color_var, 20);
 }
 
@@ -404,7 +471,7 @@ std::string meanshift_segmentation::cacheName() const
 
 int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
 	int regions_count = slicSuperpixels(image, labels, settings.superpixel_size, settings.superpixel_compactness);
-	std::vector<RegionDescriptor> regions(regions_count);
+	std::vector<DisparityRegion> regions(regions_count);
 	fillRegionDescriptors(regions.begin(), regions.end(), labels);
 
 	superpixel = labels.clone();
@@ -486,7 +553,7 @@ std::string mssuperpixel_segmentation::cacheName() const
 
 bool mssuperpixel_segmentation::refinementPossible() {
 	return true;
-}*/
+}
 
 template<typename T>
 void defuse(std::vector<T>& fused_regions, cv::Mat_<int>& newlabels, int newsegcount, const fusion_work_data& data)
@@ -525,23 +592,23 @@ void defuse(std::vector<T>& fused_regions, cv::Mat_<int>& newlabels, int newsegc
 	std::swap(fused_regions, regions);
 }
 
-/*void mssuperpixel_segmentation::refine(RegionContainer& container) {
+void mssuperpixel_segmentation::refine(RegionContainer& container) {
 	defuse(container.regions, superpixel, regions_count_superpixel, *fusion_data);
 	container.labels = superpixel;
 
 	generate_neighborhood(container.labels, container.regions);
-}*/
+}
 
 
 
 std::shared_ptr<segmentation_algorithm> getSegmentationClass(const segmentation_settings& settings) {
-	/*if(settings.algorithm == "meanshift")
+	if(settings.algorithm == "meanshift")
 		return std::shared_ptr<segmentation_algorithm>( new meanshift_segmentation(settings) );
 	else if(settings.algorithm == "superpixel")
 		return std::shared_ptr<segmentation_algorithm>( new slic_segmentation(settings) );
 	else if(settings.algorithm == "ms_superpixel")
 		return std::shared_ptr<segmentation_algorithm>( new mssuperpixel_segmentation(settings) );
-	else*/ if(settings.algorithm == "cr_superpixel")
+	else if(settings.algorithm == "cr_superpixel")
 		return std::shared_ptr<segmentation_algorithm>( new crslic_segmentation(settings) );
 	else
 		throw std::invalid_argument("unknown segmentation algorithm");

@@ -82,15 +82,15 @@ public:
 	virtual void refine(RegionContainer&) {}
 };
 
-/*class slic_segmentation : public segmentation_algorithm {
+class slic_segmentation : public segmentation_algorithm {
 public:
 	slic_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
-	virtual int operator()(const cv::Mat& image, cv::Mat& labels);
+	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels);
 	virtual std::string cacheName() const;
 
 private:
 	segmentation_settings settings;
-};*/
+};
 
 class crslic_segmentation : public segmentation_algorithm {
 public:
@@ -102,7 +102,7 @@ private:
 	segmentation_settings settings;
 };
 
-/*class meanshift_segmentation : public segmentation_algorithm {
+class meanshift_segmentation : public segmentation_algorithm {
 public:
 	meanshift_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
 	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels);
@@ -124,9 +124,9 @@ public:
 private:
 	std::shared_ptr<fusion_work_data> fusion_data;
 	segmentation_settings settings;
-	cv::Mat superpixel;
+	cv::Mat_<int> superpixel;
 	int regions_count_superpixel;
-};*/
+};
 
 std::shared_ptr<segmentation_algorithm> getSegmentationClass(const segmentation_settings& settings);
 

@@ -26,7 +26,15 @@ SOURCES += main.cpp \
     segmentation.cpp \
     slidingGradient.cpp \
     region_descriptor.cpp \
-    refinement.cpp
+    refinement.cpp \
+    SLIC_CV/slic.cpp \
+    SLIC_CV/slic_adaptor.cpp \
+    meanshift_cv/rlist.cpp \
+    meanshift_cv/ms.cpp \
+    meanshift_cv/ms_cv.cpp \
+    meanshift_cv/msImageProcessor.cpp \
+    meanshift_cv/msSysPrompt.cpp \
+    meanshift_cv/RAList.cpp
 
 HEADERS  += \
     genericfunctions.h \
@@ -60,7 +68,16 @@ HEADERS  += \
     region_descriptor.h \
     region_metrics.h \
     refinement.h \
-    region_descriptor_algorithms.h
+    region_descriptor_algorithms.h \
+    SLIC_CV/slic.h \
+    SLIC_CV/slic_adaptor.h \
+    meanshift_cv/rlist.h \
+    meanshift_cv/tdef.h \
+    meanshift_cv/ms.h \
+    meanshift_cv/ms_cv.h \
+    meanshift_cv/msImageProcessor.h \
+    meanshift_cv/msSys.h \
+    meanshift_cv/RAList.h
 
 FORMS    += \
     gui/matstoreviewer.ui \
@@ -69,7 +86,7 @@ FORMS    += \
     gui/imagestore.ui \
     gui/regionwindow.ui
 
-INCLUDEPATH += gui contourRelaxation
+INCLUDEPATH += gui contourRelaxation SLIC_CV meanshift_cv
 LIBS += -lcvwidgets
 
 unix {
