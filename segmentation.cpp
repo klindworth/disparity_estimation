@@ -651,13 +651,13 @@ int split_region(const RegionDescriptor& descriptor, int min_size, std::back_ins
 	++y_avg;
 
 	bool split_h = false;
-	if( ((y_avg - descriptor.bounding_box.y) > min_size)
-			&& ((descriptor.bounding_box.y + descriptor.bounding_box.height - y_avg) > min_size))
+	if( ((y_avg - descriptor.bounding_box.y) >= min_size)
+			&& ((descriptor.bounding_box.y + descriptor.bounding_box.height - y_avg) >= min_size))
 		split_h = true;
 
 	bool split_v = false;
-	if( ((x_avg - descriptor.bounding_box.x) > min_size)
-			&& ((descriptor.bounding_box.x + descriptor.bounding_box.width - x_avg) > min_size))
+	if( ((x_avg - descriptor.bounding_box.x) >= min_size)
+			&& ((descriptor.bounding_box.x + descriptor.bounding_box.width - x_avg) >= min_size))
 		split_v = true;
 
 	if(split_h && split_v)
@@ -695,11 +695,9 @@ void split_region_test()
 {
 	RegionDescriptor test = create_rectangle(cv::Rect(5,5,10,10));
 
-	//TODO: minsize
-
 	//quadratic case
 	std::vector<RegionDescriptor> res1;
-	int ret1 = split_region(test, 4, std::back_inserter(res1));
+	int ret1 = split_region(test, 5, std::back_inserter(res1));
 
 	assert(res1.size() == 4);
 	assert(res1[0].size() == 25);
@@ -708,7 +706,7 @@ void split_region_test()
 	assert(res1[3].size() == 25);
 	assert(ret1 == 4);
 
-	//too small case
+	//too small case (both directions)
 	std::vector<RegionDescriptor> res2;
 	int ret2 = split_region(test, 6, std::back_inserter(res2));
 	assert(ret2 == 1);
@@ -725,6 +723,14 @@ void split_region_test()
 	assert(res3[1].size() == 50);
 	assert(res3[2].size() == 50);
 	assert(res3[3].size() == 50);
+
+	//to small case (one direction)
+	std::vector<RegionDescriptor> res4;
+	int ret4 = split_region(test3, 10, std::back_inserter(res4));
+	assert(ret4 == 2);
+	assert(res4.size() == 2);
+	assert(res4[0].size() == 100);
+	assert(res4[1].size() == 100);
 
 	return;
 }
