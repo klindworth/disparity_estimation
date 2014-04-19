@@ -732,6 +732,16 @@ void split_region_test()
 	assert(res4[0].size() == 100);
 	assert(res4[1].size() == 100);
 
+	//irregular shaped case
+	RegionDescriptor test5 = test3;
+	test5.lineIntervals.push_back(RegionInterval(30,15,40));
+	test5.bounding_box.width = 25;
+	test5.bounding_box.height += 1;
+	std::vector<RegionDescriptor> res5;
+	int ret5 = split_region(test5, 5, std::back_inserter(res5));
+	assert(ret5 == 4);
+	assert(res5.size() == 4);
+
 	return;
 }
 

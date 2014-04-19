@@ -98,7 +98,7 @@ void calculateRegionDisparity(StereoSingleTask& task, const cv::Mat& base, const
 		return lhs.m_size < rhs.m_size;
 	});
 
-	cost_type cost_agg(base, match, it->size * 10);
+	cost_type cost_agg(base, match, it->size() * 10);
 	typename cost_type::thread_type cost_thread;
 	#pragma omp parallel for default(none) shared(task, regions, dilate, base, match, occ, delta, cost_agg) private(cost_thread)
 	for(std::size_t i = 0; i < regions_count; ++i)
@@ -459,8 +459,8 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 	//return std::make_pair(cost_left, cost_right);
 }
 
-template<typename disparity_metric>
-void segment_based_disparity_internal(StereoTask& task, RegionContainer& left, RegionContainer& right, const InitialDisparityConfig& config, std::shared_ptr<segmentation_algorithm>& algorithm)
+template<typename disparity_function>
+void segment_based_disparity_internal(disparity_function func, StereoTask& task, RegionContainer& left, RegionContainer& right, const InitialDisparityConfig& config, std::shared_ptr<segmentation_algorithm>& algorithm)
 {
 	auto segmentationLeft  = getSegmentationClass(config.segmentation);
 	auto segmentationRight = getSegmentationClass(config.segmentation);
@@ -474,13 +474,14 @@ void segment_based_disparity_internal(StereoTask& task, RegionContainer& left, R
 		cregion.base_disparity = 0;
 
 	//for SAD
-	single_pass_region_disparity(task, left, right, config, false, calculate_region_disparity<disparity_metric>);
+	//single_pass_region_disparity(task, left, right, config, false, calculate_region_disparity<disparity_metric>);
 	//for IT metrics
-	//single_pass_region_disparity<disparity_metric>(task, left, right, config, false, calculateRegionDisparity<disparity_metric>);
+	single_pass_region_disparity(task, left, right, config, false, func);
 
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_fused_left");
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_fused_right");
 
+	//regionwise refinement
 	if(algorithm->refinementPossible() && config.region_refinement_delta != 0)
 	{
 		segmentationLeft->refine(left);
@@ -490,9 +491,9 @@ void segment_based_disparity_internal(StereoTask& task, RegionContainer& left, R
 		//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_unfused_right");
 
 		//for it metrics
-		//single_pass_region_disparity<disparity_metric>(task, left, right, config, true, calculateRegionDisparity<disparity_metric>);
+		single_pass_region_disparity(task, left, right, config, true, func);
 		//for SAD
-		single_pass_region_disparity(task, left, right, config, true, calculate_region_disparity<disparity_metric>);
+		//single_pass_region_disparity(task, left, right, config, true, calculate_region_disparity<disparity_metric>);
 	}
 }
 
@@ -515,18 +516,19 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 	std::shared_ptr<RegionContainer> left  = std::make_shared<RegionContainer>();
 	std::shared_ptr<RegionContainer> right = std::make_shared<RegionContainer>();
 
-	//task.algoLeft  = quantizeImage(task.leftGray, quantizer);
-	//task.algoRight = quantizeImage(task.rightGray, quantizer);
-	//task.algoLeft = task.leftGray;
-	//task.algoRight = task.rightGray;
+	//for IT
+	/*task.algoLeft  = quantizeImage(task.leftGray, quantizer);
+	task.algoRight = quantizeImage(task.rightGray, quantizer);
+	segment_based_disparity_internal(calculateRegionDisparity<disparity_metric>, task, *left, *right, config, algorithm);*/
+	//for SAD
 	task.algoLeft = task.left;
 	task.algoRight = task.right;
-
-	segment_based_disparity_internal<disparity_metric>(task, *left, *right, config, algorithm);
+	segment_based_disparity_internal(calculate_region_disparity<disparity_metric>, task, *left, *right, config, algorithm);
 
 	cv::Mat disparity_left  = getDisparityBySegments(*left);
 	cv::Mat disparity_right = getDisparityBySegments(*right);
 
+	//pixelwise refinement
 	if(config.enable_refinement)
 	{
 		cv::Mat costmap_left  = refineInitialDisparity<refinement_metric, quantizer>(disparity_left, task.forward,  task.algoLeft,  task.algoRight, *left,  refconfig);

@@ -48,8 +48,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 int main(int argc, char *argv[])
 {
 
-	split_region_test();
-	return 0;
+	//split_region_test();
+	//return 0;
 
 	QApplication app(argc, argv);
 
@@ -100,8 +100,8 @@ int main(int argc, char *argv[])
 	//TaskTestSet testset("tasks/smallset2");
 	//TaskTestSet testset("tasks/bigset");
 	//TaskTestSet testset("tasks/localset");
-	TaskTestSet testset("tasks/rgbset");
-	//StereoTask testset("tasks/kit5");
+	//TaskTestSet testset("tasks/rgbset");
+	StereoTask testset("tasks/kit5");
 
 	//std::string configfile = "tasks/config-irvl.yml";
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";
