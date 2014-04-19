@@ -648,60 +648,66 @@ void insert_pair(T pair, InsertIterator it)
 	++it;
 }
 
-std::pair<RegionDescriptor, RegionDescriptor> hsplit_region(const RegionDescriptor& descriptor, int split_threshold)
+template<typename T, typename func_type>
+std::pair<T,T> split_region_proxy(const T& descriptor, int split_threshold, func_type func)
 {
-	std::pair<RegionDescriptor, RegionDescriptor> result;
-	result.first.bounding_box = descriptor.bounding_box;
-	result.first.bounding_box.height = split_threshold - descriptor.bounding_box.y;
+	std::pair<T,T> result;
+	result.first = descriptor;
+	result.second = descriptor;
 
-	result.second.bounding_box = descriptor.bounding_box;
-	result.second.bounding_box.y = split_threshold;
-	result.second.bounding_box.height = descriptor.bounding_box.y + descriptor.bounding_box.height - split_threshold;
-
-	for(const RegionInterval& cinterval : descriptor.lineIntervals)
-	{
-		if(cinterval.y < split_threshold)
-			result.first.lineIntervals.push_back(cinterval);
-		else
-			result.second.lineIntervals.push_back(cinterval);
-	}
-
-	result.first.m_size = getSizeOfRegion(result.first.lineIntervals);
-	result.second.m_size = getSizeOfRegion(result.second.lineIntervals);
+	func(descriptor, result.first, result.second, split_threshold);
 
 	return result;
 }
 
-std::pair<RegionDescriptor, RegionDescriptor> vsplit_region(const RegionDescriptor& descriptor, int split_threshold)
+void hsplit_region(const RegionDescriptor& descriptor, RegionDescriptor& first, RegionDescriptor& second, int split_threshold)
 {
-	std::pair<RegionDescriptor, RegionDescriptor> result;
-	result.first.bounding_box = descriptor.bounding_box;
-	result.first.bounding_box.width = split_threshold - descriptor.bounding_box.x;
+	first.lineIntervals.clear();
+	first.bounding_box.height = split_threshold - descriptor.bounding_box.y;
 
-	result.second.bounding_box = descriptor.bounding_box;
-	result.second.bounding_box.x = split_threshold;
-	result.second.bounding_box.width = descriptor.bounding_box.x + descriptor.bounding_box.width - split_threshold;
+	second.lineIntervals.clear();
+	second.bounding_box.y = split_threshold;
+	second.bounding_box.height = descriptor.bounding_box.y + descriptor.bounding_box.height - split_threshold;
+
+	for(const RegionInterval& cinterval : descriptor.lineIntervals)
+	{
+		if(cinterval.y < split_threshold)
+			first.lineIntervals.push_back(cinterval);
+		else
+			second.lineIntervals.push_back(cinterval);
+	}
+
+	first.m_size = getSizeOfRegion(first.lineIntervals);
+	second.m_size = getSizeOfRegion(second.lineIntervals);
+}
+
+void vsplit_region(const RegionDescriptor& descriptor, RegionDescriptor& first, RegionDescriptor& second, int split_threshold)
+{
+	first.lineIntervals.clear();
+	first.bounding_box.width = split_threshold - descriptor.bounding_box.x;
+
+	second.lineIntervals.clear();
+	second.bounding_box.x = split_threshold;
+	second.bounding_box.width = descriptor.bounding_box.x + descriptor.bounding_box.width - split_threshold;
 
 	for(const RegionInterval& cinterval : descriptor.lineIntervals)
 	{
 		if(cinterval.upper > split_threshold && cinterval.lower <= split_threshold)
 		{
-			result.first.lineIntervals.push_back(RegionInterval(cinterval.y, cinterval.lower, split_threshold));
-			result.second.lineIntervals.push_back(RegionInterval(cinterval.y, split_threshold, cinterval.upper));
+			first.lineIntervals.push_back(RegionInterval(cinterval.y, cinterval.lower, split_threshold));
+			second.lineIntervals.push_back(RegionInterval(cinterval.y, split_threshold, cinterval.upper));
 		}
 		else if(cinterval.upper <= split_threshold)
-			result.first.lineIntervals.push_back(cinterval);
+			first.lineIntervals.push_back(cinterval);
 		else
-			result.second.lineIntervals.push_back(cinterval);
+			second.lineIntervals.push_back(cinterval);
 	}
 
-	result.first.m_size = getSizeOfRegion(result.first.lineIntervals);
-	result.second.m_size = getSizeOfRegion(result.second.lineIntervals);
-
-	return result;
+	first.m_size = getSizeOfRegion(first.lineIntervals);
+	second.m_size = getSizeOfRegion(second.lineIntervals);
 }
 
-int split_region(const RegionDescriptor& descriptor, int min_size, std::back_insert_iterator<std::vector<RegionDescriptor>> it)
+cv::Point region_avg_point(const RegionDescriptor& descriptor)
 {
 	long long x_avg = 0;
 	long long y_avg = 0;
@@ -714,29 +720,34 @@ int split_region(const RegionDescriptor& descriptor, int min_size, std::back_ins
 	x_avg /= descriptor.lineIntervals.size();
 	y_avg /= descriptor.lineIntervals.size();
 
-	++x_avg; //because we want open intervalls
-	++y_avg;
+	return cv::Point(x_avg+1,y_avg+1);//because we want open intervalls +1
+}
+
+template<typename T>
+int split_region(const T& descriptor, int min_size, std::back_insert_iterator<std::vector<T>> it)
+{
+	cv::Point avg_pt = region_avg_point(descriptor);
 
 	bool split_h = false;
-	if( ((y_avg - descriptor.bounding_box.y) >= min_size)
-			&& ((descriptor.bounding_box.y + descriptor.bounding_box.height - y_avg) >= min_size))
+	if( ((avg_pt.y - descriptor.bounding_box.y) >= min_size)
+			&& ((descriptor.bounding_box.y + descriptor.bounding_box.height - avg_pt.y) >= min_size))
 		split_h = true;
 
 	bool split_v = false;
-	if( ((x_avg - descriptor.bounding_box.x) >= min_size)
-			&& ((descriptor.bounding_box.x + descriptor.bounding_box.width - x_avg) >= min_size))
+	if( ((avg_pt.x - descriptor.bounding_box.x) >= min_size)
+			&& ((descriptor.bounding_box.x + descriptor.bounding_box.width - avg_pt.x) >= min_size))
 		split_v = true;
 
 	if(split_h && split_v)
 	{
-		auto temp = hsplit_region(descriptor, y_avg);
-		insert_pair(vsplit_region(temp.first, x_avg), it);
-		insert_pair(vsplit_region(temp.second, x_avg), it);
+		auto temp = split_region_proxy(descriptor, avg_pt.y, hsplit_region);
+		insert_pair(split_region_proxy(temp.first, avg_pt.x, vsplit_region), it);
+		insert_pair(split_region_proxy(temp.second, avg_pt.x, vsplit_region), it);
 	}
 	else if(split_h)
-		insert_pair(hsplit_region(descriptor, y_avg), it);
+		insert_pair(split_region_proxy(descriptor, avg_pt.y, hsplit_region), it);
 	else if(split_v)
-		insert_pair(vsplit_region(descriptor, x_avg), it);
+		insert_pair(split_region_proxy(descriptor, avg_pt.x, vsplit_region), it);
 	else
 	{
 		*it = descriptor;

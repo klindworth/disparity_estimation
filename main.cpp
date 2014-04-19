@@ -48,8 +48,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 int main(int argc, char *argv[])
 {
 
-	//split_region_test();
-	//return 0;
+	split_region_test();
+	return 0;
 
 	QApplication app(argc, argv);
 
