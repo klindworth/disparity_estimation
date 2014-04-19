@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 
 class RegionContainer;
+class RegionDescriptor;
 class fusion_work_data;
 class StereoSingleTask;
 
@@ -163,5 +164,7 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const segmentation_settings
 
 int cachedSegmentation(StereoSingleTask& task, cv::Mat_<int>& labels, std::shared_ptr<segmentation_algorithm>& algorithm);
 
+int split_region(const RegionDescriptor& descriptor, int min_size, std::back_insert_iterator<std::vector<RegionDescriptor>> it);
+void split_region_test();
 
 #endif // SEGMENTATION_H

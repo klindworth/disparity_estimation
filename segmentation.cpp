@@ -572,3 +572,160 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const segmentation_settings
 	return stream;
 }
 
+template<typename T, typename InsertIterator>
+void insert_pair(T pair, InsertIterator it)
+{
+	*it = pair.first;
+	++it;
+	*it = pair.second;
+	++it;
+}
+
+std::pair<RegionDescriptor, RegionDescriptor> hsplit_region(const RegionDescriptor& descriptor, int split_threshold)
+{
+	std::pair<RegionDescriptor, RegionDescriptor> result;
+	result.first.bounding_box = descriptor.bounding_box;
+	result.first.bounding_box.height = split_threshold - descriptor.bounding_box.y;
+
+	result.second.bounding_box = descriptor.bounding_box;
+	result.second.bounding_box.y = split_threshold;
+	result.second.bounding_box.height = descriptor.bounding_box.y + descriptor.bounding_box.height - split_threshold;
+
+	for(const RegionInterval& cinterval : descriptor.lineIntervals)
+	{
+		if(cinterval.y < split_threshold)
+			result.first.lineIntervals.push_back(cinterval);
+		else
+			result.second.lineIntervals.push_back(cinterval);
+	}
+
+	result.first.m_size = getSizeOfRegion(result.first.lineIntervals);
+	result.second.m_size = getSizeOfRegion(result.second.lineIntervals);
+
+	return result;
+}
+
+std::pair<RegionDescriptor, RegionDescriptor> vsplit_region(const RegionDescriptor& descriptor, int split_threshold)
+{
+	std::pair<RegionDescriptor, RegionDescriptor> result;
+	result.first.bounding_box = descriptor.bounding_box;
+	result.first.bounding_box.width = split_threshold - descriptor.bounding_box.x;
+
+	result.second.bounding_box = descriptor.bounding_box;
+	result.second.bounding_box.x = split_threshold;
+	result.second.bounding_box.width = descriptor.bounding_box.x + descriptor.bounding_box.width - split_threshold;
+
+	for(const RegionInterval& cinterval : descriptor.lineIntervals)
+	{
+		if(cinterval.upper > split_threshold && cinterval.lower <= split_threshold)
+		{
+			result.first.lineIntervals.push_back(RegionInterval(cinterval.y, cinterval.lower, split_threshold));
+			result.second.lineIntervals.push_back(RegionInterval(cinterval.y, split_threshold, cinterval.upper));
+		}
+		else if(cinterval.upper <= split_threshold)
+			result.first.lineIntervals.push_back(cinterval);
+		else
+			result.second.lineIntervals.push_back(cinterval);
+	}
+
+	result.first.m_size = getSizeOfRegion(result.first.lineIntervals);
+	result.second.m_size = getSizeOfRegion(result.second.lineIntervals);
+
+	return result;
+}
+
+int split_region(const RegionDescriptor& descriptor, int min_size, std::back_insert_iterator<std::vector<RegionDescriptor>> it)
+{
+	long long x_avg = 0;
+	long long y_avg = 0;
+
+	for(const RegionInterval& cinterval : descriptor.lineIntervals)
+	{
+		x_avg += cinterval.upper - (cinterval.upper - cinterval.lower)/2 - 1;
+		y_avg += cinterval.y;
+	}
+	x_avg /= descriptor.lineIntervals.size();
+	y_avg /= descriptor.lineIntervals.size();
+
+	++x_avg; //because we want open intervalls
+	++y_avg;
+
+	bool split_h = false;
+	if( ((y_avg - descriptor.bounding_box.y) > min_size)
+			&& ((descriptor.bounding_box.y + descriptor.bounding_box.height - y_avg) > min_size))
+		split_h = true;
+
+	bool split_v = false;
+	if( ((x_avg - descriptor.bounding_box.x) > min_size)
+			&& ((descriptor.bounding_box.x + descriptor.bounding_box.width - x_avg) > min_size))
+		split_v = true;
+
+	if(split_h && split_v)
+	{
+		auto temp = hsplit_region(descriptor, y_avg);
+		insert_pair(vsplit_region(temp.first, x_avg), it);
+		insert_pair(vsplit_region(temp.second, x_avg), it);
+	}
+	else if(split_h)
+		insert_pair(hsplit_region(descriptor, y_avg), it);
+	else if(split_v)
+		insert_pair(vsplit_region(descriptor, x_avg), it);
+	else
+	{
+		*it = descriptor;
+		++it;
+	}
+
+	return (split_h ? 2 : 1) * (split_v ? 2 : 1);
+}
+
+RegionDescriptor create_rectangle(cv::Rect rect)
+{
+	RegionDescriptor result;
+	for(int i = 0; i < rect.height; ++i)
+		result.lineIntervals.push_back(RegionInterval(i+rect.y, rect.x, rect.x + rect.width));
+
+	result.bounding_box = rect;
+	result.m_size = rect.area();
+
+	return result;
+}
+
+void split_region_test()
+{
+	RegionDescriptor test = create_rectangle(cv::Rect(5,5,10,10));
+
+	//TODO: minsize
+
+	//quadratic case
+	std::vector<RegionDescriptor> res1;
+	int ret1 = split_region(test, 4, std::back_inserter(res1));
+
+	assert(res1.size() == 4);
+	assert(res1[0].size() == 25);
+	assert(res1[1].size() == 25);
+	assert(res1[2].size() == 25);
+	assert(res1[3].size() == 25);
+	assert(ret1 == 4);
+
+	//too small case
+	std::vector<RegionDescriptor> res2;
+	int ret2 = split_region(test, 6, std::back_inserter(res2));
+	assert(ret2 == 1);
+	assert(res2.size() == 1);
+	assert(res2[0].size() == 100);
+
+	//rectangular case
+	RegionDescriptor test3 = create_rectangle(cv::Rect(10,15, 10,20));
+	std::vector<RegionDescriptor> res3;
+	int ret3 = split_region(test3, 4, std::back_inserter(res3));
+	assert(ret3 == 4);
+	assert(res3.size() == 4);
+	assert(res3[0].size() == 50);
+	assert(res3[1].size() == 50);
+	assert(res3[2].size() == 50);
+	assert(res3[3].size() == 50);
+
+	return;
+}
+
