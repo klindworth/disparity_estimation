@@ -26,6 +26,19 @@ cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, s
 	return result;
 }
 
+template<typename reg_type>
+cv::Mat_<int> generate_label_matrix(cv::Size size, const std::vector<reg_type>& regions)
+{
+	cv::Mat_<int> result(size, 0);
+
+	for(std::size_t i = 0; i < regions.size(); ++i)
+	{
+		intervals::setRegionValue<int>(result, regions[i].lineIntervals, (int)i);
+	}
+
+	return result;
+}
+
 /**
  * Fills a vector of RegionDescriptors with the correct lineIntervals and sizes
  */

@@ -96,7 +96,7 @@ unix {
 
 QMAKE_CXXFLAGS += -std=c++0x -march=native -Wextra
 
-QMAKE_CXXFLAGS_DEBUG += -msse3 -O0 -fsanitize=address -fno-omit-frame-pointer #-fopenmp
+QMAKE_CXXFLAGS_DEBUG += -msse3 -O0 -fno-omit-frame-pointer #-fsanitize=address #-fopenmp
 QMAKE_CXXFLAGS_RELEASE += -O3 -DNDEBUG -msse3 -fopenmp
 QMAKE_LFLAGS_RELEASE += -fopenmp
-QMAKE_LFLAGS_DEBUG += -fsanitize=address #-fopenmp
+#QMAKE_LFLAGS_DEBUG += -fsanitize=address #-fopenmp

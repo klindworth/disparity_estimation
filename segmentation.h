@@ -80,6 +80,8 @@ public:
 	 * @brief refine Returns a segmentation with smaller segments. The smaller segments lay in a bigger segments and not in more than one!
 	 */
 	virtual void refine(RegionContainer&) {}
+
+	virtual ~segmentation_algorithm() {}
 };
 
 class slic_segmentation : public segmentation_algorithm {

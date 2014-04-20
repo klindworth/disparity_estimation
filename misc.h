@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "genericfunctions.h"
 #include "region_descriptor.h"
+#include "region_descriptor_algorithms.h"
 
 template<typename T>
 cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<DisparityRegion>& regions, std::function<T(const DisparityRegion& region)> func)

@@ -592,13 +592,15 @@ void defuse(std::vector<T>& fused_regions, cv::Mat_<int>& newlabels, int newsegc
 	std::swap(fused_regions, regions);
 }
 
+cv::Mat_<int> segmentation_iteration(std::vector<DisparityRegion>& regions, cv::Size size);
+
 void mssuperpixel_segmentation::refine(RegionContainer& container) {
-	defuse(container.regions, superpixel, regions_count_superpixel, *fusion_data);
-	container.labels = superpixel;
+	//defuse(container.regions, superpixel, regions_count_superpixel, *fusion_data);
+	//container.labels = superpixel;
+	container.labels = segmentation_iteration(container.regions, container.task.base.size());
 
 	generate_neighborhood(container.labels, container.regions);
 }
-
 
 
 std::shared_ptr<segmentation_algorithm> getSegmentationClass(const segmentation_settings& settings) {
@@ -646,6 +648,25 @@ void insert_pair(T pair, InsertIterator it)
 	++it;
 	*it = pair.second;
 	++it;
+}
+
+template<typename T, typename InsertIterator>
+int insert_pair_regions(T pair, InsertIterator it)
+{
+	int counter = 0;
+	if(pair.first.m_size > 0)
+	{
+		*it = pair.first;
+		++it;
+		++counter;
+	}
+	if(pair.second.m_size > 0)
+	{
+		*it = pair.second;
+		++it;
+		++counter;
+	}
+	return counter;
 }
 
 template<typename T, typename func_type>
@@ -738,23 +759,91 @@ int split_region(const T& descriptor, int min_size, std::back_insert_iterator<st
 			&& ((descriptor.bounding_box.x + descriptor.bounding_box.width - avg_pt.x) >= min_size))
 		split_v = true;
 
+	int counter;
 	if(split_h && split_v)
 	{
 		auto temp = split_region_proxy(descriptor, avg_pt.y, hsplit_region);
-		insert_pair(split_region_proxy(temp.first, avg_pt.x, vsplit_region), it);
-		insert_pair(split_region_proxy(temp.second, avg_pt.x, vsplit_region), it);
+		counter = insert_pair_regions(split_region_proxy(temp.first, avg_pt.x, vsplit_region), it);
+		counter += insert_pair_regions(split_region_proxy(temp.second, avg_pt.x, vsplit_region), it);
 	}
 	else if(split_h)
-		insert_pair(split_region_proxy(descriptor, avg_pt.y, hsplit_region), it);
+		counter = insert_pair_regions(split_region_proxy(descriptor, avg_pt.y, hsplit_region), it);
 	else if(split_v)
-		insert_pair(split_region_proxy(descriptor, avg_pt.x, vsplit_region), it);
+		counter = insert_pair_regions(split_region_proxy(descriptor, avg_pt.x, vsplit_region), it);
 	else
 	{
 		*it = descriptor;
 		++it;
+		counter = 1;
 	}
 
-	return (split_h ? 2 : 1) * (split_v ? 2 : 1);
+	//return (split_h ? 2 : 1) * (split_v ? 2 : 1);
+	return counter;
+}
+
+class defusion_data
+{
+public:
+	defusion_data(int pidx_old, int psplit_factor) : idx_old(pidx_old), split_factor(psplit_factor) {}
+	int idx_old;
+	int split_factor;
+};
+
+cv::Mat_<int> segmentation_iteration(std::vector<DisparityRegion>& regions, cv::Size size)
+{
+	int min_size = 10;
+	std::vector<DisparityRegion> created_regions;
+	created_regions.reserve(regions.size());
+
+	std::vector<defusion_data> data;
+	for(std::size_t i = 0; i < regions.size(); ++i)
+	{
+		regions[i].base_disparity = regions[i].disparity;
+		int ret = split_region(regions[i], min_size, std::back_inserter(created_regions));
+
+		for(int i = 0; i < ret; ++i)
+			data.push_back(defusion_data(i, ret));
+	}
+	std::swap(regions, created_regions);
+
+
+	return generate_label_matrix(size, regions);
+//	regionWiseSet<int
+	//for(DisparityRegion& cregion : regions)
+
+
+	/*std::vector<T> regions(newsegcount);// = getRegionVector(newlabels, newsegcount);
+	fillRegionDescriptors(regions.begin(), regions.end(), newlabels);
+
+	const std::size_t regions_count = regions.size();
+	std::vector<std::size_t> inverse_mapping;
+	inverse_mapping.reserve(fused_regions.size());
+	for(std::size_t i = 0; i < regions_count; ++i)
+	{
+		if(data.active[i])
+			inverse_mapping.push_back(i);
+	}
+	assert(fused_regions.size() == inverse_mapping.size());
+	std::cout << fused_regions.size() << " vs " << inverse_mapping.size() << std::endl;
+
+	for(std::size_t i = 0; i < regions_count; ++i)
+	{
+		std::size_t master_unfused_idx = i;
+
+		while(!data.active[master_unfused_idx])
+			master_unfused_idx = data.fused_with[master_unfused_idx];
+		auto it = std::find(inverse_mapping.begin(), inverse_mapping.end(), master_unfused_idx);
+		if(it != inverse_mapping.end())
+		{
+			std::size_t master_fused_idx = std::distance(inverse_mapping.begin(), it);
+			regions[i].disparity = fused_regions[master_fused_idx].disparity;
+			regions[i].base_disparity = regions[i].disparity;
+		}
+		else
+			std::cerr << "missed mapping" << std::endl;
+	}
+
+	std::swap(fused_regions, regions);*/
 }
 
 RegionDescriptor create_rectangle(cv::Rect rect)
@@ -771,9 +860,8 @@ RegionDescriptor create_rectangle(cv::Rect rect)
 
 void split_region_test()
 {
-	RegionDescriptor test = create_rectangle(cv::Rect(5,5,10,10));
-
 	//quadratic case
+	RegionDescriptor test = create_rectangle(cv::Rect(5,5,10,10));
 	std::vector<RegionDescriptor> res1;
 	int ret1 = split_region(test, 5, std::back_inserter(res1));
 
