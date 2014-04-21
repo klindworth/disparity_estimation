@@ -101,7 +101,7 @@ int main(int argc, char *argv[])
 	//TaskTestSet testset("tasks/bigset");
 	//TaskTestSet testset("tasks/localset");
 	//TaskTestSet testset("tasks/rgbset");
-	StereoTask testset("tasks/kit5"); //5
+	StereoTask testset("tasks/kit1"); //5
 
 	//std::string configfile = "tasks/config-irvl.yml";
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";

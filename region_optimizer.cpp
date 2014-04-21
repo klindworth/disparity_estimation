@@ -195,7 +195,7 @@ void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& 
 		cregion.damping_history = 0;
 
 	//optimize L/R
-	if(refinement == 0)
+	//if(refinement == 0)
 	{
 		for(int i = 0; i < config.rounds; ++i)
 		{
@@ -219,7 +219,7 @@ void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& 
 			refreshOptimizationBaseValues(right, left, config.base_eval, refinement);
 		}
 	}
-	else
+	/*else
 	{
 		for(int i = 0; i < config.rounds; ++i)
 		{
@@ -229,7 +229,7 @@ void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& 
 			optimize(right, left, config.base_eval, config.prop_eval_refine, refinement);
 			refreshWarpedIdx(right);
 		}
-	}
+	}*/
 }
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const config_term& config)

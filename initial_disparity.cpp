@@ -481,19 +481,30 @@ void segment_based_disparity_internal(disparity_function func, StereoTask& task,
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_fused_left");
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_fused_right");
 
-	//regionwise refinement
-	if(algorithm->refinementPossible() && config.region_refinement_delta != 0)
+	InitialDisparityConfig config2 = config;
+	for(int i = 0; i < 6; ++i)
 	{
-		segmentationLeft->refine(left);
-		segmentationRight->refine(right);
+		//regionwise refinement
+		if(algorithm->refinementPossible() && config2.region_refinement_delta != 0)
+		{
+			segmentationLeft->refine(left);
+			segmentationRight->refine(right);
 
-		//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_unfused_left");
-		//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_unfused_right");
+			//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_unfused_left");
+			//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_unfused_right");
 
-		//for it metrics
-		single_pass_region_disparity(task, left, right, config, true, func);
-		//for SAD
-		//single_pass_region_disparity(task, left, right, config, true, calculate_region_disparity<disparity_metric>);
+			//for it metrics
+			single_pass_region_disparity(task, left, right, config2, true, func);
+			//for SAD
+			//single_pass_region_disparity(task, left, right, config, true, calculate_region_disparity<disparity_metric>);
+
+			config2.region_refinement_delta /= 2;
+
+			for(DisparityRegion cregion : left.regions)
+				cregion.base_disparity = cregion.disparity;
+			for(DisparityRegion cregion : right.regions)
+				cregion.base_disparity = cregion.disparity;
+		}
 	}
 }
 
