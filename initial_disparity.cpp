@@ -50,44 +50,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <memory>
 
-void getRegionEntropy(cv::Mat& base, DisparityRegion &cregion)
-{
-	const int quantizer = 4;
-	const int bins = 256/quantizer;
-	cv::Mat base_quant = quantizeImage(base, quantizer);
-
-	fast_array<unsigned int, bins+2> counter_array;
-	cv::Mat_<float> entropy_table;
-	fill_entropytable_unnormalized(entropy_table, cregion.m_size*7);
-	cv::Mat base_region = getRegionAsMat(base_quant, cregion.lineIntervals, 0);
-
-	calculate_soft_histogramm(counter_array, base_region.data, base_region.total());
-	cregion.entropy = calculate_entropy_unnormalized<float>(counter_array, entropy_table, bins);
-}
-
-void getAllRegionEntropies(cv::Mat& base, std::vector<DisparityRegion>& regions)
-{
-	assert(base.channels() == 1 && base.type() == CV_8UC1);
-	const int quantizer = 4;
-	const int bins = 256/quantizer;
-	cv::Mat base_quant = quantizeImage(base, quantizer);
-
-	fast_array<unsigned int, bins+2> counter_array;
-
-	const std::size_t regions_count = regions.size();
-	//for(SegRegion& cregion : regions)
-	#pragma omp parallel for default(none) shared(regions, base_quant) private(counter_array)
-	for(std::size_t i = 0; i < regions_count; ++i)
-	{
-		cv::Mat_<float> entropy_table;
-		fill_entropytable_unnormalized(entropy_table, regions[i].m_size*7);
-		cv::Mat base_region = getRegionAsMat(base_quant, regions[i].lineIntervals, 0);
-
-		calculate_soft_histogramm(counter_array, base_region.data, base_region.total());
-		regions[i].entropy = calculate_entropy_unnormalized<float>(counter_array, entropy_table, bins);
-	}
-}
-
 //for IT metrics (region wise)
 template<typename cost_type>
 void calculateRegionDisparity(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, unsigned int dilate, const std::vector<RegionInterval>& occ, int delta)
@@ -359,9 +321,6 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 	if(b_refinement)
 		refinement = config.region_refinement_delta;
 
-	getAllRegionEntropies(task.leftGray, left.regions);
-	getAllRegionEntropies(task.rightGray, right.regions);
-
 	calculate_all_average_colors(task.forward.base, left.regions);
 	calculate_all_average_colors(task.backward.base, right.regions);
 
@@ -439,8 +398,6 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 			//matstore.addMat(regionWiseImage<float>(task.backward, right.regions, [&](const SegRegion& region){return region.disparity_costs(region.disparity-task.backward.dispMin);}), "opt-right");
 			//matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [&](const SegRegion& region){return region.confidence(region.disparity-task.forward.dispMin);}), "mi-conf-left");
 			//matstore.addMat(regionWiseImage<float>(task.backward, right.regions, [&](const SegRegion& region){return region.confidence(region.disparity-task.backward.dispMin);}), "mi-conf-right");
-			matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [](const DisparityRegion& region){return region.entropy;}), "entropy-left");
-			matstore.addMat(regionWiseImage<float>(task.backward, right.regions, [](const DisparityRegion& region){return region.entropy;}), "entropy-right");
 			matstore.addMat(getValueScaledImage<unsigned char, unsigned char>(exp_left), "exp-left");
 			matstore.addMat(getValueScaledImage<unsigned char, unsigned char>(exp_right), "exp-right");
 

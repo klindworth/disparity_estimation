@@ -51,29 +51,14 @@ inline cv::Mat subwindow(const cv::Mat& image, int x, int y, int windowsize_x, i
 }
 
 
-//sets a range in an array to the given value. like memset, but beware: count must not include the size of T!
-template<typename T>
-inline void resetRange(T* src, T value, int count)
-{
-	std::fill(src, src + count, value);
-}
-
-template<>
-inline void resetRange(unsigned char *src, unsigned char value, int count)
-{
-	memset(src, value, count);
-}
-
-/*template<typename T>
-inline void resetRange(T* src, int count)
-{
-	memset(src, 0, count*sizeof(T));
-}*/
-
 //rests the border of a matrix (2d/3d) to an given value
 template<typename T>
 void resetBorder(cv::Mat& input, int borderwidth, T value = 0)
 {
+	auto resetRange = [](T* src, T value, int count) {
+		std::fill(src, src + count, value);
+	};
+
 	int thirdfactor = 1;
 
 	if(input.dims == 3)
