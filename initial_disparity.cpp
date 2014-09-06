@@ -152,18 +152,7 @@ void fillRegionContainer(RegionContainer& result, StereoSingleTask& task, std::s
 //untested
 cv::Mat convertDisparityFromPartialCostmap(const cv::Mat& disparity, const cv::Mat& rangeCenters, int subsampling = 1)
 {
-	cv::Mat result(rangeCenters.size(), CV_16SC1);
-
-	short *dst_ptr = result.ptr<short>(0);
-	const short *src_ptr = disparity.ptr<short>(0);
-	const short *range_ptr = rangeCenters.ptr<short>(0);
-
-	for(std::size_t i = 0; i < disparity.total(); ++i)
-	{
-		*dst_ptr++ = *src_ptr++ + *range_ptr++ * subsampling;
-	}
-
-	return result;
+	return disparity + rangeCenters * subsampling;
 }
 
 cv::Mat convertToFullDisparityCostMap(const cv::Mat& cost_map, const cv::Mat& rangeCenters, int dispMin, int dispMax, float initValue)

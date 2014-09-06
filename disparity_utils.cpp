@@ -83,7 +83,6 @@ cv::Mat createDisparityImage(const cv::Mat& disparity)
 {
 	assert(disparity.type() == CV_16SC1);
 
-	cv::Mat disparity_image = cv::Mat(disparity.size(), CV_8UC1);
 	double mind;
 	double maxd;
 	cv::minMaxIdx(disparity, &mind, &maxd);
@@ -92,20 +91,9 @@ cv::Mat createDisparityImage(const cv::Mat& disparity)
 	short maxs = maxd;
 	float scale = 255.0f/(maxs-mins);
 
-	int maxcounter = disparity.total();
-	const short* disparity_ptr = disparity.ptr<short>(0);
-	unsigned char* dst_ptr = disparity_image.data;
 	if(mins >= 0 && maxs >= 0)
-	{
-		for(int i = 0; i < maxcounter; ++i)
-			*dst_ptr++ = (*disparity_ptr++ - mins)*scale;
-	}
+		return (disparity - mins)*scale;
 	else
-	{
-		for(int i = 0; i < maxcounter; ++i)
-			*dst_ptr++ = 255-(*disparity_ptr++ - mins)*scale;
-	}
-
-	return disparity_image;
+		return (disparity - mins)*-scale+255;
 }
 
