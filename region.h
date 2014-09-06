@@ -59,7 +59,6 @@ public:
 
 
 	stat_t stats;
-	float entropy;
 	short disparity;
 	short base_disparity;
 	short disparity_offset;

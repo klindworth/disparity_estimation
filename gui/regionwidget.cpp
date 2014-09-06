@@ -193,7 +193,7 @@ void RegionWidget::neighborTree(std::vector<DisparityRegion>& regionsBase, int i
 		item << QString::number(cpair.second);
 		item << QString::number(regionsBase[cidx].disparity);
 		item << QString::number(cv::norm(regionsBase[index].average_color - regionsBase[cidx].average_color));
-		item << QString::number(std::abs(regionsBase[cidx].entropy - regionsBase[index].entropy));
+		//item << QString::number(std::abs(regionsBase[cidx].entropy - regionsBase[index].entropy));
 		//item << QString::number(m_regionsLeft[cidx]);
 		//item << QString::number(accost_base_diff/range_base*100, 'f', 2) + "%";
 		//item << QString::number(accost_match_diff/range_match*100, 'f', 2) + "%";
@@ -243,7 +243,7 @@ void RegionWidget::setData(std::shared_ptr<RegionContainer>& base, std::shared_p
 
 	ui->lblIndex->setText("Index: " + QString::number(index));
 	ui->lblDisparity->setText("Disparity: " + QString::number(regionsBase[index].disparity));
-	ui->lblEntropy->setText("Entropy: " + QString::number(regionsBase[index].entropy));
+	//ui->lblEntropy->setText("Entropy: " + QString::number(regionsBase[index].entropy));
 	ui->lblPixelcount->setText("Pixelcount: " + QString::number(regionsBase[index].m_size));
 
 
