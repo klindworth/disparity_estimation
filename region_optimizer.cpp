@@ -177,10 +177,20 @@ void optimize(RegionContainer& base, RegionContainer& match, std::function<float
 		if(ndisparity != baseRegion.disparity)
 			++baseRegion.damping_history;
 		if(baseRegion.damping_history < 2)
+		{
 			baseRegion.disparity = ndisparity;
+			EstimationStep step;
+			step.disparity = baseRegion.disparity;
+			baseRegion.results.push_back(step);
+		}
 		else {
 			if(random_dist(random_gen) == 1)
+			{
 				baseRegion.disparity = ndisparity;
+				EstimationStep step;
+				step.disparity = baseRegion.disparity;
+				baseRegion.results.push_back(step);
+			}
 			else
 				baseRegion.damping_history = 0;
 		}

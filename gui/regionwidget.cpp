@@ -266,6 +266,8 @@ void RegionWidget::setData(std::shared_ptr<RegionContainer>& base, std::shared_p
 	optimizeWidth(ui->treeConnected);
 	optimizeWidth(ui->twOcc);
 	optimizeWidth(ui->twMutualDisparity);
+
+	showResultHistory(regionsBase[index]);
 }
 
 RegionWidget::~RegionWidget()
@@ -287,3 +289,22 @@ void RegionWidget::on_treeNeighbors_itemDoubleClicked(QTreeWidgetItem *item, int
 {
 	emit baseRegionSelected(item->text(0).toInt());
 }
+
+void RegionWidget::showResultHistory(DisparityRegion &region)
+{
+	ui->twResulthistory->clear();
+	QStringList header;
+	header << "costs" << "disp" << "start" << "end" << "base";
+	ui->twResulthistory->setHeaderLabels(header);
+
+	for(const EstimationStep& step : region.results)
+	{
+		QStringList item;
+		item << QString::number(step.costs) << QString::number(step.disparity) << QString::number(step.searchrange_start) << QString::number(step.searchrange_end) << QString::number(step.base_disparity);
+		ui->twResulthistory->addTopLevelItem(new QTreeWidgetItem(item));
+	}
+
+	optimizeWidth(ui->twResulthistory);
+}
+
+

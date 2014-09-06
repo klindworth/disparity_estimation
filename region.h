@@ -47,6 +47,16 @@ public:
 	float percent;
 };
 
+class EstimationStep
+{
+public:
+	short searchrange_start, searchrange_end;
+	short disparity;
+	float costs;
+	float optimization_costs;
+	short base_disparity;
+};
+
 class DisparityRegion : public RegionDescriptor
 {
 public:
@@ -67,6 +77,8 @@ public:
 	unsigned char dilation;
 	char old_dilation;
 	int damping_history;
+
+	std::vector<EstimationStep> results;
 
 	//int out_of_image;
 	//std::array<int, 5> occlusion;

@@ -189,23 +189,9 @@ public:
 
 		assert(base_region.total() == match_region.total());
 
-		/*calculate_joint_soft_histogramm(thread.counter_joint, base_region.data, match_region.data, base_region.total());
-		float joint_entropy;
-		if(base_region.total()*6 > bins*bins)
-			joint_entropy = calculate_joint_entropy_unnormalized<float>(thread.counter_joint, entropy_table, bins);
-		else
-			joint_entropy = calculate_joint_entropy_unnormalized_sparse<float>(thread.counter_joint, entropy_table, bins, base_region.total(), base_region.data, match_region.data);
-
-		calculate_soft_histogramm(thread.counter_array, base_region.data, base_region.total());
-		float base_entropy = calculate_entropy_unnormalized<float>(thread.counter_array, entropy_table, bins);
-
-		calculate_soft_histogramm(thread.counter_array, match_region.data, match_region.total());
-		float match_entropy = calculate_entropy_unnormalized<float>(thread.counter_array, entropy_table, bins);*/
-
 		auto result = entropies_calculator<float, bins>(thread.counter_joint, thread.counter_array, entropy_table, base_region, match_region);
 
 		return std::make_pair(calculator(std::get<0>(result), std::get<1>(result), std::get<2>(result)), std::get<1>(result)+ std::get<2>(result)-std::get<0>(result));
-		//return std::make_pair(calculator(joint_entropy, base_entropy, match_entropy), base_entropy+match_entropy-joint_entropy);
 	}
 };
 

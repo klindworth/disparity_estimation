@@ -113,6 +113,7 @@ void calculateRegionDisparity(StereoSingleTask& task, const cv::Mat& base, const
 template<typename cost_type>
 void calculate_region_disparity(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, unsigned int dilate, const std::vector<RegionInterval>& occ, int delta)
 {
+	std::cout << "delta: " << delta << std::endl;
 	const std::size_t regions_count = regions.size();
 
 	int crange = task.dispMax - task.dispMin + 1;
@@ -153,6 +154,14 @@ void calculate_region_disparity(StereoSingleTask& task, const cv::Mat& base, con
 	{
 		auto it = std::min_element(regions[i].disparity_costs.begin(), regions[i].disparity_costs.end());
 		regions[i].disparity = std::distance(regions[i].disparity_costs.begin(), it) + regions[i].disparity_offset;
+		EstimationStep step;
+		step.costs = *it;
+		step.disparity = regions[i].disparity;
+		auto range = getSubrange(regions[i].base_disparity, delta, task);
+		step.searchrange_start = range.first;
+		step.searchrange_end = range.second;
+		step.base_disparity = regions[i].base_disparity;
+		regions[i].results.push_back(step);
 		//TODO: needed?
 		regions[i].old_dilation = regions[i].dilation;
 	}
@@ -482,11 +491,12 @@ void segment_based_disparity_internal(disparity_function func, StereoTask& task,
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_fused_right");
 
 	InitialDisparityConfig config2 = config;
-	for(int i = 0; i < 6; ++i)
+	for(int i = 0; i < 2; ++i)
 	{
 		//regionwise refinement
 		if(algorithm->refinementPossible() && config2.region_refinement_delta != 0)
 		{
+			std::cout << "refine: " << config2.region_refinement_delta << std::endl;
 			segmentationLeft->refine(left);
 			segmentationRight->refine(right);
 

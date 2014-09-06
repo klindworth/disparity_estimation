@@ -121,6 +121,22 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="resulthistory">
+      <attribute name="title">
+       <string>resulthistory</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="QTreeWidget" name="twResulthistory">
+         <column>
+          <property name="text">
+           <string notr="true">1</string>
+          </property>
+         </column>
+        </widget>
+       </item>
+      </layout>
+     </widget>
      <widget class="QWidget" name="tab_2">
       <attribute name="title">
        <string>occ</string>

@@ -44,6 +44,7 @@ class RegionWidget : public QWidget
 	
 public:
 	explicit RegionWidget(QWidget *parent = 0);
+	void showResultHistory(DisparityRegion& region);
 	void warpTree(int index, DisparityRegion& baseRegion, std::vector<DisparityRegion>& other_regions , QTreeWidget *tree, int dispMin, int currentDisparity);
 	void mutualDisparity(DisparityRegion& baseRegion, RegionContainer &base, RegionContainer& match, QTreeWidget *tree, int dispMin);
 	void neighborTree(std::vector<DisparityRegion>& regionsBase, int index, int dispMin);
