@@ -195,45 +195,11 @@ cv::Mat convertToFullDisparityCostMap(const cv::Mat& cost_map, const cv::Mat& ra
 	return result;
 }
 
-void generateOccStat(RegionContainer& container)
-{
-	/*cv::Mat occ_stat(container.task.base.size(), CV_8UC1, cv::Scalar(0));
-
-	for(SegRegion& cregion : container.regions)
-		intervals::addRegionValue<unsigned char>(occ_stat, cregion.warped_interval, 1);
-
-	const std::size_t regions_count = container.regions.size();
-	#pragma omp parallel for default(none) shared(container, occ_stat)
-	for(std::size_t j = 0; j < regions_count; ++j)
-	{
-		SegRegion& cregion = container.regions[j];
-		cregion.occlusion.fill(0);
-		for(RegionInterval& cinterval : cregion.warped_interval)
-		{
-			for(int x = cinterval.lower; x < cinterval.upper; ++x)
-			{
-				int cocclusion = std::min((int)occ_stat.at<unsigned char>(cinterval.y, x), (int)cregion.occlusion.size()-1);
-				cregion.occlusion[cocclusion] += 1;
-			}
-		}
-		cregion.occlusion[0] = cregion.out_of_image;
-		int occ_sum = 0;
-		for(std::size_t i = 0; i < cregion.occlusion.size(); ++i)
-			occ_sum += i*cregion.occlusion[i];
-		cregion.occ_value = (float)occ_sum/cregion.size;
-		cregion.stats.occ_val = cregion.occ_value;
-	}*/
-}
-
 void generateRegionInformation(RegionContainer& left, RegionContainer& right)
 {
 	std::cout << "warped_idx" << std::endl;
 	refreshWarpedIdx(left);
 	refreshWarpedIdx(right);
-
-	/*std::cout << "occ stat" << std::endl;
-	generateOccStat(left);
-	generateOccStat(right);*/
 }
 
 void generateFundamentalRegionInformation(StereoTask& task, RegionContainer& left, RegionContainer& right, int delta)
@@ -283,26 +249,6 @@ std::vector<RegionInterval> exposureVector(const cv::Mat& occlusionMap)
 
 	return exposure;
 }
-
-/*void dilateLR(StereoSingleTask& task, std::vector<SegRegion>& regions_base, std::vector<SegRegion>& regions_match, int dilate_step, int delta)
-{
-	const std::size_t regions_count = regions_base.size();
-	#pragma omp parallel for default(none) shared(regions_base, regions_match, task, dilate_step, delta)
-	for(std::size_t i = 0; i < regions_count; ++i)
-	{
-		/*float pot_lr = getOtherRegionsAverage(regions_match, regions_base[i].other_regions[regions_base[i].disparity-task.dispMin], [&](const SegRegion& cregion){return (float)std::min(std::abs(cregion.disparity+regions_base[i].disparity), 15);});
-		if(pot_lr >= 5.0f)
-			regions_base[i].dilation += dilate_step;*/
-
-		/*generateStats(regions_base[i], task, delta);
-
-		if(regions_base[i].stats.confidence_range == 0 || regions_base[i].stats.confidence_range > 2 || regions_base[i].stats.confidence_variance > 0.2)
-			regions_base[i].dilation += dilate_step;
-
-		//if(!((regions_base[i].stats.minima.size() < 2) && !(regions_base[i].stats.minima.size() == 0 && regions_base[i].stats.bad_minima.size() > 2)))
-			//regions_base[i].dilation += dilate_step;
-	}
-}*/
 
 void dilateLR(StereoSingleTask& task, std::vector<DisparityRegion>& regions_base, std::vector<DisparityRegion>& /*regions_match*/, int dilate_step, int delta)
 {
@@ -406,23 +352,6 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 			matstore.addMat(getValueScaledImage<unsigned char, unsigned char>(occ_mat), "occ");
 		}
 	}
-
-	//exposure
-	/*std::vector<RegionInterval> exposure = exposureVector(exp_left);
-
-	calculateRegionDisparity<disparity_metric>(task.backward, right_quant, left_quant, right.regions, config.dilate, exposure);
-	cv::Mat disp_occ = createDisparityImage(getDisparityBySegments(right));
-	matstore.addMat(disp_occ, "disp_occ-right");
-
-	run_optimization(task, left, right, config);
-
-	cv::Mat disp_occ2 = createDisparityImage(getDisparityBySegments(right));
-	matstore.addMat(disp_occ2, "disp_occ-right-opt");*/
-
-	//cv::Mat cost_left  = getRegionCostmap(left.regions,  task.left.rows, task.left.cols, task.dispRange);
-	//cv::Mat cost_right = getRegionCostmap(right.regions, task.left.rows, task.left.cols, task.dispRange);
-
-	//return std::make_pair(cost_left, cost_right);
 }
 
 template<typename disparity_function>
@@ -521,6 +450,3 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 
 	return std::make_pair(disparity_left, disparity_right);
 }
-
-
-

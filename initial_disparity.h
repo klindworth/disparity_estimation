@@ -45,8 +45,6 @@ class RegionInterval;
 class RegionDescriptor;
 
 void fillRegionContainer(RegionContainer& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm);
-void getRegionEntropy(cv::Mat& base, DisparityRegion &cregion);
-void getAllRegionEntropies(cv::Mat& base, std::vector<DisparityRegion>& regions);
 void generateRegionInformation(RegionContainer& left, RegionContainer& right);
 
 //void getRegionDisparity(SegRegion& pixel_idx, const cv::Mat &base, const cv::Mat &match, int dispMin, int dispMax, unsigned int dilate_grow);
