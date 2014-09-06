@@ -35,32 +35,14 @@ cv::Mat createFixedDisparity(const cv::Mat& disparity, float scale)
 {
 	assert(disparity.type() == CV_16SC1);
 
-	cv::Mat disparity_image = cv::Mat(disparity.size(), CV_8UC1);
 	double mind;
 	double maxd;
 	cv::minMaxIdx(disparity, &mind, &maxd);
 
-	short mins = mind;
-	short maxs = maxd;
-
-	std::cout << mins << std::endl;
-	std::cout << maxs << std::endl;
-
-	int maxcounter = disparity.total();
-	const short* disparity_ptr = disparity.ptr<short>(0);
-	unsigned char* dst_ptr = disparity_image.data;
-	if(mins >= 0 && maxs >= 0)
-	{
-		for(int i = 0; i < maxcounter; ++i)
-			*dst_ptr++ = (*disparity_ptr++)*scale;
-	}
+	if(mind >= 0 && maxd >= 0)
+		return disparity * scale;
 	else
-	{
-		for(int i = 0; i < maxcounter; ++i)
-			*dst_ptr++ = std::abs(maxs)-(*disparity_ptr++)*scale;
-	}
-
-	return disparity_image;
+		return disparity * -scale + std::abs(static_cast<short>(maxd));
 }
 
 TaskAnalysis::TaskAnalysis()
@@ -97,13 +79,6 @@ void TaskAnalysis::createInternal(const StereoSingleTask& task, const cv::Mat& d
 		//if(ignore_border > 0)
 			//resetBorder<unsigned char>(error_mat, ignore_border);
 
-		/*unsigned int max_counter = error_mat.total();
-		unsigned char *src = error_mat.data;
-		for(unsigned int i = 0; i < max_counter; ++i)
-		{
-			unsigned char idx = std::min((unsigned char)(maxdiff-1), *src++);
-			++(hist[idx]);
-		}*/
 		for(unsigned int y = ignore_border; y < error_mat.rows - ignore_border; ++y)
 		{
 			for(unsigned int x = ignore_border; x < error_mat.cols - ignore_border; ++x)
@@ -122,39 +97,6 @@ void TaskAnalysis::createInternal(const StereoSingleTask& task, const cv::Mat& d
 	else
 		std::clog << "no ground truth data" << std::endl;
 }
-
-/*void TaskAnalysis::createInternal(const StereoSingleTask& task, const cv::Mat& disparity, cv::Mat& error_mat, std::array<int, maxdiff>& hist, int ignore_border)
-{
-	//result.task = *this;
-	//cv::Mat result;
-	int subsamplingDisparity = 1;
-	if(task.groundTruth.data)
-	{
-		cv::Mat scaledDisp = disparity / subsamplingDisparity;
-		cv::Mat scaledGround = task.groundTruth / task.groundTruthSampling;
-		//result = cv::norm(scaledDisp, scaledGround, cv::NORM_L1, occ);
-		//cv::Mat result;
-		cv::Mat ndisp = createFixedDisparity(scaledDisp, 1.0f);
-		//cv::imshow("ndisp", ndisp);
-		//cv::imshow("ground", scaledGround);
-		cv::absdiff(ndisp, scaledGround, error_mat);
-		if(task.occ.data)
-			foreignThreshold<unsigned char, unsigned char>(error_mat, task.occ, 128, true);
-		foreignThreshold<unsigned char, unsigned char>(error_mat, disparity, 1, true);
-		if(ignore_border > 0)
-			resetBorder<unsigned char>(error_mat, ignore_border);
-
-		unsigned int max_counter = error_mat.total();
-		unsigned char *src = error_mat.data;
-		for(unsigned int i = 0; i < max_counter; ++i)
-		{
-			unsigned char idx = std::min((unsigned char)(maxdiff-1), *src++);
-			++(hist[idx]);
-		}
-	}
-	else
-		std::clog << "no ground truth data" << std::endl;
-}*/
 
 TaskAnalysis::TaskAnalysis(const StereoTask& task, const cv::Mat& disparity_left, const cv::Mat& disparity_right, int subsampling, int ignore_border)
 {
