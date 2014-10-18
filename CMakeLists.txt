@@ -14,23 +14,27 @@ set(SOURCES main.cpp
     debugmatstore.cpp
     costmap_utils.cpp
     region.cpp
-    gui/matstoreviewer.cpp
-    gui/costmapviewer.cpp
-    gui/miniplot.cpp
     initial_disparity.cpp
     stereotask.cpp
-    gui/regionwidget.cpp
-    gui/imagestore.cpp
     window_size.cpp
     disparity_utils.cpp
     region_optimizer.cpp
     configrun.cpp
     taskanalysis.cpp
-    gui/regionwindow.cpp
-    segmentation.cpp
     slidingGradient.cpp
-    region_descriptor.cpp
+
     refinement.cpp
+    
+    
+    gui/matstoreviewer.cpp
+    gui/costmapviewer.cpp
+    gui/miniplot.cpp    
+    gui/regionwidget.cpp
+    gui/imagestore.cpp    
+    gui/regionwindow.cpp   
+
+    segmentation/region_descriptor.cpp
+    segmentation/segmentation.cpp
 )
 
 
@@ -52,18 +56,21 @@ set(HEADERS
 
     window_size.h
     disparity_utils.h
-    intervals.h
+
     region_optimizer.h
     configrun.h
     taskanalysis.h
-    intervals_algorithms.h
+    
     misc.h
 
-    segmentation.h
-    region_descriptor.h
     region_metrics.h
     refinement.h
-    region_descriptor_algorithms.h
+
+    segmentation/region_descriptor.h
+    segmentation/region_descriptor_algorithms.h
+    segmentation/intervals_algorithms.h
+    segmentation/intervals.h
+    segmentation/segmentation.h
 )
 
 set(QTHEADERS
@@ -87,7 +94,7 @@ qt4_wrap_cpp(HEADERS_MOC ${QTHEADERS})
 qt4_wrap_ui(FORMS_HEADERS ${FORMS})
 qt4_add_resources(RESOURCES_RCC ${RESOURCES})
 
-include_directories(. gui ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(. gui segmentation ${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(${QT_DEFINITIONS})
 
 add_executable(${PROJECT_NAME}
