@@ -32,6 +32,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <iostream>
 
+void filterGradientCostmap(cv::Mat& cost_map, int threshold)
+{
+	float *gradient_ptr = cost_map.ptr<float>(0);
+	int max_counter = cost_map.total();
+	for(int i = 0; i < max_counter; ++i)
+	{
+		if(*gradient_ptr < threshold)
+			*gradient_ptr = 1;
+		++gradient_ptr;
+	}
+}
+
 cv::Mat onestepSlidingInfoGradient(StereoSingleTask task, std::function<cv::Mat(StereoSingleTask)> func, int windowsize)
 {
 	cv::Mat cost_gradient = slidingGradient(task, windowsize);

@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/core/core.hpp>
 #include <string>
-#include <iosfwd>
+//include <iosfwd>
 
 //saves a matrix to a binary file
 void matToFile(const cv::Mat& input , const std::string &filename);
@@ -50,30 +50,14 @@ inline cv::Mat subwindow(const cv::Mat& image, int x, int y, int windowsize_x, i
 	return cv::Mat(image, cv::Range(y - windowsize_y/2, y+windowsize_y/2+1), cv::Range(x-windowsize_x/2, x+windowsize_x/2+1));
 }
 
-
-//sets a range in an array to the given value. like memset, but beware: count must not include the size of T!
-template<typename T>
-inline void resetRange(T* src, T value, int count)
-{
-	std::fill(src, src + count, value);
-}
-
-template<>
-inline void resetRange(unsigned char *src, unsigned char value, int count)
-{
-	memset(src, value, count);
-}
-
-/*template<typename T>
-inline void resetRange(T* src, int count)
-{
-	memset(src, 0, count*sizeof(T));
-}*/
-
 //rests the border of a matrix (2d/3d) to an given value
 template<typename T>
 void resetBorder(cv::Mat& input, int borderwidth, T value = 0)
 {
+	auto resetRange = [](T* src, T value, int count) {
+		std::fill(src, src + count, value);
+	};
+
 	int thirdfactor = 1;
 
 	if(input.dims == 3)
@@ -204,11 +188,8 @@ cv::Mat_<dst_t> getValueScaledImage(const cv::Mat& image)
 	return result;
 }
 
-void derivedMat(const cv::Mat &input, cv::Mat& grad_x, cv::Mat& grad_y, bool blur);
-cv::Mat quantizeImage(const cv::Mat &input, int quantizer);
 cv::Mat cutImageBorder(const cv::Mat &input, int windowsize);
 cv::Mat lowerDimensionality(const cv::Mat &input);
-void filterGradientCostmap(cv::Mat& cost_map, int threshold);
 cv::Mat lab_to_bgr(const cv::Mat& src);
 cv::Mat bgr_to_lab(const cv::Mat& src);
 

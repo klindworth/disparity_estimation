@@ -113,6 +113,22 @@ cv::Mat gradientImage(cv::Mat base, cv::Mat base2, cv::Mat match, cv::Mat match2
 	return result;
 }
 
+void derivedMat(const cv::Mat& input, cv::Mat& grad_x, cv::Mat& grad_y, bool blur)
+{
+	cv::Mat temp;
+
+	if(blur)
+		cv::GaussianBlur(input, temp, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT );
+	else
+		temp = input;
+
+	//Gradient X
+	cv::Scharr( temp, grad_x, CV_32FC1, 1, 0);
+
+	//Gradient Y
+	cv::Scharr( temp, grad_y, CV_32FC1, 0, 1);
+}
+
 cv::Mat slidingGradient(StereoSingleTask& task, int windowsize)
 {
 	cv::Mat gradLeftX;

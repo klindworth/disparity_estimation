@@ -31,14 +31,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class RegionInterval;
 typedef std::vector<std::pair<std::size_t, std::size_t> > neighbor_vector;
 
+/**
+ * @brief The RegionDescriptor class saves the shape of an region. It holds a vector of line intervalls which shapes the region
+ * Additionally it saves a bounding box of the region, the size (in pixel).
+ */
 class RegionDescriptor
 {
 public:
 	std::vector<RegionInterval> lineIntervals;
 	cv::Rect bounding_box;
 
+	/*! Returns a cv::Mat with a binary image of the region. The image can be made bigger than actually nedded by setting a margin > 0*/
 	cv::Mat getMask(int margin) const;
+	/*! Returns all pixels of the region as 1D cv::Mat. You can move the region horizontally (by setting d != 0), where the pixels will be extracted. */
 	cv::Mat getAsMat(const cv::Mat& src, int d) const;
+	/*! Returns the size of the region in pixel (the actual region, not the bounding box) */
 	int size() const;
 
 	int m_size;
