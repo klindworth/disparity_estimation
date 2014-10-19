@@ -30,6 +30,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "slidingEntropy.h"
 #include "costmap_creators.h"
 
+inline cv::Mat quantizeImage(const cv::Mat& input, int quantizer)
+{
+	//return input/quantizer;
+	assert(input.isContinuous());
+	int size = input.cols * input.rows;
+	cv::Mat result(input.size(), input.type());
+	unsigned char *input_ptr = input.data;
+	unsigned char *result_ptr = result.data;
+	for(int i = 0; i < size; ++i)
+	{
+		*result_ptr++ = *input_ptr++/quantizer;
+	}
+	return result;
+}
+
 enum class IT_Metric {
 	MutualInformation, VariationOfInformation, NormalizedVariationOfInformation, NormalizedInformationDistance
 };

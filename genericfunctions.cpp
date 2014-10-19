@@ -29,43 +29,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <string>
 #include <opencv2/imgproc/imgproc.hpp>
 
-void derivedMat(const cv::Mat& input, cv::Mat& grad_x, cv::Mat& grad_y, bool blur)
-{
-	cv::Mat temp;
-
-	if(blur)
-		cv::GaussianBlur(input, temp, cv::Size(3,3), 0, 0, cv::BORDER_DEFAULT );
-	else
-		temp = input;
-
-	//Gradient X
-	cv::Scharr( temp, grad_x, CV_32FC1, 1, 0);
-
-	//Gradient Y
-	cv::Scharr( temp, grad_y, CV_32FC1, 0, 1);
-}
-
-cv::Mat quantizeImage(const cv::Mat& input, int quantizer)
-{
-	//return input/quantizer;
-	assert(input.isContinuous());
-	int size = input.cols * input.rows;
-	cv::Mat result(input.size(), input.type());
-	unsigned char *input_ptr = input.data;
-	unsigned char *result_ptr = result.data;
-	for(int i = 0; i < size; ++i)
-	{
-		*result_ptr++ = *input_ptr++/quantizer;
-	}
-	return result;
-}
-
 cv::Mat cutImageBorder(const cv::Mat& input, int windowsize)
 {
 	assert(input.dims == 2);
-	cv::Mat temp = cv::Mat(input, cv::Range(windowsize/2, input.rows-windowsize/2-1), cv::Range(windowsize/2, input.cols-windowsize/2-1));
-	cv::Mat result = temp.clone();
-	return result;
+	cv::Mat result = cv::Mat(input, cv::Range(windowsize/2, input.rows-windowsize/2-1), cv::Range(windowsize/2, input.cols-windowsize/2-1));
+	return result.clone();
 }
 
 cv::Mat lowerDimensionality(const cv::Mat& input)
@@ -76,18 +44,6 @@ cv::Mat lowerDimensionality(const cv::Mat& input)
 	memcpy(result.data, input.data, data_size);
 
 	return result;
-}
-
-void filterGradientCostmap(cv::Mat& cost_map, int threshold)
-{
-	float *gradient_ptr = cost_map.ptr<float>(0);
-	int max_counter = cost_map.total();
-	for(int i = 0; i < max_counter; ++i)
-	{
-		if(*gradient_ptr < threshold)
-			*gradient_ptr = 1;
-		++gradient_ptr;
-	}
 }
 
 void matToStream(const cv::Mat& input, std::ofstream& ostream)

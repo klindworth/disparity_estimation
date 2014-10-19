@@ -28,7 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/core/core.hpp>
 #include <string>
-#include <iosfwd>
 
 //saves a matrix to a binary file
 void matToFile(const cv::Mat& input , const std::string &filename);
@@ -49,7 +48,6 @@ inline cv::Mat subwindow(const cv::Mat& image, int x, int y, int windowsize_x, i
 	assert(x >= windowsize_x/2 && y >= windowsize_y/2 && x < image.cols- windowsize_x/2 && y < image.rows-windowsize_y/2 && windowsize_y % 2 == 1 && windowsize_x % 2 == 1 );
 	return cv::Mat(image, cv::Range(y - windowsize_y/2, y+windowsize_y/2+1), cv::Range(x-windowsize_x/2, x+windowsize_x/2+1));
 }
-
 
 //rests the border of a matrix (2d/3d) to an given value
 template<typename T>
@@ -189,11 +187,8 @@ cv::Mat_<dst_t> getValueScaledImage(const cv::Mat& image)
 	return result;
 }
 
-void derivedMat(const cv::Mat &input, cv::Mat& grad_x, cv::Mat& grad_y, bool blur);
-cv::Mat quantizeImage(const cv::Mat &input, int quantizer);
 cv::Mat cutImageBorder(const cv::Mat &input, int windowsize);
 cv::Mat lowerDimensionality(const cv::Mat &input);
-void filterGradientCostmap(cv::Mat& cost_map, int threshold);
 cv::Mat lab_to_bgr(const cv::Mat& src);
 cv::Mat bgr_to_lab(const cv::Mat& src);
 
