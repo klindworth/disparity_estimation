@@ -257,7 +257,7 @@ void getRegionDisparityInternal(std::vector<RegionInterval>& actual_region, cost
  * @param dispMax
  */
 template<typename cost_type>
-void getRegionDisparity(cost_type& cost_agg, typename cost_type::thread_type& thread, DisparityRegion &cregion, const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, unsigned int dilate_grow, const std::vector<RegionInterval>& occ)
+void getRegionDisparity(cost_type& cost_agg, typename cost_type::thread_type& thread, DisparityRegion &cregion, const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, const std::vector<RegionInterval>& occ)
 {
 	int dilate = cregion.dilation;
 	if(dilate == cregion.old_dilation)

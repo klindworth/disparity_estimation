@@ -40,6 +40,7 @@ public:
 	unsigned char groundTruthSampling;
 };
 
+/// Class for saving a StereoTask, forward and backward
 class StereoTask
 {
 public:
@@ -79,7 +80,7 @@ inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, t
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const StereoTask& task);
 
-
+/// Container for StereoTasks. It can read a testset file, which contain the filenames for the single StereoTasks
 class TaskTestSet
 {
 public:

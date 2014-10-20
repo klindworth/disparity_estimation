@@ -101,20 +101,16 @@ void StereoTask::loadImages(const std::string& nameLeft, const std::string& name
 
 void StereoTask::loadGroundTruth(const std::string& nameGroundLeft, const std::string& nameGroundRight)
 {
-	cv::Mat tempLeft  = cv::imread(nameGroundLeft);
-	cv::Mat tempRight = cv::imread(nameGroundRight);
+	groundLeft  = cv::imread(nameGroundLeft, CV_LOAD_IMAGE_GRAYSCALE);
+	groundRight = cv::imread(nameGroundRight, CV_LOAD_IMAGE_GRAYSCALE);
 
 	filenameGroundLeft = nameGroundLeft;
 	filenameGroundRight =nameGroundRight;
 
-	if(tempLeft.data)
-		cv::cvtColor(tempLeft,  groundLeft,  CV_BGR2GRAY);
-	else
+	if(!groundLeft.data)
 		std::cout << "no ground truth data for left image" << std::endl;
 
-	if(tempRight.data)
-		cv::cvtColor(tempRight, groundRight, CV_BGR2GRAY);
-	else
+	if(!groundRight.data)
 		std::cout << "no ground truth data for right image" << std::endl;
 }
 
@@ -150,19 +146,15 @@ StereoTask::StereoTask(const std::string& pname, const std::string& nameLeft, co
 
 void StereoTask::loadOcc(const std::string& nameOccLeft, const std::string& nameOccRight)
 {
-	cv::Mat tempLeft  = cv::imread(nameOccLeft);
-	cv::Mat tempRight = cv::imread(nameOccRight);
+	occLeft  = cv::imread(nameOccLeft, CV_LOAD_IMAGE_GRAYSCALE);
+	occRight = cv::imread(nameOccRight, CV_LOAD_IMAGE_GRAYSCALE);
 
 	filenameOccLeft = nameOccLeft;
 	filenameOccRight = nameOccRight;
 
-	if(tempLeft.data)
-		cv::cvtColor(tempLeft,  occLeft,  CV_BGR2GRAY);
-	else
+	if(!occLeft.data)
 		std::cout << "no occ data for left image" << std::endl;
-	if(tempRight.data)
-		cv::cvtColor(tempRight, occRight, CV_BGR2GRAY);
-	else
+	if(!occRight.data)
 		std::cout << "no occ data for right image" << std::endl;
 
 	estimateOcc();

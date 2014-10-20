@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "stereotask.h"
 #include "genericfunctions.h"
 
-cv::Mat createFixedDisparity(const cv::Mat& disparity, float scale)
+/*cv::Mat createFixedDisparity(const cv::Mat& disparity, float scale)
 {
 	assert(disparity.type() == CV_16SC1);
 
@@ -43,6 +43,38 @@ cv::Mat createFixedDisparity(const cv::Mat& disparity, float scale)
 		return disparity * scale;
 	else
 		return disparity * -scale + std::abs(static_cast<short>(maxd));
+}*/
+
+cv::Mat createFixedDisparity(const cv::Mat& disparity, float scale)
+{
+	assert(disparity.type() == CV_16SC1);
+
+	cv::Mat disparity_image = cv::Mat(disparity.size(), CV_8UC1);
+	double mind;
+	double maxd;
+	cv::minMaxIdx(disparity, &mind, &maxd);
+
+	short mins = mind;
+	short maxs = maxd;
+
+	std::cout << mins << std::endl;
+	std::cout << maxs << std::endl;
+
+	int maxcounter = disparity.total();
+	const short* disparity_ptr = disparity.ptr<short>(0);
+	unsigned char* dst_ptr = disparity_image.data;
+	if(mins >= 0 && maxs >= 0)
+	{
+		for(int i = 0; i < maxcounter; ++i)
+			*dst_ptr++ = (*disparity_ptr++)*scale;
+	}
+	else
+	{
+		for(int i = 0; i < maxcounter; ++i)
+			*dst_ptr++ = std::abs(maxs)-(*disparity_ptr++)*scale;
+	}
+
+	return disparity_image;
 }
 
 TaskAnalysis::TaskAnalysis()

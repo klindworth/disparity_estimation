@@ -50,9 +50,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <memory>
 
+typedef std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<DisparityRegion>&, const std::vector<RegionInterval>&, int)> disparity_region_func;
+
 //for IT metrics (region wise)
 template<typename cost_type>
-void calculateRegionDisparity(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, unsigned int dilate, const std::vector<RegionInterval>& occ, int delta)
+void calculate_region_disparity_regionwise(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, const std::vector<RegionInterval>& occ, int delta)
 {
 	const std::size_t regions_count = regions.size();
 
@@ -62,18 +64,18 @@ void calculateRegionDisparity(StereoSingleTask& task, const cv::Mat& base, const
 
 	cost_type cost_agg(base, match, it->size() * 10);
 	typename cost_type::thread_type cost_thread;
-	#pragma omp parallel for default(none) shared(task, regions, dilate, base, match, occ, delta, cost_agg) private(cost_thread)
+	#pragma omp parallel for default(none) shared(task, regions, base, match, occ, delta, cost_agg) private(cost_thread)
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
 		auto range = getSubrange(regions[i].base_disparity, delta, task);
 		regions[i].disparity_offset = range.first;
-		getRegionDisparity<cost_type >(cost_agg, cost_thread, regions[i], base, match, range.first, range.second, dilate, occ);
+		getRegionDisparity<cost_type >(cost_agg, cost_thread, regions[i], base, match, range.first, range.second, occ);
 	}
 }
 
 //for SAD (disparity wise)
 template<typename cost_type>
-void calculate_region_disparity(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, unsigned int dilate, const std::vector<RegionInterval>& occ, int delta)
+void calculate_region_disparity_disparitywise(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, const std::vector<RegionInterval>& occ, int delta)
 {
 	std::cout << "delta: " << delta << std::endl;
 	const std::size_t regions_count = regions.size();
@@ -137,14 +139,10 @@ void fillRegionContainer(RegionContainer& result, StereoSingleTask& task, std::s
 
 	result.regions = std::vector<DisparityRegion>(regions_count);//getRegionVector(result.labels, regions_count);
 	fillRegionDescriptors(result.regions.begin(), result.regions.end(), result.labels);
-	//cv::Mat test = getWrongColorSegmentationImage(result.labels, regions_count);
-	cv::Mat test = getWrongColorSegmentationImage(result);
-	matstore.addMat(test, "segtest");
+
+	matstore.addMat(getWrongColorSegmentationImage(result), "segtest");
 
 	std::cout << "regions count: " << regions_count << std::endl;
-
-
-	//getAllRegionEntropies(task.baseGray, result.regions);
 
 	generate_neighborhood(result.labels, result.regions);
 }
@@ -250,7 +248,7 @@ void dilateLR(StereoSingleTask& task, std::vector<DisparityRegion>& regions_base
 }
 
 //template<typename disparity_metric>
-void single_pass_region_disparity(StereoTask& task, RegionContainer& left, RegionContainer& right, const InitialDisparityConfig& config, bool b_refinement, std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<DisparityRegion>&, unsigned int, const std::vector<RegionInterval>&, int)> disparity_calculator)
+void single_pass_region_disparity(StereoTask& task, RegionContainer& left, RegionContainer& right, const InitialDisparityConfig& config, bool b_refinement, disparity_region_func disparity_calculator)
 {
 	int refinement = 0;
 	if(b_refinement)
@@ -285,8 +283,8 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 		for(unsigned int i = 0; i <= config.dilate; i+= config.dilate_step)
 		{
 			std::cout << i << std::endl;
-			disparity_calculator(task.forward,  task.algoLeft,  task.algoRight, left.regions, config.dilate, occ_left, refinement);
-			disparity_calculator(task.backward, task.algoRight, task.algoLeft, right.regions, config.dilate, occ_right, refinement);
+			disparity_calculator(task.forward,  task.algoLeft,  task.algoRight, left.regions, occ_left, refinement);
+			disparity_calculator(task.backward, task.algoRight, task.algoLeft, right.regions, occ_right, refinement);
 
 			std::cout << "dilateLR" << std::endl;
 			dilateLR(task.forward, left.regions, right.regions, config.dilate_step, refinement);
@@ -343,8 +341,7 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 	}
 }
 
-template<typename disparity_function>
-void segment_based_disparity_internal(disparity_function func, StereoTask& task, RegionContainer& left, RegionContainer& right, const InitialDisparityConfig& config, std::shared_ptr<segmentation_algorithm>& algorithm)
+void segment_based_disparity_internal(StereoTask& task, RegionContainer& left, RegionContainer& right, const InitialDisparityConfig& config, std::shared_ptr<segmentation_algorithm>& algorithm, disparity_region_func disparity_func)
 {
 	auto segmentationLeft  = getSegmentationClass(config.segmentation);
 	auto segmentationRight = getSegmentationClass(config.segmentation);
@@ -357,10 +354,7 @@ void segment_based_disparity_internal(disparity_function func, StereoTask& task,
 	for(DisparityRegion& cregion : right.regions)
 		cregion.base_disparity = 0;
 
-	//for SAD
-	//single_pass_region_disparity(task, left, right, config, false, calculate_region_disparity<disparity_metric>);
-	//for IT metrics
-	single_pass_region_disparity(task, left, right, config, false, func);
+	single_pass_region_disparity(task, left, right, config, false, disparity_func);
 
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_fused_left");
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_fused_right");
@@ -378,10 +372,7 @@ void segment_based_disparity_internal(disparity_function func, StereoTask& task,
 			//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_unfused_left");
 			//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_unfused_right");
 
-			//for it metrics
-			single_pass_region_disparity(task, left, right, config2, true, func);
-			//for SAD
-			//single_pass_region_disparity(task, left, right, config, true, calculate_region_disparity<disparity_metric>);
+			single_pass_region_disparity(task, left, right, config2, true, disparity_func);
 
 			config2.region_refinement_delta /= 2;
 
@@ -398,6 +389,14 @@ cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, c
 	return convertDisparityFromPartialCostmap(createDisparity(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
 }
 
+/*template<typename it_metric, int quantizer>
+struct region_it_algorithm
+{
+	typedef RegionInfoDisparityConf<it_metric, quantizer> disparity_metric;
+	typedef slidingEntropyFlex<it_metric, quantizer> refinement_metric;
+	std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<DisparityRegion>&, const std::vector<RegionInterval>&, int)>;
+};*/
+
 std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, std::shared_ptr<segmentation_algorithm>& algorithm, int subsampling)
 {
 	const int quantizer = 4;
@@ -412,14 +411,16 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 	std::shared_ptr<RegionContainer> left  = std::make_shared<RegionContainer>();
 	std::shared_ptr<RegionContainer> right = std::make_shared<RegionContainer>();
 
-	//for IT
-	/*task.algoLeft  = quantizeImage(task.leftGray, quantizer);
-	task.algoRight = quantizeImage(task.rightGray, quantizer);
-	segment_based_disparity_internal(calculateRegionDisparity<disparity_metric>, task, *left, *right, config, algorithm);*/
-	//for SAD
+	//SAD
+	auto disparity_function = calculate_region_disparity_disparitywise<disparity_metric>;
 	task.algoLeft = task.left;
 	task.algoRight = task.right;
-	segment_based_disparity_internal(calculate_region_disparity<disparity_metric>, task, *left, *right, config, algorithm);
+	//IT
+	/*auto disparity_function = calculate_region_disparity_regionwise<disparity_metric>;
+	task.algoLeft  = quantizeImage(task.leftGray, quantizer);
+	task.algoRight = quantizeImage(task.rightGray, quantizer);*/
+
+	segment_based_disparity_internal(task, *left, *right, config, algorithm, disparity_function);
 
 	cv::Mat disparity_left  = getDisparityBySegments(*left);
 	cv::Mat disparity_right = getDisparityBySegments(*right);
