@@ -230,11 +230,7 @@ void calculate_all_average_colors(const cv::Mat& image, std::vector<DisparityReg
 cv::Mat getDisparityBySegments(const RegionContainer& container)
 {
 	return regionWiseSet<short>(container.task, container.regions, [](const DisparityRegion& cregion){return cregion.disparity;});
-}
-
-cv::Mat getDisparityBySegments(const RegionContainer& container, const std::size_t exclude)
-{
-	return regionWiseSet<short>(container.task, container.regions, exclude, 0, [](const DisparityRegion& cregion){return cregion.disparity;});
+	//return regionWiseSet<short>(container.task.base.size(), container.regions, [](const DisparityRegion& cregion){return cregion.disparity;});
 }
 
 void refreshWarpedIdx(RegionContainer& container)

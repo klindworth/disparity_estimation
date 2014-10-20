@@ -29,71 +29,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region.h"
 #include "intervals.h"
 #include "intervals_algorithms.h"
-#include "genericfunctions.h"
 #include "misc.h"
 #include "region_descriptor.h"
 #include "region_descriptor_algorithms.h"
 #include "slic_adaptor.h"
 #include "ms_cv.h"
 
-#include "msImageProcessor.h"
+//include "msImageProcessor.h"
+
 
 #include <stdexcept>
 #include <fstream>
 
-#include "contourRelaxation/FeatureType.h"
-#include "contourRelaxation/ContourRelaxation.h"
-#include "contourRelaxation/InitializationFunctions.h"
-
-int cachedSegmentation(StereoSingleTask& task, cv::Mat_<int>& labels, std::shared_ptr<segmentation_algorithm>& algorithm)
-{
-	int regions_count = 0;
-	if(algorithm->cacheAllowed())
-	{
-		std::string filename = "cache/" + task.fullname + "_" + algorithm->cacheName() + ".cache.cvmat";
-		std::ifstream istream(filename, std::ifstream::binary);
-		if(istream.is_open())
-		{
-			std::cout << "use cachefile: " << filename << std::endl;
-			istream.read((char*)&regions_count, sizeof(int));
-			labels = streamToMat(istream);
-			istream.close();
-		}
-		else
-		{
-			std::cout << "create cachefile: " << filename << std::endl;
-			regions_count = (*algorithm)(task.base, labels);
-
-			std::ofstream ostream(filename, std::ofstream::binary);
-			ostream.write((char*)&regions_count, sizeof(int));
-			matToStream(labels, ostream);
-			ostream.close();
-		}
-	}
-	else
-		regions_count = (*algorithm)(task.base, labels);
-	return regions_count;
-}
-
-/**
- * @param src Image to segment
- * @param labels_dst cv::Mat where the (int) labels will be written in
- * @return Number of different labels
- */
-//7,4.0
-/*int mean_shift_segmentation(const cv::Mat& src, cv::Mat& labels_dst, int spatial_variance, float color_variance, int minsize)
-{
-	msImageProcessor proc;
-	proc.DefineImage(src.data, (src.channels() == 3 ? COLOR : GRAYSCALE), src.rows, src.cols);
-	proc.Segment(spatial_variance,color_variance, minsize, MED_SPEEDUP);//HIGH_SPEEDUP, MED_SPEEDUP, NO_SPEEDUP; high: speedupThreshold setzen!
-	//cv::Mat res = cv::Mat(src.size(), src.type());
-	//proc.GetResults(res.data);
-
-	labels_dst = cv::Mat(src.size(), CV_32SC1);
-	int regions_count = proc.GetRegionsModified(labels_dst.data);
-
-	return regions_count;
-}*/
+#include "segmentation_cr.h"
+#include "segmentation_ms.h"
 
 /**
  * @brief fusion
@@ -412,61 +361,6 @@ int ms_cr(const cv::Mat& image, cv::Mat_<int>& labels, const segmentation_settin
 	fuse(data, regions, labels);
 
 	return regions.size();
-}
-
-
-int crslic_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels)
-{
-	float directCliqueCost = 0.3;
-	unsigned int const iterations = 3;
-	double const diagonalCliqueCost = directCliqueCost / sqrt(2);
-
-	bool isColorImage = (image.channels() == 3);
-	std::vector<FeatureType> features;
-	if (isColorImage)
-		features.push_back(Color);
-	else
-		features.push_back(Grayvalue);
-
-	features.push_back(Compactness);
-
-	ContourRelaxation<int> crslic_obj(features);
-	cv::Mat labels_temp = createBlockInitialization<int>(image.size(), settings.superpixel_size, settings.superpixel_size);
-
-	crslic_obj.setCompactnessData(settings.superpixel_compactness);
-
-	if (isColorImage)
-	{
-		cv::Mat imageYCrCb;
-		cv::cvtColor(image, imageYCrCb, CV_BGR2YCrCb);
-		std::vector<cv::Mat> imageYCrCbChannels;
-		cv::split(imageYCrCb, imageYCrCbChannels);
-
-		crslic_obj.setColorData(imageYCrCbChannels[0], imageYCrCbChannels[1], imageYCrCbChannels[2]);
-	}
-	else
-		crslic_obj.setGrayvalueData(image.clone());
-
-	crslic_obj.relax(labels_temp, directCliqueCost, diagonalCliqueCost, iterations, labels);
-	return 1+*(std::max_element(labels.begin(), labels.end()));
-}
-
-std::string crslic_segmentation::cacheName() const
-{
-	std::stringstream stream;
-	stream << "crsuperpixel_" << settings.superpixel_size;
-	return stream.str();
-}
-
-int meanshift_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
-	return mean_shift_segmentation(image, labels, settings.spatial_var, settings.color_var, 20);
-}
-
-std::string meanshift_segmentation::cacheName() const
-{
-	std::stringstream stream;
-	stream << "meanshift_" << settings.spatial_var;
-	return stream.str();
 }
 
 int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {

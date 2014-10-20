@@ -94,26 +94,6 @@ private:
 	segmentation_settings settings;
 };
 
-class crslic_segmentation : public segmentation_algorithm {
-public:
-	crslic_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
-	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels);
-	virtual std::string cacheName() const;
-
-private:
-	segmentation_settings settings;
-};
-
-class meanshift_segmentation : public segmentation_algorithm {
-public:
-	meanshift_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
-	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels);
-	virtual std::string cacheName() const;
-
-private:
-	segmentation_settings settings;
-};
-
 class mssuperpixel_segmentation : public segmentation_algorithm {
 public:
 	mssuperpixel_segmentation(const segmentation_settings& psettings) : settings(psettings) {}

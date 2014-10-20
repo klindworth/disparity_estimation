@@ -71,19 +71,7 @@ void DebugMatStore::addMat(const cv::Mat& left, const cv::Mat& right, cv::Mat &c
 
 void DebugMatStore::addMat(const StereoSingleTask& task, cv::Mat& cost, const char* name, int windowsize, cv::Mat windows, cv::Mat offset)
 {
-	assert(!tasks.empty());
-
-	viewerMat temp;
-	temp.left = task.base;
-	temp.right = task.match;
-	temp.cost_map = cost;
-	temp.name = std::string(name);
-	temp.windowsize = windowsize;
-	temp.forward = task.dispMin < 0;
-	temp.windows = windows;
-	temp.offset = offset;
-
-	tasks.back().costmaps.push_back(temp);
+	addMat(task.base, task.match, cost, name, windowsize, task.dispMin < 0, windows, offset);
 }
 
 

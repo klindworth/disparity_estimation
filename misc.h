@@ -37,25 +37,10 @@ cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<DisparityR
 }
 
 template<typename T>
-cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<DisparityRegion>& regions, const std::size_t exclude, T defaultValue, std::function<T(const DisparityRegion& region)> func)
-{
-	cv::Mat_<T> result = cv::Mat_<T>(task.base.size(), defaultValue);
-
-	const std::size_t regions_count = regions.size();
-	#pragma omp parallel for default(none) shared(result, regions, func)
-	for(std::size_t i = 0; i < regions_count; ++i)
-	{
-		if(i != exclude)
-			intervals::setRegionValue<T>(result, regions[i].lineIntervals, func(regions[i]));
-	}
-
-	return result;
-}
-
-template<typename T>
 cv::Mat regionWiseImage(StereoSingleTask& task, std::vector<DisparityRegion>& regions, std::function<T(const DisparityRegion& region)> func)
 {
-	return getValueScaledImage<T, unsigned char>(regionWiseSet<T>(task, regions, func));
+	//return getValueScaledImage<T, unsigned char>(regionWiseSet<T>(task, regions, func));
+	return getValueScaledImage<T, unsigned char>(regionWiseSet<T>(task.base.size(), regions, func));
 }
 
 #endif // MISC_H
