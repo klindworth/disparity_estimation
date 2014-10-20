@@ -29,68 +29,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region.h"
 #include "intervals.h"
 #include "intervals_algorithms.h"
-#include "genericfunctions.h"
 #include "misc.h"
 #include "region_descriptor.h"
 #include "region_descriptor_algorithms.h"
 //include "slic_adaptor.h"
 
-//include "msImageProcessor.h"
+
 
 #include <stdexcept>
 #include <fstream>
 
 #include "segmentation_cr.h"
-
-int cachedSegmentation(StereoSingleTask& task, cv::Mat_<int>& labels, std::shared_ptr<segmentation_algorithm>& algorithm)
-{
-	int regions_count = 0;
-	if(algorithm->cacheAllowed())
-	{
-		std::string filename = "cache/" + task.fullname + "_" + algorithm->cacheName() + ".cache.cvmat";
-		std::ifstream istream(filename, std::ifstream::binary);
-		if(istream.is_open())
-		{
-			std::cout << "use cachefile: " << filename << std::endl;
-			istream.read((char*)&regions_count, sizeof(int));
-			labels = streamToMat(istream);
-			istream.close();
-		}
-		else
-		{
-			std::cout << "create cachefile: " << filename << std::endl;
-			regions_count = (*algorithm)(task.base, labels);
-
-			std::ofstream ostream(filename, std::ofstream::binary);
-			ostream.write((char*)&regions_count, sizeof(int));
-			matToStream(labels, ostream);
-			ostream.close();
-		}
-	}
-	else
-		regions_count = (*algorithm)(task.base, labels);
-	return regions_count;
-}
-
-/**
- * @param src Image to segment
- * @param labels_dst cv::Mat where the (int) labels will be written in
- * @return Number of different labels
- */
-//7,4.0
-/*int mean_shift_segmentation(const cv::Mat& src, cv::Mat& labels_dst, int spatial_variance, float color_variance, int minsize)
-{
-	msImageProcessor proc;
-	proc.DefineImage(src.data, (src.channels() == 3 ? COLOR : GRAYSCALE), src.rows, src.cols);
-	proc.Segment(spatial_variance,color_variance, minsize, MED_SPEEDUP);//HIGH_SPEEDUP, MED_SPEEDUP, NO_SPEEDUP; high: speedupThreshold setzen!
-	//cv::Mat res = cv::Mat(src.size(), src.type());
-	//proc.GetResults(res.data);
-
-	labels_dst = cv::Mat(src.size(), CV_32SC1);
-	int regions_count = proc.GetRegionsModified(labels_dst.data);
-
-	return regions_count;
-}*/
+#include "segmentation_ms.h"
 
 /**
  * @brief fusion
@@ -346,16 +296,7 @@ std::string slic_segmentation::cacheName() const
 }*/
 
 
-/*int meanshift_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
-	return mean_shift_segmentation(image, labels, settings.spatial_var, settings.color_var, 20);
-}
-
-std::string meanshift_segmentation::cacheName() const
-{
-	std::stringstream stream;
-	stream << "meanshift_" << settings.spatial_var;
-	return stream.str();
-}
+/*
 
 int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
 	int regions_count = slicSuperpixels(image, labels, settings.superpixel_size, settings.superpixel_compactness);

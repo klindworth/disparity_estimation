@@ -48,6 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iterator>
 #include <cstdlib>
 #include <iostream>
+#include <fstream>
 #include <memory>
 
 typedef std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<DisparityRegion>&, const std::vector<RegionInterval>&, int)> disparity_region_func;
@@ -119,6 +120,36 @@ void calculate_region_sad(StereoSingleTask& task, const cv::Mat& base, const cv:
 		//TODO: needed?
 		regions[i].old_dilation = regions[i].dilation;
 	}
+}
+
+int cachedSegmentation(StereoSingleTask& task, cv::Mat_<int>& labels, std::shared_ptr<segmentation_algorithm>& algorithm)
+{
+	int regions_count = 0;
+	if(algorithm->cacheAllowed())
+	{
+		std::string filename = "cache/" + task.fullname + "_" + algorithm->cacheName() + ".cache.cvmat";
+		std::ifstream istream(filename, std::ifstream::binary);
+		if(istream.is_open())
+		{
+			std::cout << "use cachefile: " << filename << std::endl;
+			istream.read((char*)&regions_count, sizeof(int));
+			labels = streamToMat(istream);
+			istream.close();
+		}
+		else
+		{
+			std::cout << "create cachefile: " << filename << std::endl;
+			regions_count = (*algorithm)(task.base, labels);
+
+			std::ofstream ostream(filename, std::ofstream::binary);
+			ostream.write((char*)&regions_count, sizeof(int));
+			matToStream(labels, ostream);
+			ostream.close();
+		}
+	}
+	else
+		regions_count = (*algorithm)(task.base, labels);
+	return regions_count;
 }
 
 void fillRegionContainer(RegionContainer& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm)
