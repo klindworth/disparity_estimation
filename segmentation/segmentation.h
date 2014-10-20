@@ -84,16 +84,6 @@ public:
 	virtual ~segmentation_algorithm() {}
 };
 
-class slic_segmentation : public segmentation_algorithm {
-public:
-	slic_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
-	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels);
-	virtual std::string cacheName() const;
-
-private:
-	segmentation_settings settings;
-};
-
 class mssuperpixel_segmentation : public segmentation_algorithm {
 public:
 	mssuperpixel_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
@@ -144,7 +134,6 @@ cv::Mat getWrongColorSegmentationImage(RegionContainer& container);
 const cv::FileNode& operator>>(const cv::FileNode& stream, segmentation_settings& config);
 cv::FileStorage& operator<<(cv::FileStorage& stream, const segmentation_settings& config);
 
-int cachedSegmentation(StereoSingleTask& task, cv::Mat_<int>& labels, std::shared_ptr<segmentation_algorithm>& algorithm);
 
 //int split_region(const RegionDescriptor& descriptor, int min_size, std::back_insert_iterator<std::vector<RegionDescriptor>> it);
 void split_region_test();
