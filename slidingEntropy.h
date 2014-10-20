@@ -410,7 +410,7 @@ private:
 	const int windowsize;
 
 public:
-	slidingEntropyFlex(const cv::Mat& match, unsigned int max_windowsize) : windowsize(max_windowsize), m_match(match)
+	slidingEntropyFlex(const cv::Mat& match, unsigned int max_windowsize) : m_match(match), windowsize(max_windowsize)
 	{
 		fill_entropytable_unnormalized(entropy_table, windowsize*windowsize*9);
 	}

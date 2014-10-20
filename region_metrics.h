@@ -142,16 +142,6 @@ public:
 		cv::Mat match_region = getRegionAsMat(m_match, region, d);
 
 		assert(base_region.total() == match_region.total());
-		/*calculate_joint_soft_histogramm(thread.counter_joint, base_region.data, match_region.data, base_region.total());
-		float joint_entropy = calculate_joint_entropy_unnormalized<float>(thread.counter_joint, entropy_table, bins);
-
-		calculate_soft_histogramm(thread.counter_array, base_region.data, base_region.total());
-		float base_entropy = calculate_entropy_unnormalized<float>(thread.counter_array, entropy_table, bins);
-
-		calculate_soft_histogramm(thread.counter_array, match_region.data, match_region.total());
-		float match_entropy = calculate_entropy_unnormalized<float>(thread.counter_array, entropy_table, bins);
-
-		return calculator(joint_entropy, base_entropy, match_entropy);*/
 
 		auto result = entropies_calculator<float, bins>(thread.counter_joint, thread.counter_array, entropy_table, base_region, match_region);
 
@@ -189,28 +179,12 @@ public:
 
 		assert(base_region.total() == match_region.total());
 
-		/*calculate_joint_soft_histogramm(thread.counter_joint, base_region.data, match_region.data, base_region.total());
-		float joint_entropy;
-		if(base_region.total()*6 > bins*bins)
-			joint_entropy = calculate_joint_entropy_unnormalized<float>(thread.counter_joint, entropy_table, bins);
-		else
-			joint_entropy = calculate_joint_entropy_unnormalized_sparse<float>(thread.counter_joint, entropy_table, bins, base_region.total(), base_region.data, match_region.data);
-
-		calculate_soft_histogramm(thread.counter_array, base_region.data, base_region.total());
-		float base_entropy = calculate_entropy_unnormalized<float>(thread.counter_array, entropy_table, bins);
-
-		calculate_soft_histogramm(thread.counter_array, match_region.data, match_region.total());
-		float match_entropy = calculate_entropy_unnormalized<float>(thread.counter_array, entropy_table, bins);*/
-
 		auto result = entropies_calculator<float, bins>(thread.counter_joint, thread.counter_array, entropy_table, base_region, match_region);
 
 		return std::make_pair(calculator(std::get<0>(result), std::get<1>(result), std::get<2>(result)), std::get<1>(result)+ std::get<2>(result)-std::get<0>(result));
 		//return std::make_pair(calculator(joint_entropy, base_entropy, match_entropy), base_entropy+match_entropy-joint_entropy);
 	}
 };
-
-//template<typename cost_type>
-//std::pair<float, float> getRegionDisparityInternal2(std::vector<)
 
 inline std::vector<RegionInterval> filter_region(std::vector<RegionInterval>& actual_region, int d, const std::vector<RegionInterval>& occ, int width)
 {
@@ -227,7 +201,7 @@ inline std::vector<RegionInterval> filter_region(std::vector<RegionInterval>& ac
 }
 
 template<typename cost_type>
-void getRegionDisparityInternal(std::vector<RegionInterval>& actual_region, cost_type& cost_agg, typename cost_type::thread_type& thread, DisparityRegion &cregion, const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, const std::vector<RegionInterval>& occ)
+void getRegionDisparityInternal(std::vector<RegionInterval>& actual_region, cost_type& cost_agg, typename cost_type::thread_type& thread, DisparityRegion &cregion, const cv::Mat&, const cv::Mat& match, int dispMin, int dispMax, const std::vector<RegionInterval>& occ)
 {
 	int length = getSizeOfRegion(actual_region);
 
@@ -283,137 +257,5 @@ void getRegionDisparity(cost_type& cost_agg, typename cost_type::thread_type& th
 
 	cregion.old_dilation = dilate;
 }
-
-/*template<typename cost_type>
-void getRegionDisparity(SegRegion &cregion, const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, unsigned int dilate_grow, const std::vector<RegionInterval>& occ)
-{
-	for(unsigned int dilate = 0; dilate <= dilate_grow; dilate+=4)
-	{
-		cregion.unprocessed = true;
-		std::vector<RegionInterval> actual_pixel_idx = getDilatedRegion(cregion, dilate, base);
-
-		int length = getSizeOfRegion(actual_pixel_idx);
-
-		cost_type cost_agg(length);
-
-		cregion.confidence = cv::Mat(dispMax-dispMin+1, 1, CV_32FC1, cv::Scalar(0));
-		cregion.disparity_costs = cv::Mat(dispMax-dispMin+1, 1, CV_32FC1, cv::Scalar(cost_agg.normalizationValue()));
-		cregion.unprocessed = cv::Mat_<unsigned char>(dispMax-dispMin+1, 1, 1);
-
-		float minCost = std::numeric_limits<float>::max();
-		short minD = dispMin;
-		for(int d = dispMin; d <= dispMax; ++d)
-		{
-			std::vector<RegionInterval> filtered_pixel_idx = getFilteredPixelIdx(match.size[1], actual_pixel_idx, d);
-
-			std::vector<RegionInterval> *actual_filtered = &filtered_pixel_idx;
-			std::vector<RegionInterval> occ_filtered;
-			if(!occ.empty())
-			{
-				intervals::difference(filtered_pixel_idx.begin(), filtered_pixel_idx.end(), occ.begin(), occ.end(), d, std::back_inserter(occ_filtered));
-				actual_filtered = &occ_filtered;
-			}
-			int filtered_length = getSizeOfRegion(*actual_filtered);
-
-			if((float)filtered_length/(float)length > 0.6f && filtered_length > 10) //0.4
-			{
-				cregion.unprocessed(d-dispMin) = 0;
-				cv::Mat base_region  = getRegionAsMat(base,  *actual_filtered, 0);
-				cv::Mat match_region = getRegionAsMat(match, *actual_filtered, d);
-				assert(base_region.total() == match_region.total());
-
-				std::pair<float,float> cost = cost_agg(base_region, match_region);
-
-				assert(d-dispMin >= 0 && d-dispMin < cregion.disparity_costs.size[0]);
-
-				cregion.disparity_costs(d-dispMin) = cost.first;
-				cregion.confidence(d-dispMin) = cost.second;
-
-				if(minCost > cost.first)
-				{
-					minD = d;
-					minCost = cost.first;
-				}
-			}
-		}
-		cregion.disparity = minD;
-		cregion.dilation = dilate;
-
-		//analyze for further dilation rounds
-		int len = cregion.disparity_costs.size[0];
-		float *derived = new float[len-1];
-		const float *costs = cregion.disparity_costs[0];
-		derivePartialCostmap(costs, derived, len);
-		analyzeDisparityRange(cregion.stats, costs, derived, len);
-
-		if((cregion.stats.minima.size() < 2) && !(cregion.stats.minima.size() == 0 && cregion.stats.bad_minima.size() > 2))
-			return;
-	}
-}*/
-
-/*template<typename cost_type>
-void getRegionDisparity(SegRegion &cregion, const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, unsigned int dilate_grow, const std::vector<RegionInterval>& occ)
-{
-	for(unsigned int dilate = 0; dilate <= dilate_grow; dilate+=4)
-	{
-		cregion.unprocessed = true;
-		std::vector<RegionInterval> actual_pixel_idx = getDilatedRegion(cregion, dilate, base);
-
-		int length = getSizeOfRegion(actual_pixel_idx);
-
-		cost_type cost_agg(length);
-
-		cregion.disparity_costs = cv::Mat(dispMax-dispMin+1, 1, CV_32FC1, cv::Scalar(cost_agg.normalizationValue()));
-		cregion.unprocessed = cv::Mat_<unsigned char>(dispMax-dispMin+1, 1, 1);
-
-		float minCost = std::numeric_limits<float>::max();
-		short minD = dispMin;
-		for(int d = dispMin; d <= dispMax; ++d)
-		{
-			std::vector<RegionInterval> filtered_pixel_idx = getFilteredPixelIdx(match.size[1], actual_pixel_idx, d);
-
-			std::vector<RegionInterval> *actual_filtered = &filtered_pixel_idx;
-			std::vector<RegionInterval> occ_filtered;
-			if(!occ.empty())
-			{
-				intervals::difference(filtered_pixel_idx.begin(), filtered_pixel_idx.end(), occ.begin(), occ.end(), d, std::back_inserter(occ_filtered));
-				actual_filtered = &occ_filtered;
-			}
-			int filtered_length = getSizeOfRegion(*actual_filtered);
-
-			if((float)filtered_length/(float)length > 0.6f && filtered_length > 10) //0.4
-			{
-				cregion.unprocessed(d-dispMin) = 0;
-				cv::Mat base_region  = getRegionAsMat(base,  *actual_filtered, 0);
-				cv::Mat match_region = getRegionAsMat(match, *actual_filtered, d);
-				assert(base_region.total() == match_region.total());
-
-				float cost = cost_agg(base_region, match_region);
-
-				assert(d-dispMin >= 0 && d-dispMin < cregion.disparity_costs.size[0]);
-
-				cregion.disparity_costs(d-dispMin) = cost;
-
-				if(minCost > cost)
-				{
-					minD = d;
-					minCost = cost;
-				}
-			}
-		}
-		cregion.disparity = minD;
-		cregion.dilation = dilate;
-
-		//analyze for further dilation rounds
-		int len = cregion.disparity_costs.size[0];
-		float *derived = new float[len-1];
-		const float *costs = cregion.disparity_costs[0];
-		derivePartialCostmap(costs, derived, len);
-		analyzeDisparityRange(cregion.stats, costs, derived, len);
-
-		if((cregion.stats.minima.size() < 2) && !(cregion.stats.minima.size() == 0 && cregion.stats.bad_minima.size() > 2))
-			return;
-	}
-}*/
 
 #endif // REGION_METRICS_H
