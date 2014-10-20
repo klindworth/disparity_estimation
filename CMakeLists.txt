@@ -35,6 +35,7 @@ set(SOURCES main.cpp
 
     segmentation/region_descriptor.cpp
     segmentation/segmentation.cpp
+    segmentation/segmentation_cr.cpp
 )
 
 
@@ -71,6 +72,7 @@ set(HEADERS
     segmentation/intervals_algorithms.h
     segmentation/intervals.h
     segmentation/segmentation.h
+    segmentation/segmentation_cr.h
 )
 
 set(QTHEADERS
