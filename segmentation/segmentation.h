@@ -33,6 +33,7 @@ class RegionContainer;
 class RegionDescriptor;
 class fusion_work_data;
 class StereoSingleTask;
+class DisparityRegion;
 
 class segmentation_settings
 {
@@ -121,5 +122,6 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const segmentation_settings
 
 //int split_region(const RegionDescriptor& descriptor, int min_size, std::back_insert_iterator<std::vector<RegionDescriptor>> it);
 void split_region_test();
+cv::Mat_<int> segmentation_iteration(std::vector<DisparityRegion>& regions, cv::Size size);
 
 #endif // SEGMENTATION_H

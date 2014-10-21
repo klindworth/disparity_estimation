@@ -112,8 +112,10 @@ bool mssuperpixel_segmentation::refinementPossible() {
 }
 
 void mssuperpixel_segmentation::refine(RegionContainer& container) {
-	defuse(container.regions, superpixel, regions_count_superpixel, *fusion_data);
-	container.labels = superpixel;
+	//defuse(container.regions, superpixel, regions_count_superpixel, *fusion_data);
+	//container.labels = superpixel;
+
+	container.labels = segmentation_iteration(container.regions, container.task.base.size());
 
 	generate_neighborhood(container.labels, container.regions);
 }
