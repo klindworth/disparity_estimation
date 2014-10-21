@@ -14,7 +14,7 @@ inline void parallel_region(Iterator begin, Iterator end, T func)
 		func(*(begin + i));
 }
 
-template<typename T, typename reg_type>
+/*template<typename T, typename reg_type>
 cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, std::function<T(const reg_type& region)> func)
 {
 	cv::Mat_<T> result(size, 0);
@@ -24,6 +24,31 @@ cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, s
 	});
 
 	return result;
+}*/
+
+template<typename T, typename reg_type, typename lambda_type>
+cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, lambda_type func)
+{
+	cv::Mat_<T> result(size, 0);
+
+	parallel_region(regions.begin(), regions.end(), [&](const reg_type& region) {
+		intervals::setRegionValue<T>(result, region.lineIntervals, func(region));
+	});
+
+	return result;
+}
+
+template<typename reg_type>
+cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Size size, const std::vector<reg_type>& regions)
+{
+	std::srand(0);
+	return regionWiseSet<cv::Vec3b>(size, regions, [&](const reg_type&){
+		cv::Vec3b ccolor;
+		ccolor[0] = std::rand() % 256;
+		ccolor[1] = std::rand() % 256;
+		ccolor[2] = std::rand() % 256;
+		return ccolor;
+	});
 }
 
 /**
@@ -210,14 +235,31 @@ void calculate_all_average_colors(const cv::Mat& image, Iterator begin, Iterator
 	});
 }
 
-template<typename T, typename reg_type>
+/*template<typename T, typename reg_type>
 cv::Mat_<unsigned char> regionWiseImage(cv::Size size, std::vector<reg_type>& regions, std::function<T(const reg_type& region)> func)
+{
+	return getValueScaledImage<T, unsigned char>(regionWiseSet<T, reg_type>(size, regions, func));
+}*/
+
+template<typename T, typename reg_type, typename lambda_type>
+cv::Mat_<unsigned char> regionWiseImage(cv::Size size, std::vector<reg_type>& regions, lambda_type func)
 {
 	return getValueScaledImage<T, unsigned char>(regionWiseSet<T, reg_type>(size, regions, func));
 }
 
-template<typename T, typename reg_type>
+/*template<typename T, typename reg_type>
 T getNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, std::function<T(const reg_type&)> func)
+{
+	T result = initVal;
+	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
+	{
+		result += func(container[cpair.first]);
+	}
+	return result/(int)neighbors.size();
+}*/
+
+template<typename T, typename reg_type, typename lambda_type>
+T getNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, lambda_type func)
 {
 	T result = initVal;
 	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)

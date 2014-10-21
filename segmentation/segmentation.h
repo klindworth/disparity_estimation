@@ -28,10 +28,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/core/core.hpp>
 #include <memory>
+#include "region_descriptor_algorithms.h"
 
 class RegionContainer;
 class fusion_work_data;
-class StereoSingleTask;
 
 class segmentation_settings
 {
@@ -47,6 +47,15 @@ public:
 	bool enable_color_fusion;
 };
 
+template<typename reg_type>
+struct segmentation_image {
+	typedef reg_type regions_type;
+	std::size_t segment_count;
+	cv::Size image_size;
+	std::vector<reg_type> regions;
+	cv::Mat_<int> labels;
+};
+
 class segmentation_algorithm {
 public:
 	/**
@@ -56,6 +65,21 @@ public:
 	 * @return Number of segments
 	 */
 	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels) = 0;
+
+	template<typename seg_image_type>
+	std::shared_ptr<seg_image_type> getSegmentationImage(cv::Mat image)
+	{
+		std::shared_ptr<seg_image_type> result = std::make_shared<seg_image_type>();
+		result->segment_count = this->operator ()(image, result->labels);
+		result->regions = std::vector<typename seg_image_type::regions_type>(result->segment_count);
+		result->image_size = image.size();
+
+		fillRegionDescriptors(result->regions.begin(), result->regions.end(), result->labels);
+		//refreshBoundingBoxes(result->regions.begin(), result->regions.end(), result->labels);
+		generate_neighborhood(result->labels, result->regions);
+
+		return result;
+	}
 
 	/**
 	 * @brief cacheAllowed Returns, if caching for this segmentation algorithm is allowed
@@ -105,12 +129,7 @@ public:
 	std::vector<std::size_t> fused_with;
 };
 
-//void runFusion(cv::Mat& labels, std::vector<SegRegion>& regions, std::function<bool(const SegRegion& master_seg, const SegRegion& slave_seg, const SegRegion& fusion_seg)> check_func);
-cv::Mat getWrongColorSegmentationImage(cv::Mat_<int>& labels, int labelcount);
-cv::Mat getWrongColorSegmentationImage(RegionContainer& container);
-//void fuse(fusion_work_data& data, std::vector<SegRegion>& regions, cv::Mat& labels);
-//int mean_shift_segmentation(const cv::Mat& src, cv::Mat& labels_dst, int spatial_variance, float color_variance, int minsize);
-//int ms_slic(const cv::Mat& image, cv::Mat& labels, const segmentation_settings &config);
+cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Mat_<int>& labels, int labelcount);
 
 const cv::FileNode& operator>>(const cv::FileNode& stream, segmentation_settings& config);
 cv::FileStorage& operator<<(cv::FileStorage& stream, const segmentation_settings& config);
