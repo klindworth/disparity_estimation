@@ -37,8 +37,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
 
 #include "segmentation_cr.h"
+#ifdef USE_MEANSHIFT
 #include "segmentation_ms.h"
+#endif
+
+#ifdef USE_SLIC
 #include "segmentation_slic.h"
+#endif
+
+#ifdef USE_MSSLIC
+#include "segmentation_msslic.h"
+#endif
 
 #include "segmentation_algorithms.h"
 
@@ -84,16 +93,22 @@ cv::Mat getWrongColorSegmentationImage(RegionContainer& container)
 
 
 std::shared_ptr<segmentation_algorithm> getSegmentationClass(const segmentation_settings& settings) {
-	/*if(settings.algorithm == "meanshift")
-		return std::shared_ptr<segmentation_algorithm>( new meanshift_segmentation(settings) );
-	else if(settings.algorithm == "superpixel")
-		return std::shared_ptr<segmentation_algorithm>( new slic_segmentation(settings) );
-	else if(settings.algorithm == "ms_superpixel")
-		return std::shared_ptr<segmentation_algorithm>( new mssuperpixel_segmentation(settings) );
-	else*/ if(settings.algorithm == "cr_superpixel")
+#ifdef USE_MEANSHIFT
+	if(settings.algorithm == "meanshift")
+		return std::make_shared<meanshift_segmentation>(settings);
+#endif
+#ifdef USE_SLIC
+	if(settings.algorithm == "superpixel")
+		return std::make_shared<slic_segmentation>(settings);
+#endif
+#ifdef USE_MSSLIC
+	if(settings.algorithm == "ms_superpixel")
+		return std::make_shared<mssuperpixel_segmentation>(settings);
+#endif
+	if(settings.algorithm == "cr_superpixel")
 		return std::make_shared<crslic_segmentation>(settings);
-	else
-		throw std::invalid_argument("unknown segmentation algorithm");
+
+	throw std::invalid_argument("unknown segmentation algorithm");
 }
 
 const cv::FileNode& operator>>(const cv::FileNode& stream, segmentation_settings& config)
