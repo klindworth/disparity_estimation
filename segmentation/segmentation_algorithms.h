@@ -4,6 +4,8 @@
 #include "segmentation.h"
 #include "region_descriptor_algorithms.h"
 
+#include <iterator>
+
 /**
  * @brief fusion
  * @param regions
@@ -41,7 +43,7 @@ void fusion(fusion_work_data& data, std::vector<T>& regions, std::size_t idx, st
 }
 
 template<typename T>
-void fuse(fusion_work_data& data, std::vector<T>& regions, cv::Mat& labels)
+void fuse(fusion_work_data& data, std::vector<T>& regions, cv::Mat_<int>& labels)
 {
 	const std::size_t regions_count = regions.size();
 	#pragma omp parallel for default(none) shared(regions, data)

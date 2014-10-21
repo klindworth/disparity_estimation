@@ -38,8 +38,22 @@ set(SOURCES main.cpp
     segmentation/segmentation_cr.cpp
     segmentation/segmentation_ms.cpp
     segmentation/segmentation_slic.cpp
+    segmentation/segmentation_msslic.cpp
 )
 
+set(SOURCES ${SOURCES}
+    SLIC_CV/slic.cpp
+    SLIC_CV/slic_adaptor.cpp
+)
+
+set(SOURCES ${SOURCES}
+    meanshift_cv/rlist.cpp
+    meanshift_cv/ms.cpp
+    meanshift_cv/ms_cv.cpp
+    meanshift_cv/msImageProcessor.cpp
+    meanshift_cv/msSysPrompt.cpp
+    meanshift_cv/RAList.cpp
+)
 
 set(HEADERS
     genericfunctions.h
@@ -78,6 +92,22 @@ set(HEADERS
     segmentation/segmentation_cr.h
     segmentation/segmentation_ms.h
     segmentation/segmentation_slic.h
+    segmentation/segmentation_msslic.h
+)
+
+set(HEADERS ${HEADERS}
+    SLIC_CV/slic.h
+    SLIC_CV/slic_adaptor.h
+)
+
+set(HEADERS ${HEADERS}
+    meanshift_cv/rlist.h
+    meanshift_cv/tdef.h
+    meanshift_cv/ms.h
+    meanshift_cv/ms_cv.h
+    meanshift_cv/msImageProcessor.h
+    meanshift_cv/msSys.h
+    meanshift_cv/RAList.h
 )
 
 set(QTHEADERS

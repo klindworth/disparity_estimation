@@ -1,6 +1,7 @@
 #include "segmentation_ms.h"
 
-//include "msImageProcessor.h"
+#include "meanshift_cv/msImageProcessor.h"
+#include "meanshift_cv/ms_cv.h"
 
 /**
  * @param src Image to segment
@@ -20,7 +21,7 @@
 	int regions_count = proc.GetRegionsModified(labels_dst.data);
 
 	return regions_count;
-}
+}*/
 
 int meanshift_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
 	return mean_shift_segmentation(image, labels, settings.spatial_var, settings.color_var, 20);
@@ -32,4 +33,4 @@ std::string meanshift_segmentation::cacheName() const
 	stream << "meanshift_" << settings.spatial_var;
 	return stream.str();
 }
-*/
+

@@ -3,7 +3,7 @@
 
 #include "segmentation.h"
 
-/*class slic_segmentation : public segmentation_algorithm {
+class slic_segmentation : public segmentation_algorithm {
 public:
 	slic_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
 	virtual int operator()(const cv::Mat& image, cv::Mat& labels);
@@ -11,6 +11,6 @@ public:
 
 private:
 	segmentation_settings settings;
-};*/
+};
 
 #endif
