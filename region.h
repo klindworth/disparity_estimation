@@ -77,13 +77,9 @@ public:
 	MutualRegion getMutualRegion(std::size_t idx, std::size_t disparity_idx);
 };
 
-struct RegionContainer : segmentation_image<DisparityRegion>
+struct RegionContainer : public segmentation_image<DisparityRegion>
 {
-public:
 	StereoSingleTask task;
-	//std::shared_ptr<segmentation_image<DisparityRegion> > image;
-	//std::vector<DisparityRegion> regions;
-	//cv::Mat_<int> labels;
 };
 
 template<typename T>

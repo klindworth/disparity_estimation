@@ -4,6 +4,7 @@
 #include "genericfunctions.h"
 #include "region_descriptor.h"
 #include "intervals_algorithms.h"
+#include "segmentation_image.h"
 
 template<typename Iterator, typename T>
 inline void parallel_region(Iterator begin, Iterator end, T func)
@@ -38,6 +39,12 @@ cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, l
 	return result;
 }
 
+template<typename T, typename reg_type, typename lambda_type>
+cv::Mat_<T> regionWiseSet(const segmentation_image<reg_type>& image, lambda_type func)
+{
+	return regionWiseSet<T>(image.image_size, image.regions, func);
+}
+
 template<typename reg_type>
 cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Size size, const std::vector<reg_type>& regions)
 {
@@ -49,6 +56,12 @@ cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Size size, const std::vec
 		ccolor[2] = std::rand() % 256;
 		return ccolor;
 	});
+}
+
+template<typename reg_type>
+cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(const segmentation_image<reg_type>& image)
+{
+	return getWrongColorSegmentationImage(image.image_size, image.regions);
 }
 
 /**

@@ -29,6 +29,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "region_descriptor.h"
 
+#include "segmentation_image.h"
+
 template<typename T>
 cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<DisparityRegion>& regions, std::function<T(const DisparityRegion& region)> func)
 {
@@ -40,6 +42,12 @@ cv::Mat regionWiseImage(StereoSingleTask& task, std::vector<DisparityRegion>& re
 {
 	//return getValueScaledImage<T, unsigned char>(regionWiseSet<T>(task, regions, func));
 	return getValueScaledImage<T, unsigned char>(regionWiseSet<T>(task.base.size(), regions, func));
+}
+
+template<typename T, typename reg_type, typename lambda_type>
+cv::Mat regionWiseImage(const segmentation_image<reg_type>& image, lambda_type func)
+{
+	return getValueScaledImage<T, unsigned char>(regionWiseSet<T>(image.image_size, image.regions, func));
 }
 
 #endif // MISC_H

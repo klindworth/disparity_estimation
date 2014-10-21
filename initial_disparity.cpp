@@ -344,13 +344,13 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 
 		if(config.verbose)
 		{
-			matstore.addMat(regionWiseImage<unsigned char>(task.forward, left.regions, [](const DisparityRegion& region){return (unsigned char)region.stats.minima.size();}), "minima-left");
-			matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [](const DisparityRegion& region){return region.stats.stddev;}), "stddev-left");
-			matstore.addMat(regionWiseImage<float>(task.backward, right.regions, [](const DisparityRegion& region){return region.stats.stddev;}), "stddev-right");
-			matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [](const DisparityRegion& region){return region.stats.mean;}), "mean-left");
-			matstore.addMat(regionWiseImage<float>(task.forward, left.regions ,[](const DisparityRegion& region){return region.stats.confidence2;}), "confidence2-left");
-			matstore.addMat(regionWiseImage<float>(task.backward, right.regions ,[](const DisparityRegion& region){return region.stats.confidence2;}), "confidence2-right");
-			matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [](const DisparityRegion& region){return region.stats.stddev/region.stats.mean;}), "stddev-norm");
+			matstore.addMat(regionWiseImage<unsigned char>(left, [](const DisparityRegion& region){return (unsigned char)region.stats.minima.size();}), "minima-left");
+			matstore.addMat(regionWiseImage<float>(left, [](const DisparityRegion& region){return region.stats.stddev;}), "stddev-left");
+			matstore.addMat(regionWiseImage<float>(right, [](const DisparityRegion& region){return region.stats.stddev;}), "stddev-right");
+			matstore.addMat(regionWiseImage<float>(left, [](const DisparityRegion& region){return region.stats.mean;}), "mean-left");
+			matstore.addMat(regionWiseImage<float>(left ,[](const DisparityRegion& region){return region.stats.confidence2;}), "confidence2-left");
+			matstore.addMat(regionWiseImage<float>(right ,[](const DisparityRegion& region){return region.stats.confidence2;}), "confidence2-right");
+			matstore.addMat(regionWiseImage<float>(left, [](const DisparityRegion& region){return region.stats.stddev/region.stats.mean;}), "stddev-norm");
 			//matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [&](const SegRegion& region){return region.disparity_costs(region.disparity-task.forward.dispMin);}), "opt-left");
 			//matstore.addMat(regionWiseImage<float>(task.backward, right.regions, [&](const SegRegion& region){return region.disparity_costs(region.disparity-task.backward.dispMin);}), "opt-right");
 			//matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [&](const SegRegion& region){return region.confidence(region.disparity-task.forward.dispMin);}), "mi-conf-left");

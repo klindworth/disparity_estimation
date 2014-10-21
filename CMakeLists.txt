@@ -71,6 +71,7 @@ set(HEADERS
     segmentation/segmentation_algorithms.h
     segmentation/segmentation.h
     segmentation/segmentation_cr.h
+    segmentation/segmentation_image.h
 )
 
 set(ENABLE_SLIC ON)
