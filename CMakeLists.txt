@@ -22,10 +22,8 @@ set(SOURCES main.cpp
     configrun.cpp
     taskanalysis.cpp
     slidingGradient.cpp
-
     refinement.cpp
-    
-    
+
     gui/matstoreviewer.cpp
     gui/costmapviewer.cpp
     gui/miniplot.cpp    
@@ -36,23 +34,6 @@ set(SOURCES main.cpp
     segmentation/region_descriptor.cpp
     segmentation/segmentation.cpp
     segmentation/segmentation_cr.cpp
-    segmentation/segmentation_ms.cpp
-    segmentation/segmentation_slic.cpp
-    segmentation/segmentation_msslic.cpp
-)
-
-set(SOURCES ${SOURCES}
-    SLIC_CV/slic.cpp
-    SLIC_CV/slic_adaptor.cpp
-)
-
-set(SOURCES ${SOURCES}
-    meanshift_cv/rlist.cpp
-    meanshift_cv/ms.cpp
-    meanshift_cv/ms_cv.cpp
-    meanshift_cv/msImageProcessor.cpp
-    meanshift_cv/msSysPrompt.cpp
-    meanshift_cv/RAList.cpp
 )
 
 set(HEADERS
@@ -90,25 +71,64 @@ set(HEADERS
     segmentation/segmentation_algorithms.h
     segmentation/segmentation.h
     segmentation/segmentation_cr.h
-    segmentation/segmentation_ms.h
-    segmentation/segmentation_slic.h
-    segmentation/segmentation_msslic.h
 )
 
-set(HEADERS ${HEADERS}
-    SLIC_CV/slic.h
-    SLIC_CV/slic_adaptor.h
-)
+set(ENABLE_SLIC ON)
+set(ENABLE_MEANSHIFT ON)
 
-set(HEADERS ${HEADERS}
-    meanshift_cv/rlist.h
-    meanshift_cv/tdef.h
-    meanshift_cv/ms.h
-    meanshift_cv/ms_cv.h
-    meanshift_cv/msImageProcessor.h
-    meanshift_cv/msSys.h
-    meanshift_cv/RAList.h
-)
+if(ENABLE_SLIC)
+    set(SOURCES ${SOURCES}
+        SLIC_CV/slic.cpp
+        SLIC_CV/slic_adaptor.cpp
+        segmentation/segmentation_slic.cpp
+    )
+
+    set(HEADERS ${HEADERS}
+        segmentation/segmentation_slic.h
+        SLIC_CV/slic.h
+        SLIC_CV/slic_adaptor.h
+    )
+
+    add_definitions(-DUSE_SLIC)
+    message("Remember: With the use of SLIC, this software is licensed under the conditions of the GPL")
+endif()
+
+if(ENABLE_MEANSHIFT)
+    set(SOURCES ${SOURCES}
+        meanshift_cv/rlist.cpp
+        meanshift_cv/ms.cpp
+        meanshift_cv/ms_cv.cpp
+        meanshift_cv/msImageProcessor.cpp
+        meanshift_cv/msSysPrompt.cpp
+        meanshift_cv/RAList.cpp
+        segmentation/segmentation_ms.cpp
+    )
+
+    set(HEADERS ${HEADERS}
+        meanshift_cv/rlist.h
+        meanshift_cv/tdef.h
+        meanshift_cv/ms.h
+        meanshift_cv/ms_cv.h
+        meanshift_cv/msImageProcessor.h
+        meanshift_cv/msSys.h
+        meanshift_cv/RAList.h
+        segmentation/segmentation_ms.h
+    )
+
+    add_definitions(-DUSE_MEANSHIFT)
+endif()
+
+if(ENABLE_SLIC AND ENABLE_MEANSHIFT)
+    set(SOURCES ${SOURCES}
+        segmentation/segmentation_msslic.cpp
+    )
+
+    set(HEADERS ${HEADERS}
+        segmentation/segmentation_msslic.h
+    )
+
+    add_definitions(-DUSE_MSSLIC)
+endif()
 
 set(QTHEADERS
     gui/matstoreviewer.h
