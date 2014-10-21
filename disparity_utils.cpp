@@ -91,9 +91,15 @@ cv::Mat createDisparityImage(const cv::Mat& disparity)
 	short maxs = maxd;
 	float scale = 255.0f/(maxs-mins);
 
+	cv::Mat temp;
 	if(mins >= 0 && maxs >= 0)
-		return (disparity - mins)*scale;
+		temp = (disparity - mins)*scale;
 	else
-		return (disparity - mins)*-scale+255;
+		temp = (disparity - mins)*-scale+255;
+
+	cv::Mat result;
+	temp.convertTo(result, CV_8U);
+
+	return result;
 }
 
