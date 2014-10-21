@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region.h"
 #include "intervals.h"
 #include "intervals_algorithms.h"
-#include "misc.h"
+
 #include "region_descriptor.h"
 #include "region_descriptor_algorithms.h"
 
@@ -51,7 +51,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "segmentation_algorithms.h"
 
-cv::Mat getWrongColorSegmentationImage(cv::Mat_<int>& labels, int labelcount)
+cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Mat_<int>& labels, int labelcount)
 {
 	std::vector<cv::Vec3b> colors;
 	colors.reserve(labelcount);
@@ -76,19 +76,6 @@ cv::Mat getWrongColorSegmentationImage(cv::Mat_<int>& labels, int labelcount)
 		*dst_ptr++ = colors[*src_ptr++];
 	return result;
 }
-
-cv::Mat getWrongColorSegmentationImage(RegionContainer& container)
-{
-	std::srand(0);
-	return regionWiseSet<cv::Vec3b>(container.task, container.regions, [&](const DisparityRegion&){
-		cv::Vec3b ccolor;
-		ccolor[0] = std::rand() % 256;
-		ccolor[1] = std::rand() % 256;
-		ccolor[2] = std::rand() % 256;
-		return ccolor;
-	});
-}
-
 
 /*int ms_cr(const cv::Mat& image, cv::Mat_<int>& labels, const segmentation_settings& config)
 {

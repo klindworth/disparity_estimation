@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "stereotask.h"
 #include "costmap_utils.h"
 #include "region_descriptor.h"
+#include "segmentation.h"
 
 class RegionInterval;
 
@@ -88,12 +89,13 @@ public:
 	MutualRegion getMutualRegion(std::size_t idx, std::size_t disparity_idx);
 };
 
-class RegionContainer
+struct RegionContainer : segmentation_image<DisparityRegion>
 {
 public:
 	StereoSingleTask task;
-	std::vector<DisparityRegion> regions;
-	cv::Mat_<int> labels;
+	//std::shared_ptr<segmentation_image<DisparityRegion> > image;
+	//std::vector<DisparityRegion> regions;
+	//cv::Mat_<int> labels;
 };
 
 template<typename T>

@@ -161,20 +161,24 @@ int cachedSegmentation(StereoSingleTask& task, cv::Mat_<int>& labels, std::share
 	return regions_count;
 }
 
-void fillRegionContainer(RegionContainer& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm)
+void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm)
 {
-	result.task = task;
+	result = algorithm->getSegmentationImage<RegionContainer>(task.base);
+	result->task = task;
 
-	int regions_count = cachedSegmentation(task, result.labels, algorithm);
+	matstore.addMat(getWrongColorSegmentationImage(result->task.base.size(), result->regions), "segtest");
+	std::cout << "regions count: " << result->segment_count << std::endl;
+
+	/*int regions_count = cachedSegmentation(task, result.labels, algorithm);
 
 	result.regions = std::vector<DisparityRegion>(regions_count);//getRegionVector(result.labels, regions_count);
 	fillRegionDescriptors(result.regions.begin(), result.regions.end(), result.labels);
 
-	matstore.addMat(getWrongColorSegmentationImage(result), "segtest");
+	matstore.addMat(getWrongColorSegmentationImage(result.task.base.size(), result.regions), "segtest");
 
 	std::cout << "regions count: " << regions_count << std::endl;
 
-	generate_neighborhood(result.labels, result.regions);
+	generate_neighborhood(result.labels, result.regions);*/
 }
 
 //untested
@@ -316,8 +320,8 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 			disparity_calculator(task.backward, task.algoRight, task.algoLeft, right.regions, occ_right, refinement);
 
 			std::cout << "dilateLR" << std::endl;
-			dilateLR(task.forward, left.regions, right.regions, config.dilate_step, refinement);
-			dilateLR(task.backward, right.regions, left.regions, config.dilate_step, refinement);
+			dilateLR(task.forward,  left.regions,  right.regions, config.dilate_step, refinement);
+			dilateLR(task.backward, right.regions, left.regions,  config.dilate_step, refinement);
 		}
 		std::cout << "fin" << std::endl;
 
@@ -370,13 +374,13 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 	}
 }
 
-void segment_based_disparity_internal(StereoTask& task, const std::shared_ptr<RegionContainer>& left, const std::shared_ptr<RegionContainer>& right, const InitialDisparityConfig& config, std::shared_ptr<segmentation_algorithm>& algorithm, disparity_region_func disparity_func)
+void segment_based_disparity_internal(StereoTask& task, std::shared_ptr<RegionContainer>& left, std::shared_ptr<RegionContainer>& right, const InitialDisparityConfig& config, std::shared_ptr<segmentation_algorithm>& algorithm, disparity_region_func disparity_func)
 {
 	auto segmentationLeft  = getSegmentationClass(config.segmentation);
 	auto segmentationRight = getSegmentationClass(config.segmentation);
 
-	fillRegionContainer(*left, task.forward, segmentationLeft);
-	fillRegionContainer(*right, task.backward, segmentationRight);
+	fillRegionContainer(left, task.forward, segmentationLeft);
+	fillRegionContainer(right, task.backward, segmentationRight);
 
 	for(DisparityRegion& cregion : left->regions)
 		cregion.base_disparity = 0;
