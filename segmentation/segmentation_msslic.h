@@ -6,11 +6,11 @@
 class mssuperpixel_segmentation : public segmentation_algorithm {
 public:
 	mssuperpixel_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
-	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels);
-	virtual std::string cacheName() const;
-	virtual bool cacheAllowed() const;
-	virtual bool refinementPossible();
-	virtual void refine(RegionContainer &container);
+	int operator()(const cv::Mat& image, cv::Mat_<int>& labels) override;
+	std::string cacheName() const override;
+	bool cacheAllowed() const override;
+	bool refinementPossible() override;
+	void refine(RegionContainer &container) override;
 
 private:
 	std::shared_ptr<fusion_work_data> fusion_data;
