@@ -49,14 +49,7 @@ public:
 	bool enable_color_fusion;
 };
 
-template<typename reg_type>
-struct segmentation_image {
-	typedef reg_type regions_type;
-	std::size_t segment_count;
-	cv::Size image_size;
-	std::vector<reg_type> regions;
-	cv::Mat_<int> labels;
-};
+
 
 class segmentation_algorithm {
 public:
