@@ -90,16 +90,13 @@ inline void parallel_region(std::vector<DisparityRegion>& regions, T func)
 
 cv::Mat getDisparityBySegments(const RegionContainer &container);
 
-void refreshBoundingBoxes(const cv::Mat_<int>& labels, std::vector<DisparityRegion>& regions);
-
 int reenumerate(cv::Mat& labels, int old_count);
 void replace_neighbor_idx(std::vector<RegionDescriptor>& regions, std::size_t old_idx, std::size_t new_idx);
 
 void generateStats(std::vector<DisparityRegion>& regions, const StereoSingleTask& task, const int delta);
 void generateStats(DisparityRegion& region, const StereoSingleTask& task, int delta);
 
-void labelLRCheck(const cv::Mat &labelsBase, const cv::Mat &labelsMatch, std::vector<DisparityRegion>& regions, const short dispMin, const short dispMax);
-void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, std::vector<DisparityRegion>& regions, StereoSingleTask& task, int delta);
+void labelLRCheck(RegionContainer& base, RegionContainer& match, int delta);
 void refreshWarpedIdx(RegionContainer& container);
 float getOtherRegionsAverage(const std::vector<DisparityRegion> &container, const std::vector<MutualRegion> &cdisp, std::function<float(const DisparityRegion&)> func);
 std::pair<float,float> getOtherRegionsAverageCond(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, std::function<float(const DisparityRegion&)> func, std::function<float(const DisparityRegion&)> cond_eval);

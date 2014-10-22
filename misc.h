@@ -31,19 +31,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "segmentation_image.h"
 
-template<typename T>
-cv::Mat regionWiseSet(const StereoSingleTask& task, const std::vector<DisparityRegion>& regions, std::function<T(const DisparityRegion& region)> func)
-{
-	return regionWiseSet<T>(task.base.size(), regions, func);
-}
-
-template<typename T>
-cv::Mat regionWiseImage(StereoSingleTask& task, std::vector<DisparityRegion>& regions, std::function<T(const DisparityRegion& region)> func)
-{
-	//return getValueScaledImage<T, unsigned char>(regionWiseSet<T>(task, regions, func));
-	return getValueScaledImage<T, unsigned char>(regionWiseSet<T>(task.base.size(), regions, func));
-}
-
 template<typename T, typename reg_type, typename lambda_type>
 cv::Mat regionWiseImage(const segmentation_image<reg_type>& image, lambda_type func)
 {

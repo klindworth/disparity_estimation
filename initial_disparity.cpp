@@ -159,17 +159,6 @@ void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleT
 
 	matstore.addMat(getWrongColorSegmentationImage(result->task.base.size(), result->regions), "segtest");
 	std::cout << "regions count: " << result->segment_count << std::endl;
-
-	/*int regions_count = cachedSegmentation(task, result.labels, algorithm);
-
-	result.regions = std::vector<DisparityRegion>(regions_count);//getRegionVector(result.labels, regions_count);
-	fillRegionDescriptors(result.regions.begin(), result.regions.end(), result.labels);
-
-	matstore.addMat(getWrongColorSegmentationImage(result.task.base.size(), result.regions), "segtest");
-
-	std::cout << "regions count: " << regions_count << std::endl;
-
-	generate_neighborhood(result.labels, result.regions);*/
 }
 
 //untested
@@ -282,8 +271,10 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 	calculate_all_average_colors(task.backward.base, right.regions);
 
 	std::cout << "lr-check" << std::endl;
-	labelLRCheck(left.labels, right.labels, left.regions, task.forward, 0);
-	labelLRCheck(right.labels, left.labels, right.regions, task.backward, 0);
+	//labelLRCheck(left.labels, right.labels, left.regions, task.forward, 0);
+	//labelLRCheck(right.labels, left.labels, right.regions, task.backward, 0);
+	labelLRCheck(left, right, 0);
+	labelLRCheck(right, left, 0);
 
 	std::cout << "init disp" << std::endl;
 

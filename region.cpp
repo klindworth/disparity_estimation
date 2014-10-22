@@ -108,7 +108,7 @@ std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& bas
 	return std::make_pair(result/sum_weight, sum_weight);
 }
 
-inline void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, DisparityRegion& region, const short dispMin, const short dispMax)
+void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, DisparityRegion& region, const short dispMin, const short dispMax)
 {
 	const int dispRange = dispMax-dispMin + 1;
 	region.other_regions = std::vector<std::vector<MutualRegion>>(dispRange);
@@ -132,36 +132,19 @@ inline void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, 
 	}
 }
 
-void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, std::vector<DisparityRegion>& regions, const short dispMin, const short dispMax)
+void labelLRCheck(RegionContainer& base, RegionContainer& match, int delta)
 {
-	const int dispRange = dispMax-dispMin + 1;
-	const std::size_t regions_count = regions.size();
-	#pragma omp parallel for default(none) shared(regions, labelsBase, labelsMatch)
-	for(std::size_t j = 0; j < regions_count; ++j)
-	{
-		labelLRCheck(labelsBase, labelsMatch, regions[j], dispMin, dispMax);
-	}
-}
-
-void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, std::vector<DisparityRegion>& regions, StereoSingleTask& task, int delta)
-{
-	//const int dispRange = dispMax-dispMin + 1;
-	const std::size_t regions_count = regions.size();
-	#pragma omp parallel for default(none) shared(regions, labelsBase, labelsMatch, delta, task)
+	const std::size_t regions_count = base.regions.size();
+	#pragma omp parallel for default(none) shared(base, match, delta)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
 		std::pair<std::size_t, std::size_t> range;
 		if(delta == 0)
-			range = std::make_pair(task.dispMin, task.dispMax);
+			range = std::make_pair(base.task.dispMin, base.task.dispMax);
 		else
-			range = getSubrange(regions[j].base_disparity, delta, task);
-		labelLRCheck(labelsBase, labelsMatch, regions[j], range.first, range.second);
+			range = getSubrange(base.regions[j].base_disparity, delta, base.task);
+		labelLRCheck(base.labels, match.labels, base.regions[j], range.first, range.second);
 	}
-}
-
-void refreshBoundingBoxes(const cv::Mat_<int>& labels, std::vector<DisparityRegion>& regions)
-{
-	refreshBoundingBoxes(regions.begin(), regions.end(), labels);
 }
 
 int reenumerate(cv::Mat& labels, int old_count)
@@ -229,7 +212,7 @@ void calculate_all_average_colors(const cv::Mat& image, std::vector<DisparityReg
 
 cv::Mat getDisparityBySegments(const RegionContainer& container)
 {
-	return regionWiseSet<short>(container.task, container.regions, [](const DisparityRegion& cregion){return cregion.disparity;});
+	return regionWiseSet<short>(container, [](const DisparityRegion& cregion){return cregion.disparity;});
 	//return regionWiseSet<short>(container.task.base.size(), container.regions, [](const DisparityRegion& cregion){return cregion.disparity;});
 }
 
