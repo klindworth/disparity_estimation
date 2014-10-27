@@ -38,6 +38,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <functional>
 #include <random>
 
+#include <omp.h>
+
 disparity_hypothesis::disparity_hypothesis(cv::Mat& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, int pot_trunc, int dispMin)
 {
 	//occ
@@ -116,21 +118,29 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 	const short dispMin = base.task.dispMin;
 	const short dispRange = base.task.dispMax - base.task.dispMin + 1;
 
-	for(DisparityRegion& baseRegion : base.regions)
+	std::vector<cv::Mat_<short>> occmaps(omp_get_max_threads());
+	for(std::size_t i = 0; i < occmaps.size(); ++i)
+		occmaps[i] = occmap.clone();
+
+	std::size_t regions_count = base.regions.size();
+	#pragma omp parallel for
+	//for(DisparityRegion& baseRegion : base.regions)
+	for(std::size_t i = 0; i < regions_count; ++i)
 	{
+		DisparityRegion& baseRegion = base.regions[i];
+		int thread_idx = omp_get_thread_num();
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
-		intervals::substractRegionValue<unsigned char>(occmap, baseRegion.warped_interval, 1);
+		intervals::substractRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
-		#pragma omp parallel for
 		for(short d = range.first; d <= range.second; ++d)
 		{
 			std::vector<MutualRegion>& cregionvec = baseRegion.other_regions[d-dispMin];
 			if(!cregionvec.empty())
 			{
-				disparity_hypothesis hyp(occmap, baseRegion, d, base.regions, match.regions, pot_trunc, dispMin);
+				disparity_hypothesis hyp(occmaps[thread_idx], baseRegion, d, base.regions, match.regions, pot_trunc, dispMin);
 				baseRegion.optimization_energy(d-dispMin) = stat_eval(hyp);
 			}
 		}
@@ -140,7 +150,7 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 		//std::transform(baseRegion.optimization_energy.begin(), baseRegion.optimization_energy.end(), baseRegion.optimization_energy.begin(), [=](const float& cval){return cval/opt_val;});
 		//for(int i = 0; i < baseRegion.optimization_energy.rows; ++i)
 			//baseRegion.optimization_energy.at<float>(i) /= opt_val;
-		intervals::addRegionValue<unsigned char>(occmap, baseRegion.warped_interval, 1);
+		intervals::addRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 	}
 }
 
@@ -150,7 +160,7 @@ void optimize(RegionContainer& base, RegionContainer& match, std::function<float
 	refreshOptimizationBaseValues(match, base, base_eval, delta);
 
 	std::random_device random_dev;
-	std::mt19937 random_gen(random_dev());
+	std::mt19937 random_gen(random_dev()); //FIXME each threads needs a own copy
 	std::uniform_int_distribution<> random_dist(0, 1);
 
 	const int dispMin = base.task.dispMin;

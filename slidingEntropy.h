@@ -217,11 +217,16 @@ inline void fill_entropytable_unnormalized(cv::Mat_<float>& entropy_table, int s
 {
 	assert(size > 0);
 	entropy_table = cv::Mat(size, 1, CV_32FC1);
-	float *entropy_table_ptr = entropy_table[0];
+	/*float *entropy_table_ptr = entropy_table[0];
 
 	*entropy_table_ptr++ = 0.0f;
 	for(int i = 1; i < size; ++i)
-		*entropy_table_ptr++ = i*std::log(i);
+		*entropy_table_ptr++ = i*std::log(i);*/
+
+	entropy_table(0) = 0.0f;
+	#pragma omp parallel for
+	for(int i = 1; i < size; ++i)
+		entropy_table(i) = i*std::log(i);
 }
 
 inline void fill_entropytable_unnormalized(cv::Mat_<double>& entropy_table, int size)

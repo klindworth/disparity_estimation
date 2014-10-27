@@ -97,7 +97,7 @@ std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& bas
 {
 	float result = 0.0f;
 	float sum_weight = 0.0f;
-	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
+	for(const auto& cpair : neighbors)
 	{
 		float diff = color_trunc - std::min(cv::norm(base_color - container[cpair.first].average_color), color_trunc);
 
