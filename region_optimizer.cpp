@@ -118,7 +118,7 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 	const short dispMin = base.task.dispMin;
 	const short dispRange = base.task.dispMax - base.task.dispMin + 1;
 
-	std::vector<cv::Mat_<short>> occmaps(omp_get_max_threads());
+	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
 	for(std::size_t i = 0; i < occmaps.size(); ++i)
 		occmaps[i] = occmap.clone();
 
