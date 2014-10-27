@@ -135,10 +135,10 @@ void runFusion(cv::Mat& labels, std::vector<T>& regions, std::function<bool(cons
 	generate_neighborhood(labels, regions);
 }
 
-template<typename T>
-void defuse(std::vector<T>& fused_regions, cv::Mat_<int>& newlabels, int newsegcount, const fusion_work_data& data)
+template<typename T, typename lambda_type>
+void defuse(std::vector<T>& fused_regions, cv::Mat_<int>& newlabels, int newsegcount, const fusion_work_data& data, lambda_type transfer_region)
 {
-	std::vector<T> regions(newsegcount);// = getRegionVector(newlabels, newsegcount);
+	std::vector<T> regions(newsegcount);
 	fillRegionDescriptors(regions.begin(), regions.end(), newlabels);
 
 	const std::size_t regions_count = regions.size();
@@ -162,8 +162,8 @@ void defuse(std::vector<T>& fused_regions, cv::Mat_<int>& newlabels, int newsegc
 		if(it != inverse_mapping.end())
 		{
 			std::size_t master_fused_idx = std::distance(inverse_mapping.begin(), it);
-			regions[i].disparity = fused_regions[master_fused_idx].disparity;
-			regions[i].base_disparity = regions[i].disparity;
+
+			transfer_region(fused_regions[master_fused_idx], regions[i]);
 		}
 		else
 			std::cerr << "missed mapping" << std::endl;

@@ -25,8 +25,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "segmentation.h"
 
-#include "initial_disparity.h"
-#include "region.h"
 #include "intervals.h"
 #include "intervals_algorithms.h"
 
