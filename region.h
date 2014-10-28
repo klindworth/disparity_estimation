@@ -88,6 +88,79 @@ inline void parallel_region(std::vector<DisparityRegion>& regions, T func)
 	parallel_region(regions.begin(), regions.end(), func);
 }
 
+template<typename lambda_type>
+void foreach_filtered_interval_point(const RegionInterval& interval, int width, int d, lambda_type func)
+{
+	int lower = std::max(interval.lower+d, 0)-d;
+	int upper = std::min(interval.upper+d, width)-d;
+
+	for(int x = lower; x < upper; ++x)
+		func(cv::Point(x, interval.y));
+}
+
+template<typename lambda_type>
+void foreach_warped_interval_point(const RegionInterval& interval, int width, int d, lambda_type func)
+{
+	int lower = std::max(interval.lower+d, 0);
+	int upper = std::min(interval.upper+d, width);
+
+	for(int x = lower; x < upper; ++x)
+		func(cv::Point(x, interval.y));
+}
+
+template<typename lambda_type>
+void foreach_filtered_region_point(const std::vector<RegionInterval> &pixel_idx, int width, int d, lambda_type func)
+{
+	for(const RegionInterval& cinterval : pixel_idx)
+		foreach_filtered_interval_point(cinterval, width, d, func);
+}
+
+template<typename lambda_type>
+void foreach_warped_region_point(const std::vector<RegionInterval> &pixel_idx, int width, int d, lambda_type func)
+{
+	for(const RegionInterval& cinterval : pixel_idx)
+		foreach_warped_interval_point(cinterval, width, d, func);
+}
+
+template<typename lambda_type>
+float getOtherRegionsAverage(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, lambda_type func)
+{
+	float result = 0.0f;
+	for(const MutualRegion& cval : cdisp)
+	{
+		result += cval.percent * func(container[cval.index]);
+	}
+	return result;
+}
+
+template<typename lambda_type>
+float getNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, lambda_type func)
+{
+	return getNeighborhoodsAverage(container, neighbors, 0.0f, func);
+}
+
+template<typename lambda_type>
+float getWeightedNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, lambda_type func)
+{
+	return getWeightedNeighborhoodsAverage(container, neighbors, 0.0f, func);
+}
+
+template<typename lambda_type>
+std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& base_color, double color_trunc, const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, lambda_type func)
+{
+	float result = 0.0f;
+	float sum_weight = 0.0f;
+	for(const auto& cpair : neighbors)
+	{
+		float diff = color_trunc - std::min(cv::norm(base_color - container[cpair.first].average_color), color_trunc);
+
+		result += diff*func(container[cpair.first]);
+		sum_weight += diff;
+	}
+	sum_weight = std::max(std::numeric_limits<float>::min(), sum_weight);
+	return std::make_pair(result/sum_weight, sum_weight);
+}
+
 cv::Mat getDisparityBySegments(const RegionContainer &container);
 
 int reenumerate(cv::Mat& labels, int old_count);
@@ -98,12 +171,7 @@ void generateStats(DisparityRegion& region, const StereoSingleTask& task, int de
 
 void labelLRCheck(RegionContainer& base, RegionContainer& match, int delta);
 void refreshWarpedIdx(RegionContainer& container);
-float getOtherRegionsAverage(const std::vector<DisparityRegion> &container, const std::vector<MutualRegion> &cdisp, std::function<float(const DisparityRegion&)> func);
 std::pair<float,float> getOtherRegionsAverageCond(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, std::function<float(const DisparityRegion&)> func, std::function<float(const DisparityRegion&)> cond_eval);
-
-float getNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func);
-float getWeightedNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func);
-std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& base_color, double color_trunc, const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func);
 
 void calculate_all_average_colors(const cv::Mat &image, std::vector<DisparityRegion> &regions);
 

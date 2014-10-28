@@ -43,16 +43,24 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 disparity_hypothesis::disparity_hypothesis(cv::Mat& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, int pot_trunc, int dispMin)
 {
 	//occ
-	std::vector<RegionInterval> filtered = getFilteredPixelIdx(occmap.cols, baseRegion.lineIntervals, disparity);
+	/*std::vector<RegionInterval> filtered = getFilteredPixelIdx(occmap.cols, baseRegion.lineIntervals, disparity);
 	cv::Mat occ_region = getRegionAsMat(occmap, filtered, disparity);
 	int occ_sum = 0;
 	for(int j = 0; j < occ_region.size[0]; ++j)
-		occ_sum += occ_region.at<unsigned char>(j);
+		occ_sum += occ_region.at<unsigned char>(j);*/
 
-	if(occ_region.total() > 0)
+	int occ_sum = 0;
+	int count = 0;
+	foreach_warped_region_point(baseRegion.lineIntervals, occmap.cols, disparity, [&](cv::Point pt){
+		occ_sum += occmap.at<unsigned char>(pt);
+		++count;
+	});
+
+	/*if(occ_region.total() > 0)
 		occ_avg = (float)occ_sum/occ_region.total();
 	else
-		occ_avg = 1; //TODO: find a better solution to this
+		occ_avg = 1; //TODO: find a better solution to this*/
+	occ_avg = count > 0 ? (float)occ_sum/count : 1;
 
 	//neighbors
 	neighbor_pot = getNeighborhoodsAverage(left_regions, baseRegion.neighbors, [&](const DisparityRegion& cregion){return (float) abs_pott((int)cregion.disparity, -disparity, pot_trunc);});
@@ -156,8 +164,10 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 
 void optimize(RegionContainer& base, RegionContainer& match, std::function<float(const disparity_hypothesis&)> base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
 {
+	std::cout << "base" << std::endl;
 	refreshOptimizationBaseValues(base, match, base_eval, delta);
 	refreshOptimizationBaseValues(match, base, base_eval, delta);
+	std::cout << "optimize" << std::endl;
 
 	std::random_device random_dev;
 	std::mt19937 random_gen(random_dev()); //FIXME each threads needs a own copy
