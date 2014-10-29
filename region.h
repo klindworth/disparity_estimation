@@ -122,6 +122,14 @@ void foreach_warped_region_point(const std::vector<RegionInterval> &pixel_idx, i
 		foreach_warped_interval_point(cinterval, width, d, func);
 }
 
+template<typename Iterator, typename lambda_type>
+void foreach_warped_region_point(Iterator it, Iterator end, int width, int d, lambda_type func)
+{
+	//for(const RegionInterval& cinterval : pixel_idx)
+	for(; it != end; ++it)
+		foreach_warped_interval_point(*it, width, d, func);
+}
+
 template<typename lambda_type>
 float getOtherRegionsAverage(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, lambda_type func)
 {
@@ -132,6 +140,25 @@ float getOtherRegionsAverage(const std::vector<DisparityRegion>& container, cons
 	}
 	return result;
 }
+
+/*template<typename cache_type, typename lambda_type>
+void gather_other_regions_values(std::vector<cache_type>& cache, const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, lambda_type func)
+{
+	std::size_t nsize = cdisp.size();
+	cache.resize(nsize);
+
+	for(std::size_t i = 0; i < nsize; ++i)
+		cache[i] = func(container[cdisp[i].index]);
+}
+
+inline void gather_other_regions_weights(std::vector<float>& weights, const std::vector<MutualRegion>& cdisp)
+{
+	std::size_t nsize = cdisp.size();
+	weights.resize(nsize);
+
+	for(std::size_t i = 0; i < nsize; ++i)
+		weights[i] = cdisp[i].percent;
+}*/
 
 template<typename lambda_type>
 float getNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, lambda_type func)
@@ -159,6 +186,23 @@ std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& bas
 	}
 	sum_weight = std::max(std::numeric_limits<float>::min(), sum_weight);
 	return std::make_pair(result/sum_weight, sum_weight);
+}
+
+inline float gather_neighbor_color_weights(std::vector<float>& weights, const cv::Vec3d& base_color, double color_trunc, const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors)
+{
+	std::size_t nsize = neighbors.size();
+	weights.resize(nsize);
+
+	float sum_weight = 0.0f;
+	for(std::size_t i = 0; i < nsize; ++i)
+	{
+		float diff = color_trunc - std::min(cv::norm(base_color - container[neighbors[i].first].average_color), color_trunc);
+
+		weights[i] = diff;
+		sum_weight += diff;
+	}
+
+	return std::max(std::numeric_limits<float>::min(), sum_weight);
 }
 
 cv::Mat getDisparityBySegments(const RegionContainer &container);

@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 template<typename T>
 inline T abs_pott(const T& v1, const T& v2, const T& trunc)
 {
-	return std::min(std::abs(v1 - v2), trunc);
+	return std::min((T)std::abs(v1 - v2), trunc);
 }
 
 class RegionContainer;
@@ -44,6 +44,8 @@ class StereoTask;
 
 namespace cv {
 	class Mat;
+	template<typename T>
+	class Mat_;
 	class FileStorage;
 	class FileNode;
 }
@@ -52,11 +54,28 @@ class disparity_hypothesis
 {
 public:
 	disparity_hypothesis() {}
-	disparity_hypothesis(cv::Mat& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion> &right_regions, int pot_trunc, int dispMin);
+	disparity_hypothesis(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion> &right_regions, short pot_trunc, int dispMin);
 	disparity_hypothesis abs_delta(const disparity_hypothesis& base) const;
 	disparity_hypothesis delta(const disparity_hypothesis& base) const;
 
 	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
+};
+
+class disparity_hypothesis_vector
+{
+	int dispRange, dispStart;
+	//temps
+	std::vector<std::pair<int, int> > occ_temp;
+	std::vector<short> neighbor_disparities;
+	std::vector<float> neighbor_color_weights;
+
+	//end results
+	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values;
+
+public:
+	disparity_hypothesis_vector(int dispRange);
+	void operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd);
+	disparity_hypothesis operator()(int disp) const;
 };
 
 class config_term

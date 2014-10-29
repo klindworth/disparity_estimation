@@ -40,35 +40,163 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <omp.h>
 
-disparity_hypothesis::disparity_hypothesis(cv::Mat& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, int pot_trunc, int dispMin)
+template<typename sum_type, typename T>
+void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv::Mat_<T>& src, const std::vector<RegionInterval>& region, int dx_min, int dx_max)
+{
+	assert(dx_max >= dx_min);
+	assert((int)result.size() == dx_max - dx_min + 1);
+
+	std::vector<RegionInterval> old_region = region;
+	move_x_region(old_region.begin(), old_region.end(), dx_min, src.cols);
+
+	sum_type sum = 0;
+	int count = 0;
+	intervals::foreach_region_point(old_region.begin(), old_region.end(), [&](cv::Point pt) {
+		sum += src(pt);
+		++count;
+	});
+	result[0] = std::make_pair(count, sum);
+
+	for(int dx = dx_min+1; dx < dx_max; ++dx)
+	{
+		for(int i = 0; i < region.size(); ++i)
+		{
+			//std::cout << "check" << std::endl;
+			RegionInterval hyp_interval = region[i];
+			hyp_interval.move(dx, src.cols);
+			RegionInterval old_interval = old_region[i];
+
+
+			//std::cout << "dx: " << dx << ", " << hyp_interval << ", " << old_interval << std::endl;
+
+			if(hyp_interval.upper != old_interval.upper)
+			{
+				sum += src(hyp_interval.y, hyp_interval.upper - 1);
+				++count;
+			}
+			if(hyp_interval.lower != old_interval.lower)
+			{
+				//if(std::abs(hyp_interval.lower - old_interval.lower) != 1)
+					//std::cout << hyp_interval.lower << " vs " << old_interval.lower << std::endl;
+				//else
+					//std::cout << "ok" << std::endl;
+
+				sum -= src(old_interval.y, old_interval.lower);
+				--count;
+			}
+
+			old_region[i] = hyp_interval;
+		}
+		result[dx - dx_min] = std::make_pair(count, sum);
+	}
+}
+
+disparity_hypothesis_vector::disparity_hypothesis_vector(int dispRange) : dispRange(dispRange), occ_temp(dispRange), occ_avg_values(dispRange), neighbor_pot_values(dispRange), neighbor_color_pot_values(dispRange), lr_pot_values(dispRange), cost_values(dispRange)
+{
+
+}
+
+void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd)
+{
+	this->dispStart = dispStart;
+	const int range = dispEnd - dispStart + 1;
+	assert(dispRange == range);
+	//occ_avg
+	std::vector<std::pair<int, int> > occ_temp(range);
+	segment_boxfilter(occ_temp, occmap, baseRegion.lineIntervals, dispStart, dispEnd);
+
+	for(int i = 0; i < range; ++i)
+		occ_avg_values[i] = (float)occ_temp[i].second / occ_temp[i].first;
+
+	//neighbor pot
+	gather_neighbor_values(neighbor_disparities, left_regions, baseRegion.neighbors, [](const DisparityRegion& cregion) {
+		return cregion.disparity;
+	});
+
+
+	float divider = 1.0f/neighbor_disparities.size();
+	for(short i = 0; i < range; ++i)
+	{
+		short pot_sum = 0;
+		short disp = i + dispStart;
+		for(short cdisp : neighbor_disparities)
+			pot_sum += abs_pott(cdisp, disp, pot_trunc);
+
+		neighbor_pot_values[i] = pot_sum * divider;
+	}
+
+	//color neighbor pot
+	float weight_sum = gather_neighbor_color_weights(neighbor_color_weights, baseRegion.average_color, 15.0f, left_regions, baseRegion.neighbors);
+	weight_sum = 1.0f/weight_sum;
+
+	for(short i = 0; i < range; ++i)
+	{
+		short pot_sum = 0;
+		short disp = i + dispStart;
+		//for(short cdisp : neighbor_disparities)
+		for(std::size_t j = 0; j < neighbor_disparities.size(); ++j)
+			pot_sum += abs_pott(neighbor_disparities[j], disp, pot_trunc) * neighbor_color_weights[j];
+
+		neighbor_color_pot_values[i] = pot_sum * weight_sum;
+	}
+
+	//lr_pot
+	for(short cdisp = dispStart; cdisp <= dispEnd; ++cdisp)
+		lr_pot_values[cdisp - dispStart] = getOtherRegionsAverage(right_regions, baseRegion.other_regions[cdisp-dispMin], [&](const DisparityRegion& cregion){return (float)abs_pott(cdisp, (short)-cregion.disparity, pot_trunc);});
+
+	for(int i = 0; i < range; ++i)
+		cost_values[i] = baseRegion.disparity_costs((dispStart+i)-baseRegion.disparity_offset);
+}
+
+disparity_hypothesis disparity_hypothesis_vector::operator()(int disp) const
+{
+	std::size_t idx = disp - dispStart;
+	assert(idx < dispRange);
+
+	disparity_hypothesis hyp;
+	hyp.occ_avg = occ_avg_values[idx];
+	hyp.neighbor_color_pot = neighbor_color_pot_values[idx];
+	hyp.neighbor_pot = neighbor_pot_values[idx];
+	hyp.lr_pot = lr_pot_values[idx];
+	hyp.costs = cost_values[idx];
+
+	return hyp;
+}
+
+
+
+float calculate_occ_avg(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short disparity)
 {
 	//occ
-	/*std::vector<RegionInterval> filtered = getFilteredPixelIdx(occmap.cols, baseRegion.lineIntervals, disparity);
-	cv::Mat occ_region = getRegionAsMat(occmap, filtered, disparity);
 	int occ_sum = 0;
-	for(int j = 0; j < occ_region.size[0]; ++j)
-		occ_sum += occ_region.at<unsigned char>(j);*/
+	int count = 0;
+	//foreach_warped_region_point(baseRegion.lineIntervals, occmap.cols, disparity, [&](cv::Point pt){
+	foreach_warped_region_point(baseRegion.lineIntervals.begin(), baseRegion.lineIntervals.end(), occmap.cols, disparity, [&](cv::Point pt){
+		occ_sum += occmap(pt);
+		++count;
+	});
+	return (count > 0 ? (float)occ_sum/count : 1.0f);
+}
 
-	int occ_sum = 0;
+disparity_hypothesis::disparity_hypothesis(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin)
+{
+	//occ
+	/*int occ_sum = 0;
 	int count = 0;
 	foreach_warped_region_point(baseRegion.lineIntervals, occmap.cols, disparity, [&](cv::Point pt){
 		occ_sum += occmap.at<unsigned char>(pt);
 		++count;
 	});
-
-	/*if(occ_region.total() > 0)
-		occ_avg = (float)occ_sum/occ_region.total();
-	else
-		occ_avg = 1; //TODO: find a better solution to this*/
-	occ_avg = count > 0 ? (float)occ_sum/count : 1;
+	occ_avg = count > 0 ? (float)occ_sum/count : 1;*/
+	occ_avg = calculate_occ_avg(occmap, baseRegion, disparity);
 
 	//neighbors
-	neighbor_pot = getNeighborhoodsAverage(left_regions, baseRegion.neighbors, [&](const DisparityRegion& cregion){return (float) abs_pott((int)cregion.disparity, -disparity, pot_trunc);});
+	neighbor_pot = getNeighborhoodsAverage(left_regions, baseRegion.neighbors, [&](const DisparityRegion& cregion){return (float) abs_pott(cregion.disparity, disparity, pot_trunc);});
 
-	neighbor_color_pot = getColorWeightedNeighborhoodsAverage(baseRegion.average_color, 15.0f, left_regions, baseRegion.neighbors, [&](const DisparityRegion& cregion){return (float) abs_pott((int)cregion.disparity, (int)disparity, pot_trunc);}).first;
+	neighbor_color_pot = getColorWeightedNeighborhoodsAverage(baseRegion.average_color, 15.0f, left_regions, baseRegion.neighbors, [&](const DisparityRegion& cregion){return (float) abs_pott((int)cregion.disparity, (int)disparity, (int)pot_trunc);}).first;
 
 	//lr
-	lr_pot = getOtherRegionsAverage(right_regions, baseRegion.other_regions[disparity-dispMin], [&](const DisparityRegion& cregion){return (float)abs_pott((int)disparity, -cregion.disparity, pot_trunc);});
+	lr_pot = getOtherRegionsAverage(right_regions, baseRegion.other_regions[disparity-dispMin], [&](const DisparityRegion& cregion){return (float)abs_pott((int)disparity, -cregion.disparity, (int)pot_trunc);});
 
 	//misc
 	assert(disparity-dispMin >= 0);
@@ -137,19 +265,47 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 	{
 		DisparityRegion& baseRegion = base.regions[i];
 		int thread_idx = omp_get_thread_num();
+		//int thread_idx = 0;
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
 		intervals::substractRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
+		disparity_hypothesis_vector hyp_vec(range.second - range.first + 1);
+		hyp_vec(occmaps[thread_idx], baseRegion, base.regions, match.regions, pot_trunc, dispMin, range.first, range.second);
 		for(short d = range.first; d <= range.second; ++d)
 		{
 			std::vector<MutualRegion>& cregionvec = baseRegion.other_regions[d-dispMin];
 			if(!cregionvec.empty())
 			{
-				disparity_hypothesis hyp(occmaps[thread_idx], baseRegion, d, base.regions, match.regions, pot_trunc, dispMin);
-				baseRegion.optimization_energy(d-dispMin) = stat_eval(hyp);
+				//std::cout << d << std::endl;
+				//disparity_hypothesis hyp(occmaps[thread_idx], baseRegion, d, base.regions, match.regions, pot_trunc, dispMin);
+
+				/*disparity_hypothesis hyp_cmp = hyp_vec(d);
+
+				if(std::abs(hyp.costs - hyp_cmp.costs) > 0.01)
+					std::cout << "cost fail" << std::endl;
+				if(std::abs(hyp.lr_pot - hyp_cmp.lr_pot) > 0.01)
+					std::cout << "lr_pot fail" << std::endl;
+				if(std::abs(hyp.neighbor_pot - hyp_cmp.neighbor_pot) > 0.01)
+				{
+					std::cout << "neighbor_pot fail" << std::endl;
+					std::cout << hyp.neighbor_pot << " vs " << hyp_cmp.neighbor_pot << std::endl;
+				}
+				if(std::abs(hyp.occ_avg - hyp_cmp.occ_avg) > 0.01)
+				{
+					std::cout << "occ fail" << std::endl;
+					std::cout << hyp.occ_avg << " vs " << hyp_cmp.occ_avg << std::endl;
+				}
+				if(std::abs(hyp.neighbor_color_pot - hyp_cmp.neighbor_color_pot) > 0.1)
+				{
+					std::cout << "color fail" << std::endl;
+					std::cout << hyp.neighbor_color_pot << " vs " << hyp_cmp.neighbor_color_pot << std::endl;
+				}*/
+
+				//baseRegion.optimization_energy(d-dispMin) = stat_eval(hyp);
+				baseRegion.optimization_energy(d-dispMin) = stat_eval(hyp_vec(d));
 			}
 		}
 

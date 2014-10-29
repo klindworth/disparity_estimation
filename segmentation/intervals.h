@@ -59,9 +59,14 @@ public:
 	}
 
 	//ensure that you delete the intervals with no or negative length
-	inline void move(int offset, int width) {
+	/*inline void move(int offset, int width) {
 		lower += std::max(std::min(offset, width), 0);
 		upper += std::max(std::min(offset, width), 0);
+	}*/
+
+	inline void move(int offset, int width) {
+		lower = std::min(width, std::max(0, lower + offset));
+		upper = std::min(width, std::max(0, upper + offset));
 	}
 
 	inline int length() const
