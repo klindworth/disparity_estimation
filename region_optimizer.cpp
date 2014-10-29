@@ -91,18 +91,29 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	}
 }
 
-disparity_hypothesis_vector::disparity_hypothesis_vector(int dispRange) : dispRange(dispRange), occ_temp(dispRange), occ_avg_values(dispRange), neighbor_pot_values(dispRange), neighbor_color_pot_values(dispRange), lr_pot_values(dispRange), cost_values(dispRange)
+/*disparity_hypothesis_vector::disparity_hypothesis_vector(int dispRange) : dispRange(dispRange), occ_temp(dispRange), occ_avg_values(dispRange), neighbor_pot_values(dispRange), neighbor_color_pot_values(dispRange), lr_pot_values(dispRange), cost_values(dispRange)
 {
 
-}
+}*/
 
 void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd)
 {
+	//resizing
+
+
+
 	this->dispStart = dispStart;
 	const int range = dispEnd - dispStart + 1;
-	assert(dispRange == range);
+
+	occ_temp.resize(range);
+	occ_avg_values.resize(range);
+	neighbor_pot_values.resize(range);
+	neighbor_color_pot_values.resize(range);
+	lr_pot_values.resize(range);
+	cost_values.resize(range);
+
+	//assert(dispRange == range);
 	//occ_avg
-	std::vector<std::pair<int, int> > occ_temp(range);
 	segment_boxfilter(occ_temp, occmap, baseRegion.lineIntervals, dispStart, dispEnd);
 
 	for(int i = 0; i < range; ++i)
@@ -258,7 +269,9 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 		occmaps[i] = occmap.clone();
 
 	std::size_t regions_count = base.regions.size();
-	#pragma omp parallel for
+
+	disparity_hypothesis_vector hyp_vec;
+	#pragma omp parallel for private(hyp_vec)
 	//for(DisparityRegion& baseRegion : base.regions)
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
@@ -271,7 +284,7 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
-		disparity_hypothesis_vector hyp_vec(range.second - range.first + 1);
+		//disparity_hypothesis_vector hyp_vec(range.second - range.first + 1);
 		hyp_vec(occmaps[thread_idx], baseRegion, base.regions, match.regions, pot_trunc, dispMin, range.first, range.second);
 		for(short d = range.first; d <= range.second; ++d)
 		{
@@ -283,21 +296,22 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 
 				disparity_hypothesis hyp_cmp = hyp_vec(d);
 
-				if(std::abs(hyp.costs - hyp_cmp.costs) > 0.01)
+				float eps = 0.000001f;
+				if(std::abs(hyp.costs - hyp_cmp.costs) > eps)
 					std::cout << "cost fail" << std::endl;
-				if(std::abs(hyp.lr_pot - hyp_cmp.lr_pot) > 0.01)
+				if(std::abs(hyp.lr_pot - hyp_cmp.lr_pot) > eps)
 					std::cout << "lr_pot fail" << std::endl;
-				if(std::abs(hyp.neighbor_pot - hyp_cmp.neighbor_pot) > 0.01)
+				if(std::abs(hyp.neighbor_pot - hyp_cmp.neighbor_pot) > eps)
 				{
 					std::cout << "neighbor_pot fail" << std::endl;
 					std::cout << hyp.neighbor_pot << " vs " << hyp_cmp.neighbor_pot << std::endl;
 				}
-				if(std::abs(hyp.occ_avg - hyp_cmp.occ_avg) > 0.01)
+				if(std::abs(hyp.occ_avg - hyp_cmp.occ_avg) > eps)
 				{
 					std::cout << "occ fail" << std::endl;
 					std::cout << hyp.occ_avg << " vs " << hyp_cmp.occ_avg << std::endl;
 				}
-				if(std::abs(hyp.neighbor_color_pot - hyp_cmp.neighbor_color_pot) > 0.1)
+				if(std::abs(hyp.neighbor_color_pot - hyp_cmp.neighbor_color_pot) > eps)
 				{
 					std::cout << "color fail" << std::endl;
 					std::cout << hyp.neighbor_color_pot << " vs " << hyp_cmp.neighbor_color_pot << std::endl;
