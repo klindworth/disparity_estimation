@@ -131,9 +131,8 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 
 	for(short i = 0; i < range; ++i)
 	{
-		short pot_sum = 0;
+		float pot_sum = 0;
 		short disp = i + dispStart;
-		//for(short cdisp : neighbor_disparities)
 		for(std::size_t j = 0; j < neighbor_disparities.size(); ++j)
 			pot_sum += abs_pott(neighbor_disparities[j], disp, pot_trunc) * neighbor_color_weights[j];
 
@@ -280,9 +279,9 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 			if(!cregionvec.empty())
 			{
 				//std::cout << d << std::endl;
-				//disparity_hypothesis hyp(occmaps[thread_idx], baseRegion, d, base.regions, match.regions, pot_trunc, dispMin);
+				/*disparity_hypothesis hyp(occmaps[thread_idx], baseRegion, d, base.regions, match.regions, pot_trunc, dispMin);
 
-				/*disparity_hypothesis hyp_cmp = hyp_vec(d);
+				disparity_hypothesis hyp_cmp = hyp_vec(d);
 
 				if(std::abs(hyp.costs - hyp_cmp.costs) > 0.01)
 					std::cout << "cost fail" << std::endl;
