@@ -49,14 +49,6 @@ int main(int argc, char *argv[])
 {
 	QApplication app(argc, argv);
 
-	auto base_eval = [](const disparity_hypothesis& prop_stat) {
-		return (float) prop_stat.costs * 4.0f + prop_stat.occ_avg;
-	};
-
-	auto base_eval2 = [](const disparity_hypothesis& prop_stat) {
-		return (float) prop_stat.costs * 4.0f + prop_stat.occ_avg + prop_stat.neighbor_color_pot*0.2f + prop_stat.lr_pot * 0.4f;
-	};
-
 	auto prop_eval = [](const DisparityRegion& baseRegion, const RegionContainer& base, const RegionContainer& match, int disparity) {
 
 		const std::vector<MutualRegion>& other_regions = baseRegion.other_regions[disparity-base.task.dispMin];
@@ -106,7 +98,7 @@ int main(int argc, char *argv[])
 	//std::string configfile = "tasks/config-debug.yml";
 	//std::string configfile = "tasks/config-rgbl-msslic.yml";
 	//std::string configfile = "tasks/config-kit-refine2.yml";
-	std::string configfile = "tasks/config-rgb-crslic.yml";
+	std::string configfile = "tasks/config-rgb-slic.yml";
 	//std::string configfile = "tasks/config-small-woopt.yml";
 
 	/*if(!task.valid())
@@ -132,13 +124,10 @@ int main(int argc, char *argv[])
 	InitialDisparityConfig config;
 	fs >> config;
 	config.optimizer.prop_eval = prop_eval;
-	config.optimizer.base_eval = base_eval;
 	config.optimizer.prop_eval2 = prop_eval2;
-	config.optimizer.base_eval2 = base_eval2;
 	/*config.optimizer.prop_eval_refine = prop_eval_refine;
 	config.optimizer.base_eval_refine = base_eval_refine;*/
 	config.optimizer.prop_eval_refine = prop_eval2;
-	config.optimizer.base_eval_refine = base_eval2;
 	//config.enable_regionsplit = true;
 	//config.optimization_rounds = 3;
 	disparity_hypothesis_weight_vector wv1;

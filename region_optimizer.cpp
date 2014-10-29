@@ -38,7 +38,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <functional>
 #include <random>
 
+#if defined(ENABLE_OPENMP)
 #include <omp.h>
+#else
+typedef int omp_int_t;
+inline omp_int_t omp_get_thread_num() { return 0;}
+inline omp_int_t omp_get_max_threads() { return 1;}
+#endif
 
 template<typename sum_type, typename T>
 void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv::Mat_<T>& src, const std::vector<RegionInterval>& region, int dx_min, int dx_max)
@@ -65,15 +71,16 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 			hyp_interval.move(dx, src.cols);
 			RegionInterval old_interval = old_region[i];
 
-			if(hyp_interval.upper != old_interval.upper)
-			{
-				sum += src(hyp_interval.y, hyp_interval.upper - 1);
-				++count;
-			}
 			if(hyp_interval.lower != old_interval.lower)
 			{
 				sum -= src(old_interval.y, old_interval.lower);
 				--count;
+			}
+			if(hyp_interval.upper != old_interval.upper)
+			{
+				//sum += src(hyp_interval.y, hyp_interval.upper - 1);
+				sum += src(old_interval.y, old_interval.upper);
+				++count;
 			}
 
 			old_region[i] = hyp_interval;
@@ -106,6 +113,10 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	gather_neighbor_values(neighbor_disparities, left_regions, baseRegion.neighbors, [](const DisparityRegion& cregion) {
 		return cregion.disparity;
 	});
+
+	/*gather_neighbor_values_idx(neighbor_disparities, left_regions, baseRegion.neighbors, [](std::size_t idx) {
+		return left_regions.
+	});*/
 
 
 	float divider = 1.0f/neighbor_disparities.size();
@@ -278,6 +289,16 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 
 void optimize(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
 {
+	/*std::size_t reg_left = base.regions.size();
+	base.disparity.resize(reg_left);
+	for(std::size_t i = 0; i < reg_left; ++i)
+		base.disparity[i] = base.regions[i].disparity;
+
+	std::size_t reg_right = match.regions.size();
+	match.disparity.resize(reg_right);
+	for(std::size_t i = 0; i < reg_right; ++i)
+		match.disparity[i] = match.regions[i].disparity;*/
+
 	//std::cout << "base" << std::endl;
 	refreshOptimizationBaseValues(base, match, base_eval, delta);
 	refreshOptimizationBaseValues(match, base, base_eval, delta);

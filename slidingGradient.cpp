@@ -57,11 +57,11 @@ cv::Mat gradientImage(cv::Mat base, cv::Mat base2, cv::Mat match, cv::Mat match2
 {
 	const int simd_size = 4;
 
-	cv::Mat match_shifted  = prepare_match(match, d);
-	cv::Mat match2_shifted = prepare_match(match2, d);
+	cv::Mat match_shifted  = prepare_match(match, d).clone();
+	cv::Mat match2_shifted = prepare_match(match2, d).clone();
 
-	cv::Mat base_cutted  = prepare_base(base, d);
-	cv::Mat base2_cutted = prepare_base(base2, d);
+	cv::Mat base_cutted  = prepare_base(base, d).clone();
+	cv::Mat base2_cutted = prepare_base(base2, d).clone();
 
 	assert(match2_shifted.rows == base2_cutted.rows && match2_shifted.cols == base2_cutted.cols);
 

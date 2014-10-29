@@ -97,10 +97,7 @@ public:
 
 	config_term base;
 
-	std::function<float(const disparity_hypothesis&)> base_eval;
 	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval;
-
-	std::function<float(const disparity_hypothesis&)> base_eval2;
 	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval2;
 
 	disparity_hypothesis_weight_vector base_eval_wv, base_eval_wv2;

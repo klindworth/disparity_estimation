@@ -73,31 +73,38 @@ std::pair<float,float> getOtherRegionsAverageCond(const std::vector<DisparityReg
 	return std::make_pair(result/cond_true, cond_true);
 }
 
-void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, DisparityRegion& region, const short dispMin, const short dispMax)
+void labelLRCheck(const cv::Mat_<int>& labelsMatch, DisparityRegion& region, const short dispMin, const short dispMax)
 {
 	const int dispRange = dispMax-dispMin + 1;
 	region.other_regions = std::vector<std::vector<MutualRegion>>(dispRange);
+	//TODO segment boxfilter?
 	for(int i = 0; i < dispRange; ++i)
 	{
 		int cdisparity = i + dispMin;
 		sparse_histogramm hist;
-		std::vector<RegionInterval> filteredIntervals = getFilteredPixelIdx(labelsBase.cols, region.lineIntervals, cdisparity);
+		/*std::vector<RegionInterval> filteredIntervals = getFilteredPixelIdx(labelsMatch.cols, region.lineIntervals, cdisparity);
 		for(const RegionInterval& cinterval : filteredIntervals)
 		{
 			for(int x = cinterval.lower; x < cinterval.upper; ++x)
 				hist.increment(labelsMatch.at<int>(cinterval.y, x + cdisparity));
-		}
+		}*/
+
+		foreach_warped_region_point(region.lineIntervals.begin(), region.lineIntervals.end(), labelsMatch.cols, cdisparity, [&](cv::Point pt)
+		{
+			hist.increment(labelsMatch(pt));
+		});
 
 		region.other_regions[i].reserve(hist.size());
+		double normalizer = 1.0/hist.total();
 		for(auto it = hist.begin(); it != hist.end(); ++it)
 		{
-			double mutual_percent = (double)it->second / hist.total();
+			double mutual_percent = (double)it->second * normalizer;
 			region.other_regions[i].push_back(MutualRegion(it->first, mutual_percent));
 		}
 	}
 }
 
-void labelLRCheck(RegionContainer& base, RegionContainer& match, int delta)
+void labelLRCheck(RegionContainer& base, const RegionContainer& match, int delta)
 {
 	const std::size_t regions_count = base.regions.size();
 	#pragma omp parallel for default(none) shared(base, match, delta)
@@ -108,7 +115,7 @@ void labelLRCheck(RegionContainer& base, RegionContainer& match, int delta)
 			range = std::make_pair(base.task.dispMin, base.task.dispMax);
 		else
 			range = getSubrange(base.regions[j].base_disparity, delta, base.task);
-		labelLRCheck(base.labels, match.labels, base.regions[j], range.first, range.second);
+		labelLRCheck(match.labels, base.regions[j], range.first, range.second);
 	}
 }
 

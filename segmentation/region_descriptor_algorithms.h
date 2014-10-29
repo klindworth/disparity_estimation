@@ -299,6 +299,16 @@ void gather_neighbor_values(std::vector<cache_type>& cache, const std::vector<re
 		cache[i] = gather_caching_value(container[neighbors[i].first]);
 }
 
+template<typename cache_type, typename lambda_type>
+void gather_neighbor_values_idx(std::vector<cache_type>& cache, const neighbor_vector& neighbors, lambda_type gather_caching_value)
+{
+	std::size_t nsize = neighbors.size();
+	cache.resize(nsize);
+
+	for(std::size_t i = 0; i < nsize; ++i)
+		cache[i] = gather_caching_value(neighbors[i].first);
+}
+
 template<typename T, typename reg_type, typename lambda_type>
 T getWeightedNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, lambda_type func)
 {
