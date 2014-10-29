@@ -76,11 +76,11 @@ class disparity_hypothesis_vector
 
 	//end results
 	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values;
+	std::vector<float> end_result;
 
 public:
-	//disparity_hypothesis_vector(int dispRange);
-	void operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd);
-	disparity_hypothesis operator()(int disp) const;
+	void operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd, const disparity_hypothesis_weight_vector& stat_eval);
+	float operator()(int disp) const;
 };
 
 class config_term
