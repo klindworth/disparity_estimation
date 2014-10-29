@@ -117,7 +117,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	segment_boxfilter(occ_temp, occmap, baseRegion.lineIntervals, dispStart, dispEnd);
 
 	for(int i = 0; i < range; ++i)
-		occ_avg_values[i] = (float)occ_temp[i].second / occ_temp[i].first;
+		occ_avg_values[i] = (occ_temp[i].first != 0) ? (float)occ_temp[i].second / occ_temp[i].first : 1;
 
 	//neighbor pot
 	gather_neighbor_values(neighbor_disparities, left_regions, baseRegion.neighbors, [](const DisparityRegion& cregion) {
