@@ -61,13 +61,9 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	{
 		for(int i = 0; i < region.size(); ++i)
 		{
-			//std::cout << "check" << std::endl;
 			RegionInterval hyp_interval = region[i];
 			hyp_interval.move(dx, src.cols);
 			RegionInterval old_interval = old_region[i];
-
-
-			//std::cout << "dx: " << dx << ", " << hyp_interval << ", " << old_interval << std::endl;
 
 			if(hyp_interval.upper != old_interval.upper)
 			{
@@ -76,11 +72,6 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 			}
 			if(hyp_interval.lower != old_interval.lower)
 			{
-				//if(std::abs(hyp_interval.lower - old_interval.lower) != 1)
-					//std::cout << hyp_interval.lower << " vs " << old_interval.lower << std::endl;
-				//else
-					//std::cout << "ok" << std::endl;
-
 				sum -= src(old_interval.y, old_interval.lower);
 				--count;
 			}
@@ -91,17 +82,8 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	}
 }
 
-/*disparity_hypothesis_vector::disparity_hypothesis_vector(int dispRange) : dispRange(dispRange), occ_temp(dispRange), occ_avg_values(dispRange), neighbor_pot_values(dispRange), neighbor_color_pot_values(dispRange), lr_pot_values(dispRange), cost_values(dispRange)
-{
-
-}*/
-
 void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd)
 {
-	//resizing
-
-
-
 	this->dispStart = dispStart;
 	const int range = dispEnd - dispStart + 1;
 
@@ -255,7 +237,7 @@ std::size_t min_idx(const cv::Mat_<T>& src, std::size_t preferred = 0)
 	return idx;
 }
 
-void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match, std::function<float(const disparity_hypothesis&)> stat_eval, int delta)
+void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
 {
 	cv::Mat disp = getDisparityBySegments(base);
 	cv::Mat occmap = occlusionStat<short>(disp, 1.0);
@@ -284,7 +266,6 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
-		//disparity_hypothesis_vector hyp_vec(range.second - range.first + 1);
 		hyp_vec(occmaps[thread_idx], baseRegion, base.regions, match.regions, pot_trunc, dispMin, range.first, range.second);
 		for(short d = range.first; d <= range.second; ++d)
 		{
@@ -292,9 +273,9 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 			if(!cregionvec.empty())
 			{
 				//std::cout << d << std::endl;
-				/*disparity_hypothesis hyp(occmaps[thread_idx], baseRegion, d, base.regions, match.regions, pot_trunc, dispMin);
+				//disparity_hypothesis hyp(occmaps[thread_idx], baseRegion, d, base.regions, match.regions, pot_trunc, dispMin);
 
-				disparity_hypothesis hyp_cmp = hyp_vec(d);
+				/*disparity_hypothesis hyp_cmp = hyp_vec(d);
 
 				float eps = 0.000001f;
 				if(std::abs(hyp.costs - hyp_cmp.costs) > eps)
@@ -318,7 +299,11 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 				}*/
 
 				//baseRegion.optimization_energy(d-dispMin) = stat_eval(hyp);
-				baseRegion.optimization_energy(d-dispMin) = stat_eval(hyp_vec(d));
+				//baseRegion.optimization_energy(d-dispMin) = stat_eval(hyp_vec(d));
+
+				disparity_hypothesis hyp = hyp_vec(d);
+				float result = stat_eval.costs * hyp.costs + stat_eval.lr_pot * hyp.lr_pot + stat_eval.neighbor_color_pot * hyp.neighbor_color_pot + stat_eval.neighbor_pot * hyp.neighbor_pot + stat_eval.occ_avg * hyp.occ_avg;
+				baseRegion.optimization_energy(d-dispMin) = result;
 			}
 		}
 
@@ -331,7 +316,7 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 	}
 }
 
-void optimize(RegionContainer& base, RegionContainer& match, std::function<float(const disparity_hypothesis&)> base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
+void optimize(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
 {
 	std::cout << "base" << std::endl;
 	refreshOptimizationBaseValues(base, match, base_eval, delta);
@@ -389,23 +374,23 @@ void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& 
 		for(int i = 0; i < config.rounds; ++i)
 		{
 			std::cout << "optimization round" << std::endl;
-			optimize(left, right, config.base_eval, config.prop_eval, refinement);
+			optimize(left, right, config.base_eval_wv, config.prop_eval, refinement);
 			refreshWarpedIdx(left);
-			optimize(right, left, config.base_eval, config.prop_eval, refinement);
+			optimize(right, left, config.base_eval_wv, config.prop_eval, refinement);
 			refreshWarpedIdx(right);
 		}
 		for(int i = 0; i < config.rounds; ++i)
 		{
 			std::cout << "optimization round2" << std::endl;
-			optimize(left, right, config.base_eval2, config.prop_eval2, refinement);
+			optimize(left, right, config.base_eval_wv2, config.prop_eval2, refinement);
 			refreshWarpedIdx(left);
-			optimize(right, left, config.base_eval2, config.prop_eval2, refinement);
+			optimize(right, left, config.base_eval_wv2, config.prop_eval2, refinement);
 			refreshWarpedIdx(right);
 		}
 		if(config.rounds == 0)
 		{
-			refreshOptimizationBaseValues(left, right, config.base_eval, refinement);
-			refreshOptimizationBaseValues(right, left, config.base_eval, refinement);
+			refreshOptimizationBaseValues(left, right, config.base_eval_wv, refinement);
+			refreshOptimizationBaseValues(right, left, config.base_eval_wv, refinement);
 		}
 	}
 	else
@@ -413,9 +398,9 @@ void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& 
 		for(int i = 0; i < config.rounds; ++i)
 		{
 			std::cout << "optimization round-refine" << std::endl;
-			optimize(left, right, config.base_eval, config.prop_eval_refine, refinement);
+			optimize(left, right, config.base_eval_wv, config.prop_eval_refine, refinement);
 			refreshWarpedIdx(left);
-			optimize(right, left, config.base_eval, config.prop_eval_refine, refinement);
+			optimize(right, left, config.base_eval_wv, config.prop_eval_refine, refinement);
 			refreshWarpedIdx(right);
 		}
 	}
