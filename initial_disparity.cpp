@@ -51,6 +51,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
 #include <memory>
 
+#include <omp.h>
+
 typedef std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<DisparityRegion>&, const std::vector<RegionInterval>&, int)> disparity_region_func;
 
 //for IT metrics (region wise)
@@ -63,8 +65,9 @@ void calculate_region_disparity_regionwise(StereoSingleTask& task, const cv::Mat
 		return lhs.m_size < rhs.m_size;
 	});
 
-	cost_type cost_agg(base, match, it->size() * 10);
+	cost_type cost_agg(base, match, it->size() * 3);
 	typename cost_type::thread_type cost_thread;
+
 	#pragma omp parallel for default(none) shared(task, regions, base, match, occ, delta, cost_agg) private(cost_thread)
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
@@ -308,6 +311,7 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 		{
 			std::cout << i << std::endl;
 			disparity_calculator(task.forward,  task.algoLeft,  task.algoRight, left.regions, occ_left, refinement);
+			std::cout << i << ",back" << std::endl;
 			disparity_calculator(task.backward, task.algoRight, task.algoLeft, right.regions, occ_right, refinement);
 
 			std::cout << "dilateLR" << std::endl;

@@ -25,8 +25,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "segmentation.h"
 
-#include "initial_disparity.h"
-#include "region.h"
 #include "intervals.h"
 #include "intervals_algorithms.h"
 
@@ -50,6 +48,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "segmentation_algorithms.h"
+
+#include "region.h"
 
 cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Mat_<int>& labels, int labelcount)
 {

@@ -329,13 +329,14 @@ void RegionWindow::on_pbOptimize_clicked()
 		return rating;
 	};
 
-	std::cout << "optimization" << std::endl;
+	//FIXME
+	/*std::cout << "optimization" << std::endl;
 	optimize(*m_left, *m_right, base_eval, prop_eval,0);
 	generateRegionInformation(*m_left, *m_right);
 	optimize(*m_right, *m_left, base_eval, prop_eval,0);
 	generateRegionInformation(*m_left, *m_right);
 	std::cout << "finished" << std::endl;
-	setData(m_left, m_right);
+	setData(m_left, m_right);*/
 }
 
 void RegionWindow::on_pbRefreshBase_clicked()
@@ -350,7 +351,8 @@ void RegionWindow::on_pbRefreshBase_clicked()
 		return (float) prop_stat.costs * absCost + prop_stat.occ_avg * occ + prop_stat.neighbor_pot * neigh + prop_stat.lr_pot * lr_pot + prop_stat.neighbor_color_pot * color_neigh;
 	};
 
-	refreshOptimizationBaseValues(*m_left, *m_right, base_eval, 0);
+	//FIXME
+	//refreshOptimizationBaseValues(*m_left, *m_right, base_eval, 0);
 }
 
 void resetContainerDisparities(RegionContainer& container)

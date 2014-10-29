@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 template<typename T>
 inline T abs_pott(const T& v1, const T& v2, const T& trunc)
 {
-	return std::min(std::abs(v1 - v2), trunc);
+	return std::min((T)std::abs(v1 - v2), trunc);
 }
 
 class RegionContainer;
@@ -44,6 +44,8 @@ class StereoTask;
 
 namespace cv {
 	class Mat;
+	template<typename T>
+	class Mat_;
 	class FileStorage;
 	class FileNode;
 }
@@ -52,11 +54,33 @@ class disparity_hypothesis
 {
 public:
 	disparity_hypothesis() {}
-	disparity_hypothesis(cv::Mat& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion> &right_regions, int pot_trunc, int dispMin);
+	disparity_hypothesis(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion> &right_regions, short pot_trunc, int dispMin);
 	disparity_hypothesis abs_delta(const disparity_hypothesis& base) const;
 	disparity_hypothesis delta(const disparity_hypothesis& base) const;
 
 	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
+};
+
+struct disparity_hypothesis_weight_vector
+{
+	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
+};
+
+class disparity_hypothesis_vector
+{
+	int dispRange, dispStart;
+	//temps
+	std::vector<std::pair<int, int> > occ_temp;
+	std::vector<short> neighbor_disparities;
+	std::vector<float> neighbor_color_weights;
+
+	//end results
+	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values;
+	std::vector<float> end_result;
+
+public:
+	void operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd, const disparity_hypothesis_weight_vector& stat_eval);
+	float operator()(int disp) const;
 };
 
 class config_term
@@ -79,14 +103,16 @@ public:
 	std::function<float(const disparity_hypothesis&)> base_eval2;
 	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval2;
 
+	disparity_hypothesis_weight_vector base_eval_wv, base_eval_wv2;
+
 	std::function<float(const disparity_hypothesis&)> base_eval_refine;
 	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval_refine;
 
 };
 
 std::vector<std::size_t> regionSplitUp(RegionContainer& base, RegionContainer& match);
-void optimize(RegionContainer& base, RegionContainer& match, std::function<float(const disparity_hypothesis&)> stat_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
-void refreshOptimizationBaseValues(RegionContainer& left, RegionContainer& match, std::function<float(const disparity_hypothesis&)> base_eval, int delta);
+void optimize(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
+void refreshOptimizationBaseValues(RegionContainer& left, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, int delta);
 void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement= 0);
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const optimizer_settings& config);

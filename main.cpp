@@ -146,6 +146,21 @@ int main(int argc, char *argv[])
 	config.optimizer.base_eval_refine = base_eval2;
 	//config.enable_regionsplit = true;
 	//config.optimization_rounds = 3;
+	disparity_hypothesis_weight_vector wv1;
+	wv1.costs = 4.0f;
+	wv1.occ_avg = 1.0f;
+	wv1.neighbor_pot = 0;
+	wv1.neighbor_color_pot = 0;
+	wv1.lr_pot = 0;
+	config.optimizer.base_eval_wv = wv1;
+
+	disparity_hypothesis_weight_vector wv2;
+	wv2.costs = 4.0f;
+	wv2.occ_avg = 1.0f;
+	wv2.neighbor_pot = 0;
+	wv2.neighbor_color_pot = 0.2f;
+	wv2.lr_pot = 0.4f;
+	config.optimizer.base_eval_wv2 = wv2;
 	config.verbose = true;
 
 	RefinementConfig refconfig;

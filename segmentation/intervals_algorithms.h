@@ -134,24 +134,40 @@ inline void setRegionValue(cv::Mat& dst, const std::vector<RegionInterval>& pixe
 		memset(dst.ptr<unsigned char>(interval.y, interval.lower), value, interval.length());
 }
 
+template<typename lambda_type>
+inline void foreach_interval_point(const RegionInterval& interval, lambda_type func)
+{
+	for(int x = interval.lower; x < interval.upper; ++x)
+		func(cv::Point(x, interval.y));
+}
+
+template<typename Iterator, typename lambda_type>
+inline void foreach_region_point(Iterator it, Iterator end, lambda_type func)
+{
+	for(; it != end; ++it)
+		foreach_interval_point(*it, func);
+}
+
 template<typename dst_type>
 void addRegionValue(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx, dst_type change)
 {
-	for(const RegionInterval& cinterval : pixel_idx)
-	{
-		for(int x = cinterval.lower; x < cinterval.upper; ++x)
-			dst.at<dst_type>(cinterval.y, x) += change;
-	}
+	foreach_region_point(pixel_idx.begin(), pixel_idx.end(), [=,&dst](cv::Point pt){
+		dst.at<dst_type>(pt) += change;
+	});
 }
 
 template<typename dst_type>
 void substractRegionValue(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx, dst_type change)
 {
-	for(const RegionInterval& cinterval : pixel_idx)
+	/*for(const RegionInterval& cinterval : pixel_idx)
 	{
 		for(int x = cinterval.lower; x < cinterval.upper; ++x)
 			dst.at<dst_type>(cinterval.y, x) -= change;
-	}
+	}*/
+
+	foreach_region_point(pixel_idx.begin(), pixel_idx.end(), [=,&dst](cv::Point pt){
+		dst.at<dst_type>(pt) -= change;
+	});
 }
 
 

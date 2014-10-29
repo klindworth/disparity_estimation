@@ -52,20 +52,10 @@ std::vector<RegionInterval> getFilteredPixelIdx(int width, const std::vector<Reg
 		int lower = std::max(cinterval.lower+d, 0)-d;
 		int upper = std::min(cinterval.upper+d, width)-d;
 		if(upper - lower> 0)
-			filtered.push_back(RegionInterval(cinterval.y, lower, upper));
+			filtered.emplace_back(cinterval.y, lower, upper);
 	}
 
 	return filtered;
-}
-
-float getOtherRegionsAverage(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, std::function<float(const DisparityRegion&)> func)
-{
-	float result = 0.0f;
-	for(const MutualRegion& cval : cdisp)
-	{
-		result += cval.percent * func(container[cval.index]);
-	}
-	return result;
 }
 
 std::pair<float,float> getOtherRegionsAverageCond(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, std::function<float(const DisparityRegion&)> func, std::function<float(const DisparityRegion&)> cond_eval)
@@ -81,31 +71,6 @@ std::pair<float,float> getOtherRegionsAverageCond(const std::vector<DisparityReg
 		}
 	}
 	return std::make_pair(result/cond_true, cond_true);
-}
-
-float getNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func)
-{
-	return getNeighborhoodsAverage(container, neighbors, 0.0f, func);
-}
-
-float getWeightedNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func)
-{
-	return getWeightedNeighborhoodsAverage(container, neighbors, 0.0f, func);
-}
-
-std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& base_color, double color_trunc, const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, std::function<float(const DisparityRegion&)> func)
-{
-	float result = 0.0f;
-	float sum_weight = 0.0f;
-	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
-	{
-		float diff = color_trunc - std::min(cv::norm(base_color - container[cpair.first].average_color), color_trunc);
-
-		result += diff*func(container[cpair.first]);
-		sum_weight += diff;
-	}
-	sum_weight = std::max(std::numeric_limits<float>::min(), sum_weight);
-	return std::make_pair(result/sum_weight, sum_weight);
 }
 
 void labelLRCheck(const cv::Mat& labelsBase, const cv::Mat& labelsMatch, DisparityRegion& region, const short dispMin, const short dispMax)

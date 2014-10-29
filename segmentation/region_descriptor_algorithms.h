@@ -27,6 +27,13 @@ cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, s
 	return result;
 }*/
 
+template<typename Iterator>
+inline void move_x_region(Iterator it, Iterator end, int offset, int width)
+{
+	for(; it != end; ++it)
+		it->move(offset, width);
+}
+
 template<typename T, typename reg_type, typename lambda_type>
 cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, lambda_type func)
 {
@@ -295,8 +302,18 @@ T getNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor
 	return result/(int)neighbors.size();
 }
 
-template<typename T, typename reg_type>
-T getWeightedNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, std::function<T(const reg_type&)> func)
+template<typename cache_type, typename reg_type, typename lambda_type>
+void gather_neighbor_values(std::vector<cache_type>& cache, const std::vector<reg_type>& container, const neighbor_vector& neighbors, lambda_type gather_caching_value)
+{
+	std::size_t nsize = neighbors.size();
+	cache.resize(nsize);
+
+	for(std::size_t i = 0; i < nsize; ++i)
+		cache[i] = gather_caching_value(container[neighbors[i].first]);
+}
+
+template<typename T, typename reg_type, typename lambda_type>
+T getWeightedNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, lambda_type func)
 {
 	T result = initVal;
 	float sum_weight = 0.0f;

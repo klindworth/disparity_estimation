@@ -111,6 +111,18 @@ bool mssuperpixel_segmentation::refinementPossible() {
 	return true;
 }
 
+template<typename T>
+void defuse(std::vector<T>& fused_regions, cv::Mat_<int>& newlabels, int newsegcount, const fusion_work_data& data)
+{
+	//TODO: mistake, narrows choice of T
+	auto transfer_region = [](const T& src, T& dst) {
+		dst.disparity = src.disparity;
+		dst.base_disparity = dst.disparity;
+	};
+
+	defuse(fused_regions, newlabels, newsegcount, data, transfer_region);
+}
+
 void mssuperpixel_segmentation::refine(RegionContainer& container) {
 	//defuse(container.regions, superpixel, regions_count_superpixel, *fusion_data);
 	//container.labels = superpixel;
