@@ -189,9 +189,5 @@ cv::Mat_<dst_t> getValueScaledImage(const cv::Mat& image)
 
 cv::Mat cutImageBorder(const cv::Mat &input, int windowsize);
 cv::Mat lowerDimensionality(const cv::Mat &input);
-cv::Mat lab_to_bgr(const cv::Mat& src);
-cv::Mat bgr_to_lab(const cv::Mat& src);
-
-
 
 #endif // GENERICFUNCTIONS_H

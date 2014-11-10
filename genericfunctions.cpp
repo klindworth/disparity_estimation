@@ -98,27 +98,3 @@ cv::Mat fileToMat(const std::string& filename)
 	return output;
 }
 
-cv::Mat lab_to_bgr(const cv::Mat& src)
-{
-	cv::Mat temp = src;
-	if(src.type() == CV_64FC3)
-		src.convertTo(temp, CV_32FC3);
-	cv::Mat bgr_float_image;
-	cv::cvtColor(temp, bgr_float_image, CV_Lab2BGR);
-	cv::Mat result;
-	bgr_float_image.convertTo(result, CV_8UC3, 255);
-
-	return result;
-}
-
-cv::Mat bgr_to_lab(const cv::Mat& src)
-{
-	cv::Mat bgr_float_image;
-	src.convertTo(bgr_float_image, CV_32FC3, 1/255.0);
-
-	cv::Mat result;
-	cv::cvtColor(bgr_float_image,result, CV_BGR2Lab);
-	//showMatTable(result);
-
-	return result;
-}

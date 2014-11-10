@@ -63,4 +63,7 @@ void calculate_average_color(RegionDescriptor& region, const cv::Mat& lab_image)
 std::vector<RegionInterval> getDilatedRegion(RegionDescriptor &cregion, unsigned int dilate_grow, cv::Mat base);
 void setMask(const cv::Mat &mask, std::vector<RegionInterval>& pixel_idx, int py, int px, int height, int width);
 
+cv::Mat lab_to_bgr(const cv::Mat& src);
+cv::Mat bgr_to_lab(const cv::Mat& src);
+
 #endif // REGION_DESCRIPTOR_H

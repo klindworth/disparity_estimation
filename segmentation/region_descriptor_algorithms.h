@@ -1,7 +1,7 @@
 #ifndef REGION_DESCRIPTOR_ALGORITHMS_H
 #define REGION_DESCRIPTOR_ALGORITHMS_H
 
-#include "genericfunctions.h"
+//include "genericfunctions.h"
 #include "region_descriptor.h"
 #include "intervals_algorithms.h"
 #include "segmentation_image.h"
@@ -274,11 +274,11 @@ cv::Mat_<unsigned char> regionWiseImage(cv::Size size, std::vector<reg_type>& re
 	return getValueScaledImage<T, unsigned char>(regionWiseSet<T, reg_type>(size, regions, func));
 }*/
 
-template<typename T, typename reg_type, typename lambda_type>
+/*template<typename T, typename reg_type, typename lambda_type>
 cv::Mat_<unsigned char> regionWiseImage(cv::Size size, std::vector<reg_type>& regions, lambda_type func)
 {
 	return getValueScaledImage<T, unsigned char>(regionWiseSet<T, reg_type>(size, regions, func));
-}
+}*/
 
 /*template<typename T, typename reg_type>
 T getNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, std::function<T(const reg_type&)> func)
