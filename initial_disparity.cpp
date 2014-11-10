@@ -439,15 +439,15 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 	std::shared_ptr<RegionContainer> right = std::make_shared<RegionContainer>();
 
 	//SAD
-	typedef slidingSAD refinement_metric;
+	/*typedef slidingSAD refinement_metric;
 	auto disparity_function = calculate_region_sad;
 	task.algoLeft = task.left;
-	task.algoRight = task.right;
+	task.algoRight = task.right;*/
 	//IT
-	/* typedef slidingEntropyFlex<it_metric, quantizer> refinement_metric;
+	typedef slidingEntropyFlex<it_metric, quantizer> refinement_metric;
 	auto disparity_function = calculate_region_disparity_regionwise<disparity_metric>;
 	task.algoLeft  = quantizeImage(task.leftGray, quantizer);
-	task.algoRight = quantizeImage(task.rightGray, quantizer);*/
+	task.algoRight = quantizeImage(task.rightGray, quantizer);
 
 	segment_based_disparity_internal(task, left, right, config, algorithm, disparity_function);
 
