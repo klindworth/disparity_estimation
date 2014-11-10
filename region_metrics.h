@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define REGION_METRICS_H
 
 #include "slidingEntropy.h"
-#include "intervals.h"
+#include <segmentation/intervals.h>
 #include "costmap_creators.h"
 
 

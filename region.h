@@ -32,8 +32,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <array>
 #include "stereotask.h"
 #include "costmap_utils.h"
-#include "region_descriptor.h"
-#include "segmentation.h"
+#include <segmentation/region_descriptor.h>
+#include <segmentation/segmentation.h>
 
 class RegionInterval;
 

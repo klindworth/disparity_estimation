@@ -34,16 +34,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "sparse_counter.h"
 #include "costmap_creators.h"
 #include "disparity_utils.h"
-#include "intervals.h"
-#include "intervals_algorithms.h"
+#include <segmentation/intervals.h>
+#include <segmentation/intervals_algorithms.h>
 #include "region_optimizer.h"
 #include "configrun.h"
 #include "misc.h"
-#include "segmentation.h"
-#include "region_descriptor.h"
+#include <segmentation/segmentation.h>
+#include <segmentation/region_descriptor.h>
 #include "region_metrics.h"
 #include "refinement.h"
-#include "region_descriptor_algorithms.h"
+#include <segmentation/region_descriptor_algorithms.h>
 
 #include <iterator>
 #include <cstdlib>

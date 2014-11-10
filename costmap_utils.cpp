@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "genericfunctions.h"
 
-#include "intervals_algorithms.h"
+#include <segmentation/intervals_algorithms.h>
 #include "region.h"
 
 #include <numeric>

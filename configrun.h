@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <functional>
 
 #include "region_optimizer.h"
-#include "segmentation.h"
+#include <segmentation/segmentation.h>
 
 class StereoTask;
 class DisparityRegion;

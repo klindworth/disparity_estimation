@@ -28,8 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region.h"
 #include "initial_disparity.h"
 #include "debugmatstore.h"
-#include "intervals.h"
-#include "intervals_algorithms.h"
+#include <segmentation/intervals.h>
+#include <segmentation/intervals_algorithms.h>
 #include "disparity_utils.h"
 #include "misc.h"
 

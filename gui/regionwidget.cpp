@@ -29,11 +29,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "disparity_utils.h"
 #include "region.h"
-#include "intervals.h"
+#include <segmentation/intervals.h>
 
 #include "region_optimizer.h"
 #include "configrun.h"
-#include "intervals_algorithms.h"
+#include <segmentation/intervals_algorithms.h>
 #include "initial_disparity.h"
 
 #include <opencv2/highgui/highgui.hpp>

@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "debugmatstore.h"
 #include "disparity_utils.h"
 #include "taskanalysis.h"
-#include "segmentation.h"
+#include <segmentation/segmentation.h>
 #include "it_metrics.h"
 #include "refinement.h"
 #include <opencv2/highgui/highgui.hpp>

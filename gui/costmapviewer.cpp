@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QString>
 
 #include <iostream>
-#include "intervals.h"
+#include <segmentation/intervals.h>
 
 CostmapViewer::CostmapViewer(QWidget *parent) :
 	QWidget(parent),

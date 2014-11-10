@@ -30,11 +30,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iterator>
 #include <cstdlib>
 
-#include "intervals.h"
-#include "intervals_algorithms.h"
+#include <segmentation/intervals.h>
+#include <segmentation/intervals_algorithms.h>
 #include "misc.h"
 #include "disparity_utils.h"
-#include "region_descriptor_algorithms.h"
+#include <segmentation/region_descriptor_algorithms.h>
 
 DisparityRegion::DisparityRegion()
 {

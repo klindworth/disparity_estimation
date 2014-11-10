@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region.h"
 #include "regionwidget.h"
 #include <QTableWidgetItem>
-#include "intervals.h"
+#include <segmentation/intervals.h>
 #include "debugmatstore.h"
 #include "region_optimizer.h"
 #include "initial_disparity.h"

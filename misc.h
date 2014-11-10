@@ -27,10 +27,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define MISC_H
 
 #include "genericfunctions.h"
-#include "region_descriptor.h"
-#include "region_descriptor_algorithms.h"
+#include <segmentation/region_descriptor.h>
+#include <segmentation/region_descriptor_algorithms.h>
 
-#include "segmentation_image.h"
+#include <segmentation/segmentation_image.h>
 
 template<typename T, typename reg_type, typename lambda_type>
 cv::Mat regionWiseImage(const segmentation_image<reg_type>& image, lambda_type func)

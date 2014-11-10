@@ -82,7 +82,7 @@ qt4_wrap_cpp(HEADERS_MOC ${QTHEADERS})
 qt4_wrap_ui(FORMS_HEADERS ${FORMS})
 qt4_add_resources(RESOURCES_RCC ${RESOURCES})
 
-include_directories(. gui segmentation ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(. gui ${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(${QT_DEFINITIONS})
 
 add_executable(${PROJECT_NAME}
