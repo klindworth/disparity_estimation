@@ -29,11 +29,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 #include <memory>
 #include "region_descriptor_algorithms.h"
+#include "segmentation_refinement.h"
 
 class RegionContainer;
 class RegionDescriptor;
 class fusion_work_data;
-class DisparityRegion;
 
 class segmentation_settings
 {
@@ -74,6 +74,14 @@ public:
 		generate_neighborhood(result->labels, result->regions);
 
 		return result;
+	}
+
+	template<typename region_type>
+	void std_refinement(region_type& container)
+	{
+		container.labels = segmentation_iteration(container.regions, container.task.base.size());
+
+		generate_neighborhood(container.labels, container.regions);
 	}
 
 	/**

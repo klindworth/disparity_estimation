@@ -49,8 +49,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "segmentation_algorithms.h"
 
-#include "region.h"
-
 cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Mat_<int>& labels, int labelcount)
 {
 	std::vector<cv::Vec3b> colors;

@@ -1,6 +1,7 @@
 #include "segmentation_refinement.h"
 
-#include "region.h"
+#include "intervals.h"
+#include "region_descriptor.h"
 
 void hsplit_region(const RegionDescriptor& descriptor, RegionDescriptor& first, RegionDescriptor& second, int split_threshold)
 {

@@ -400,8 +400,10 @@ void segment_based_disparity_internal(StereoTask& task, std::shared_ptr<RegionCo
 		if(algorithm->refinementPossible() && config2.region_refinement_delta != 0)
 		{
 			std::cout << "refine: " << config2.region_refinement_delta << std::endl;
-			segmentationLeft->refine(*left);
-			segmentationRight->refine(*right);
+			//segmentationLeft->refine(*left);
+			//segmentationRight->refine(*right);
+			segmentationLeft->std_refinement(*left);
+			segmentationRight->std_refinement(*right);
 
 			//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_unfused_left");
 			//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_unfused_right");

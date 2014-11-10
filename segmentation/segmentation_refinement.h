@@ -100,6 +100,7 @@ public:
 	int split_factor;
 };
 
+//disparity specific
 template<typename T>
 cv::Mat_<int> segmentation_iteration(std::vector<T>& regions, cv::Size size)
 {
