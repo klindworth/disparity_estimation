@@ -394,7 +394,7 @@ void segment_based_disparity_internal(StereoTask& task, std::shared_ptr<RegionCo
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_fused_right");
 
 	InitialDisparityConfig config2 = config;
-	for(int i = 0; i < 2; ++i)
+	for(int i = 0; i < config2.region_refinement_rounds; ++i)
 	{
 		//regionwise refinement
 		if(config2.region_refinement_delta != 0)

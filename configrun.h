@@ -60,6 +60,7 @@ public:
 	bool enable_costsmoothing;
 	int occ_rounds;
 	int region_refinement_delta;
+	int region_refinement_rounds;
 
 	segmentation_settings segmentation;
 	optimizer_settings optimizer;

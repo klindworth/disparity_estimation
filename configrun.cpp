@@ -325,6 +325,7 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const InitialDisparityConfi
 	stream << "dilate_grow" << config.dilate_grow << "dilate_step" << config.dilate_step;
 	stream << "occ_rounds" << config.occ_rounds;
 	stream << "region_refinement_delta" << config.region_refinement_delta;
+	stream << "region_refinement_rounds" << config.region_refinement_rounds;
 
 	stream << config.segmentation;
 	stream << config.optimizer;
@@ -340,6 +341,7 @@ void readInitialDisparityConfig(const cv::FileNode& stream, InitialDisparityConf
 	stream["dilate"] >> dilate;
 	stream["occ_rounds"] >> config.occ_rounds;
 	stream["region_refinement_delta"] >> config.region_refinement_delta;
+	stream["region_refinement_rounds"] >> config.region_refinement_rounds;
 
 	config.dilate = dilate;
 	stream["refinement"] >> config.enable_refinement;
