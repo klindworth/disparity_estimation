@@ -397,7 +397,7 @@ void segment_based_disparity_internal(StereoTask& task, std::shared_ptr<RegionCo
 	for(int i = 0; i < 2; ++i)
 	{
 		//regionwise refinement
-		if(algorithm->refinementPossible() && config2.region_refinement_delta != 0)
+		if(config2.region_refinement_delta != 0)
 		{
 			std::cout << "refine: " << config2.region_refinement_delta << std::endl;
 			//segmentationLeft->refine(*left);

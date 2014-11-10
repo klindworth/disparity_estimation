@@ -31,8 +31,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region_descriptor_algorithms.h"
 #include "segmentation_refinement.h"
 
-class RegionContainer;
-class RegionDescriptor;
 class fusion_work_data;
 
 class segmentation_settings
@@ -95,19 +93,6 @@ public:
 	 * @return
 	 */
 	virtual std::string cacheName() const = 0;
-
-	/**
-	 * @brief refinementPossible Returns if it is possible to obtain a finer segmentation
-	 * @return
-	 */
-	virtual bool refinementPossible() { return false; }
-
-	/**
-	 * @brief refine Returns a segmentation with smaller segments. The smaller segments lay in a bigger segments and not in more than one!
-	 */
-	virtual void refine(RegionContainer&) {}
-
-	virtual ~segmentation_algorithm() {}
 };
 
 std::shared_ptr<segmentation_algorithm> getSegmentationClass(const segmentation_settings& settings);
