@@ -82,7 +82,7 @@ qt4_wrap_cpp(HEADERS_MOC ${QTHEADERS})
 qt4_wrap_ui(FORMS_HEADERS ${FORMS})
 qt4_add_resources(RESOURCES_RCC ${RESOURCES})
 
-include_directories(. gui ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(. gui loganalyzer ${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(${QT_DEFINITIONS})
 
 add_executable(${PROJECT_NAME}
@@ -102,3 +102,38 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -std=c++11 -O0
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++11 -DNDEBUG -O3")
 
 add_subdirectory(segmentation)
+
+#analyzer
+
+set(SOURCES_ANALYZER
+    loganalyzer/main.cpp
+    loganalyzer/analyzer.cpp
+    loganalyzer/comparewidget.cpp
+    loganalyzer/detailviewer.cpp
+
+    genericfunctions.cpp
+    disparity_utils.cpp
+    taskanalysis.cpp
+    stereotask.cpp
+)
+
+set(QTHEADERS_ANALYZER
+    loganalyzer/analyzer.h
+    loganalyzer/comparewidget.h
+    loganalyzer/detailviewer.h
+)
+
+set(FORMS_ANALYZER
+    loganalyzer/analyzer.ui
+    loganalyzer/detailviewer.ui
+)
+
+qt4_wrap_cpp(HEADERS_ANALYZER_MOC ${QTHEADERS_ANALYZER})
+qt4_wrap_ui(FORMS_ANALYZER_HEADERS ${FORMS_ANALYZER})
+#qt4_add_resources(RESOURCES_RCC ${RESOURCES})
+
+add_executable(${PROJECT_NAME}_loganalyzer ${SOURCES_ANALYZER} ${HEADERS_ANALYZER_MOC} ${FORMS_ANALYZER_HEADERS})
+
+target_link_libraries(${PROJECT_NAME}_loganalyzer
+    ${QT_LIBRARIES} ${OpenCV_LIBS} cvwidgets cvsegmentation_lib
+)
