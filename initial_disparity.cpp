@@ -89,6 +89,7 @@ void calculate_region_sad(StereoSingleTask& task, const cv::Mat& base, const cv:
 	for(std::size_t i = 0; i < regions_count; ++i)
 		regions[i].disparity_costs = cv::Mat(crange, 1, CV_32FC1, cv::Scalar(500));
 
+	#pragma omp parallel for
 	for(int d = task.dispMin; d <= task.dispMax; ++d)
 	{
 		cv::Mat pbase = prepare_base(base, d);
