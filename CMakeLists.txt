@@ -34,6 +34,7 @@ set(SOURCES main.cpp
     segmentation/region_descriptor.cpp
     segmentation/segmentation.cpp
     segmentation/segmentation_cr.cpp
+    segmentation/segmentation_refinement.cpp
 )
 
 set(HEADERS
@@ -72,6 +73,7 @@ set(HEADERS
     segmentation/segmentation.h
     segmentation/segmentation_cr.h
     segmentation/segmentation_image.h
+    segmentation/segmentation_refinement.h
 )
 
 set(ENABLE_SLIC ON)

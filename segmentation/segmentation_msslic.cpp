@@ -11,6 +11,8 @@
 
 #include "region.h"
 
+#include "segmentation_refinement.h"
+
 int segmentImage2(cv::Mat& src, cv::Mat& labels_dst, int spatial_variance, float color_variance)
 {
 	msImageProcessor proc;

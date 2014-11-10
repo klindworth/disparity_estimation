@@ -45,6 +45,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparity_utils.h"
 #include "refinement.h"
 
+#include "segmentation_refinement.h"
+
 int main(int argc, char *argv[])
 {
 
