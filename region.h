@@ -92,6 +92,7 @@ public:
 struct RegionContainer : public segmentation_image<DisparityRegion>
 {
 	StereoSingleTask task;
+	std::vector<short> disparity;
 };
 
 template<typename T>
@@ -225,7 +226,7 @@ void replace_neighbor_idx(std::vector<RegionDescriptor>& regions, std::size_t ol
 void generateStats(std::vector<DisparityRegion>& regions, const StereoSingleTask& task, const int delta);
 void generateStats(DisparityRegion& region, const StereoSingleTask& task, int delta);
 
-void labelLRCheck(RegionContainer& base, RegionContainer& match, int delta);
+void labelLRCheck(RegionContainer& base, const RegionContainer& match, int delta);
 void refreshWarpedIdx(RegionContainer& container);
 std::pair<float,float> getOtherRegionsAverageCond(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, std::function<float(const DisparityRegion&)> func, std::function<float(const DisparityRegion&)> cond_eval);
 

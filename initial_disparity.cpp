@@ -90,6 +90,7 @@ void calculate_region_sad(StereoSingleTask& task, const cv::Mat& base, const cv:
 	for(std::size_t i = 0; i < regions_count; ++i)
 		regions[i].disparity_costs = cv::Mat(crange, 1, CV_32FC1, cv::Scalar(500));
 
+	#pragma omp parallel for
 	for(int d = task.dispMin; d <= task.dispMax; ++d)
 	{
 		cv::Mat pbase = prepare_base(base, d);
@@ -105,9 +106,14 @@ void calculate_region_sad(StereoSingleTask& task, const cv::Mat& base, const cv:
 			if(d>= range.first && d <= range.second)
 			{
 				std::vector<RegionInterval> filtered = filter_region(regions[i].lineIntervals, d, occ, base.size[1]);
-
 				cv::Mat diff_region = getRegionAsMat(diff, filtered, std::min(0, d));
 				float sum = cv::norm(diff_region, cv::NORM_L1);
+
+				/*float sum = 0.0f;
+				foreach_warped_region_point(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end(), base.cols, d, [&](cv::Point pt)
+				{
+					sum += diff(pt)
+				});*/
 
 				if(diff_region.total() > 0)
 					regions[i].disparity_costs(d-regions[i].disparity_offset) = sum/diff_region.total()/256/diff_region.channels();
@@ -426,20 +432,20 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 	//typedef variation_of_information_calc<float> it_metric;
 
 	typedef RegionInfoDisparityConf<it_metric, quantizer> disparity_metric;
-	typedef slidingEntropyFlex<it_metric, quantizer> refinement_metric;
-	//typedef slidingSAD refinement_metric;
 
 	std::shared_ptr<RegionContainer> left  = std::make_shared<RegionContainer>();
 	std::shared_ptr<RegionContainer> right = std::make_shared<RegionContainer>();
 
 	//SAD
-	/*auto disparity_function = calculate_region_sad;
+	typedef slidingSAD refinement_metric;
+	auto disparity_function = calculate_region_sad;
 	task.algoLeft = task.left;
-	task.algoRight = task.right;*/
+	task.algoRight = task.right;
 	//IT
+	/* typedef slidingEntropyFlex<it_metric, quantizer> refinement_metric;
 	auto disparity_function = calculate_region_disparity_regionwise<disparity_metric>;
 	task.algoLeft  = quantizeImage(task.leftGray, quantizer);
-	task.algoRight = quantizeImage(task.rightGray, quantizer);
+	task.algoRight = quantizeImage(task.rightGray, quantizer);*/
 
 	segment_based_disparity_internal(task, left, right, config, algorithm, disparity_function);
 
