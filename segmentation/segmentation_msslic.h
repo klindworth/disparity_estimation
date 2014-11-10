@@ -9,8 +9,6 @@ public:
 	int operator()(const cv::Mat& image, cv::Mat_<int>& labels) override;
 	std::string cacheName() const override;
 	bool cacheAllowed() const override;
-	bool refinementPossible() override;
-	void refine(RegionContainer &container) override;
 
 private:
 	std::shared_ptr<fusion_work_data> fusion_data;

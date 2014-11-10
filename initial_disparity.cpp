@@ -383,17 +383,6 @@ void segment_based_disparity_internal(StereoTask& task, std::shared_ptr<RegionCo
 
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_fused_left");
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_fused_right");
-
-	if(algorithm->refinementPossible() && config.region_refinement_delta != 0)
-	{
-		segmentationLeft->refine(*left);
-		segmentationRight->refine(*right);
-
-		//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_unfused_left");
-		//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_unfused_right");
-
-		single_pass_region_disparity(task, *left, *right, config, true, disparity_func);
-	}
 }
 
 cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, const RefinementConfig& refconfig, int subsampling = 1)
