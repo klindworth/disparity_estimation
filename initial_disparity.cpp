@@ -425,31 +425,12 @@ cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, c
 	return convertDisparityFromPartialCostmap(createDisparity(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
 }
 
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, std::shared_ptr<segmentation_algorithm>& algorithm, int subsampling)
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it_internal(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, std::shared_ptr<segmentation_algorithm>& algorithm, int subsampling, disparity_region_func disp_func, refinement_func_type ref_func)
 {
-	const int quantizer = 4;
-
-	typedef normalized_information_distance_calc<float> it_metric;
-	//typedef normalized_variation_of_information_calc<float> it_metric;
-	//typedef variation_of_information_calc<float> it_metric;
-
-	typedef RegionInfoDisparityConf<it_metric, quantizer> disparity_metric;
-
 	std::shared_ptr<RegionContainer> left  = std::make_shared<RegionContainer>();
 	std::shared_ptr<RegionContainer> right = std::make_shared<RegionContainer>();
 
-	//SAD
-	/*typedef slidingSAD refinement_metric;
-	auto disparity_function = calculate_region_sad;
-	task.algoLeft = task.left;
-	task.algoRight = task.right;*/
-	//IT
-	typedef slidingEntropyFlex<it_metric, quantizer> refinement_metric;
-	auto disparity_function = calculate_region_disparity_regionwise<disparity_metric>;
-	task.algoLeft  = quantizeImage(task.leftGray, quantizer);
-	task.algoRight = quantizeImage(task.rightGray, quantizer);
-
-	segment_based_disparity_internal(task, left, right, config, algorithm, disparity_function);
+	segment_based_disparity_internal(task, left, right, config, algorithm, disp_func);
 
 	cv::Mat disparity_left  = getDisparityBySegments(*left);
 	cv::Mat disparity_right = getDisparityBySegments(*right);
@@ -457,8 +438,8 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 	//pixelwise refinement
 	if(config.enable_refinement)
 	{
-		cv::Mat costmap_left  = refineInitialDisparity<refinement_metric, quantizer>(disparity_left, task.forward,  task.algoLeft,  task.algoRight, *left,  refconfig);
-		cv::Mat costmap_right = refineInitialDisparity<refinement_metric, quantizer>(disparity_right, task.backward, task.algoRight, task.algoLeft,  *right, refconfig);
+		cv::Mat costmap_left  = ref_func(disparity_left, task.forward,  task.algoLeft,  task.algoRight, *left,  refconfig);
+		cv::Mat costmap_right = ref_func(disparity_right, task.backward, task.algoRight, task.algoLeft,  *right, refconfig);
 
 		disparity_left  = getNormalDisparity(disparity_left,  costmap_left, refconfig, subsampling);
 		disparity_right = getNormalDisparity(disparity_right, costmap_right, refconfig, subsampling);
@@ -468,4 +449,39 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 		matstore.setRegionContainer(left, right);
 
 	return std::make_pair(disparity_left, disparity_right);
+}
+
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, std::shared_ptr<segmentation_algorithm>& algorithm, int subsampling)
+{
+	const int quantizer = 4;
+
+	disparity_region_func disparity_function;
+	refinement_func_type ref_func;
+	std::string metric = "it";
+	if(metric == "sad")
+	{
+		//SAD
+		typedef slidingSAD refinement_metric;
+		disparity_function = calculate_region_sad;
+		task.algoLeft = task.left;
+		task.algoRight = task.right;
+		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
+	}
+	else
+	{
+		typedef normalized_information_distance_calc<float> it_metric;
+		//typedef normalized_variation_of_information_calc<float> it_metric;
+		//typedef variation_of_information_calc<float> it_metric;
+
+		typedef RegionInfoDisparityConf<it_metric, quantizer> disparity_metric;
+
+		//IT
+		typedef slidingEntropyFlex<it_metric, quantizer> refinement_metric;
+		disparity_function = calculate_region_disparity_regionwise<disparity_metric>;
+		task.algoLeft  = quantizeImage(task.leftGray, quantizer);
+		task.algoRight = quantizeImage(task.rightGray, quantizer);
+		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
+	}
+
+	return segment_based_disparity_it_internal(task, config, refconfig, algorithm, subsampling, disparity_function, ref_func);
 }
