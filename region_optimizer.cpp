@@ -365,23 +365,23 @@ void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& 
 		for(int i = 0; i < config.rounds; ++i)
 		{
 			std::cout << "optimization round" << std::endl;
-			optimize(left, right, config.base_eval_wv, config.prop_eval, refinement);
+			optimize(left, right, config.base_eval, config.prop_eval, refinement);
 			refreshWarpedIdx(left);
-			optimize(right, left, config.base_eval_wv, config.prop_eval, refinement);
+			optimize(right, left, config.base_eval, config.prop_eval, refinement);
 			refreshWarpedIdx(right);
 		}
 		for(int i = 0; i < config.rounds; ++i)
 		{
 			std::cout << "optimization round2" << std::endl;
-			optimize(left, right, config.base_eval_wv2, config.prop_eval2, refinement);
+			optimize(left, right, config.base_eval2, config.prop_eval2, refinement);
 			refreshWarpedIdx(left);
-			optimize(right, left, config.base_eval_wv2, config.prop_eval2, refinement);
+			optimize(right, left, config.base_eval2, config.prop_eval2, refinement);
 			refreshWarpedIdx(right);
 		}
 		if(config.rounds == 0)
 		{
-			refreshOptimizationBaseValues(left, right, config.base_eval_wv, refinement);
-			refreshOptimizationBaseValues(right, left, config.base_eval_wv, refinement);
+			refreshOptimizationBaseValues(left, right, config.base_eval, refinement);
+			refreshOptimizationBaseValues(right, left, config.base_eval, refinement);
 		}
 	}
 	/*else
@@ -397,26 +397,28 @@ void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& 
 	}*/
 }
 
-cv::FileStorage& operator<<(cv::FileStorage& stream, const config_term& config)
+const cv::FileNode& operator>>(const cv::FileNode& node, disparity_hypothesis_weight_vector& config)
+{
+	node["cost"] >> config.costs;
+	node["neighbor_pot"] >> config.neighbor_pot;
+	node["neighbor_color_pot"] >> config.neighbor_color_pot;
+	node["lr_pot"] >> config.lr_pot;
+	node["occ_avg"] >> config.occ_avg;
+
+	return node;
+}
+
+cv::FileStorage& operator<<(cv::FileStorage& stream, const disparity_hypothesis_weight_vector& config)
 {
 	stream << "{:";
-	stream << "cost" << config.cost;
-	stream << "color_disp" << config.color_disp;
+	stream << "cost" << config.costs;
+	stream << "neighbor_color_pot" << config.neighbor_color_pot;
+	stream << "neighbor_pot" << config.neighbor_pot;
 	stream << "lr_pot" << config.lr_pot;
-	stream << "occ" << config.occ;
+	stream << "occ_avg" << config.occ_avg;
 	stream << "}";
 
 	return stream;
-}
-
-const cv::FileNode& operator>>(const cv::FileNode& node, config_term& config)
-{
-	node["cost"] >> config.cost;
-	node["color_disp"] >> config.color_disp;
-	node["lr_pot"] >> config.lr_pot;
-	node["occ"] >> config.occ;
-
-	return node;
 }
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const optimizer_settings& config)
@@ -424,7 +426,8 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const optimizer_settings& c
 	stream << "optimization_rounds" << config.rounds;
 	stream << "enable_damping" << config.enable_damping;
 
-	stream << "base_config" << config.base;
+	stream << "base_eval" << config.base_eval;
+	stream << "base_eval2" << config.base_eval2;
 
 	return stream;
 }
@@ -437,7 +440,8 @@ const cv::FileNode& operator>>(const cv::FileNode& stream, optimizer_settings& c
 	//cv::FileNode node = stream["base_configs"];
 	//for(cv::FileNodeIterator it = node.begin(); it != node.end(); ++it)
 		//*it >> config.base;
-	stream["base_config"] >> config.base;
+	stream["base_eval"] >> config.base_eval;
+	stream["base_eval2"] >> config.base_eval2;
 
 	return stream;
 }

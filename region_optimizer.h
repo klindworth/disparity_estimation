@@ -83,28 +83,14 @@ public:
 	float operator()(int disp) const;
 };
 
-class config_term
-{
-public:
-	double cost, color_disp, lr_pot, occ;
-};
-
 class optimizer_settings
 {
 public:
 	int rounds;
 	bool enable_damping;
 
-	config_term base;
-
-	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval;
-	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval2;
-
-	disparity_hypothesis_weight_vector base_eval_wv, base_eval_wv2;
-
-	std::function<float(const disparity_hypothesis&)> base_eval_refine;
-	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval_refine;
-
+	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, prop_eval2, prop_eval_refine;
+	disparity_hypothesis_weight_vector base_eval, base_eval2, base_eval_refine;
 };
 
 std::vector<std::size_t> regionSplitUp(RegionContainer& base, RegionContainer& match);
