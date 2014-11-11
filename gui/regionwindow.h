@@ -35,6 +35,7 @@ class RegionContainer;
 class DisparityRegion;
 class DebugMatStore;
 class InitialDisparityConfig;
+class disparity_hypothesis_weight_vector;
 
 namespace Ui {
 class RegionWindow;
@@ -68,6 +69,7 @@ private slots:
 	void on_pbResetOptimization_clicked();
 
 private:
+	disparity_hypothesis_weight_vector get_weight_vector() const;
 	void refreshImages(std::vector<DisparityRegion> markLeft, bool markLeftOnRight, std::vector<DisparityRegion> markRight, bool markRightOnLeft);
 	void fillTree(int index, DisparityRegion& baseRegion, std::vector<DisparityRegion>& other_regions , QTreeWidget *tree);
 	Ui::RegionWindow *ui;

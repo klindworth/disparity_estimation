@@ -264,22 +264,20 @@ RegionWindow::~RegionWindow()
 	delete ui;
 }
 
+disparity_hypothesis_weight_vector RegionWindow::get_weight_vector() const
+{
+	disparity_hypothesis_weight_vector wv;
+	wv.costs = ui->spCostsAbs->value();
+	wv.lr_pot = ui->spDisp->value();
+	wv.occ_avg = ui->spOcc->value();
+	wv.neighbor_pot = ui->spNeighbor->value();
+	//TODO: color_neighbor_pot
+	return wv;
+}
+
 void RegionWindow::on_pbOptimize_clicked()
 {
-	// -------- base --------------------------
-	//double percCost = ui->spCostsChange->value();
-	double absCost = ui->spCostsAbs->value();
-	double occ = ui->spOcc->value();
-	double neigh = ui->spNeighbor->value();
-	double lr_pot = ui->spDisp->value();
-
-	auto base_eval = [=](const disparity_hypothesis& prop_stat) {
-		return (float) prop_stat.costs * absCost + prop_stat.occ_avg * occ + prop_stat.neighbor_pot * neigh + prop_stat.lr_pot * lr_pot;
-	};
-	// ----------------------------------------
-
-	//if(ui->cbRefreshBase->isChecked())
-		//on_pbRefreshBase_clicked();
+	disparity_hypothesis_weight_vector wv = get_weight_vector();
 
 	int choosen = 0;
 	if(ui->rbConfidence2->isChecked())
@@ -328,31 +326,19 @@ void RegionWindow::on_pbOptimize_clicked()
 			rating = (baseRegion.confidence3 *e_base+conf3*e_other) / (conf3 + baseRegion.confidence3)+pot_factor*disp_pot;
 		return rating;
 	};
-
-	//FIXME
-	/*std::cout << "optimization" << std::endl;
-	optimize(*m_left, *m_right, base_eval, prop_eval,0);
+	std::cout << "optimization" << std::endl;
+	optimize(*m_left, *m_right, wv, prop_eval, 0);
 	generateRegionInformation(*m_left, *m_right);
-	optimize(*m_right, *m_left, base_eval, prop_eval,0);
+	optimize(*m_right, *m_left, wv, prop_eval, 0);
 	generateRegionInformation(*m_left, *m_right);
 	std::cout << "finished" << std::endl;
-	setData(m_left, m_right);*/
+	setData(m_left, m_right);
 }
 
 void RegionWindow::on_pbRefreshBase_clicked()
 {
-	double absCost = ui->spCostsAbs->value();
-	double occ = ui->spOcc->value();
-	double neigh = ui->spNeighbor->value();
-	double lr_pot = ui->spDisp->value();
-	double color_neigh = ui->dsColorDisp->value();
-
-	auto base_eval = [=](const disparity_hypothesis& prop_stat) {
-		return (float) prop_stat.costs * absCost + prop_stat.occ_avg * occ + prop_stat.neighbor_pot * neigh + prop_stat.lr_pot * lr_pot + prop_stat.neighbor_color_pot * color_neigh;
-	};
-
-	//FIXME
-	//refreshOptimizationBaseValues(*m_left, *m_right, base_eval, 0);
+	disparity_hypothesis_weight_vector wv = get_weight_vector();
+	refreshOptimizationBaseValues(*m_left, *m_right, wv, 0);
 }
 
 void resetContainerDisparities(RegionContainer& container)
