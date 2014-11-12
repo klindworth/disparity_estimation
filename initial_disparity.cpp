@@ -113,7 +113,11 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 		crange = 2*delta+1;
 
 	for(std::size_t i = 0; i < regions_count; ++i)
+	{
+		auto range = getSubrange(regions[i].base_disparity, delta, task);
+		regions[i].disparity_offset = range.first;
 		regions[i].disparity_costs = cv::Mat(crange, 1, CV_32FC1, cv::Scalar(500));
+	}
 
 	calculator calc(base,match);
 
@@ -125,7 +129,6 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
 			auto range = getSubrange(regions[i].base_disparity, delta, task);
-			regions[i].disparity_offset = range.first;
 			if(d>= range.first && d <= range.second)
 			{
 				//std::vector<RegionInterval> filtered = filter_region(regions[i].lineIntervals, std::min(0,d), occ, base.size[1]);
@@ -142,11 +145,95 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 				});*/
 
 				if(diff_region.total() > 0)
+					//regions[i].disparity_costs(d-regions[i].disparity_offset) = sum/diff_region.total()/diff_region.channels();
 					regions[i].disparity_costs(d-regions[i].disparity_offset) = sum/diff_region.total()/256/diff_region.channels();
 				else
 					regions[i].disparity_costs(d-regions[i].disparity_offset) = 2.0f;
 			}
 		}
+	}
+
+	for(std::size_t i=0; i < regions_count; ++i)
+	{
+		auto it = std::min_element(regions[i].disparity_costs.begin(), regions[i].disparity_costs.end());
+		regions[i].disparity = std::distance(regions[i].disparity_costs.begin(), it) + regions[i].disparity_offset;
+		EstimationStep step;
+		step.costs = *it;
+		step.disparity = regions[i].disparity;
+		auto range = getSubrange(regions[i].base_disparity, delta, task);
+		step.searchrange_start = range.first;
+		step.searchrange_end = range.second;
+		step.base_disparity = regions[i].base_disparity;
+		regions[i].results.push_back(step);
+		//TODO: needed?
+		regions[i].old_dilation = regions[i].dilation;
+	}
+}
+
+template<typename calculator>
+void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, const std::vector<RegionInterval>& occ, int delta)
+{
+	std::cout << "delta: " << delta << std::endl;
+	const std::size_t regions_count = regions.size();
+
+	int crange = task.dispMax - task.dispMin + 1;
+	if(delta != 0)
+		crange = 2*delta+1;
+
+	for(std::size_t i = 0; i < regions_count; ++i)
+		regions[i].disparity_costs = cv::Mat(crange, 1, CV_32FC1, cv::Scalar(500));
+
+	//region:y_interval*disparity_range
+	std::vector<std::vector<float> > row_costs;
+
+	calculator calc(base,match);
+
+	//allocate in a loop
+	for(std::size_t i = 0; i < regions_count; ++i)
+	{
+		auto range = getSubrange(regions[i].base_disparity, delta, task);
+		regions[i].disparity_offset = range.first;
+		row_costs.emplace_back((range.second - range.first + 1) * regions[i].lineIntervals.size(), 2.0f);
+	}
+
+	//rowwise costs
+	int width = base.cols;
+	#pragma omp parallel for
+	for(int d = task.dispMin; d <= task.dispMax; ++d)
+	{
+		cv::Mat_<float> diff = calc(d);
+		int base_offset = std::min(0,d);
+
+		for(std::size_t i = 0; i < regions_count; ++i)
+		{
+			auto range = getSubrange(regions[i].base_disparity, delta, task);
+
+			if(d>= range.first && d <= range.second)
+			{
+				for(std::size_t j = 0; j < regions[i].lineIntervals.size(); ++j)
+				{
+					const RegionInterval& cinterval = regions[i].lineIntervals[i];
+					int lower = std::max(cinterval.lower+d, 0)-d + base_offset;
+					int upper = std::min(cinterval.upper+d, width)-d + base_offset;
+					int y = cinterval.y;
+					if(upper - lower> 0)
+					{
+						float sum = 0.0;
+						for(int x = lower; lower < upper; ++x)
+							sum += diff(y,x);
+
+						row_costs[i][j] = sum;
+					}
+				}
+
+			}
+		}
+	}
+
+	//calculate regioncost
+	for(int d = task.dispMin; d <= task.dispMax; ++d)
+	{
+
 	}
 
 	for(std::size_t i=0; i < regions_count; ++i)
