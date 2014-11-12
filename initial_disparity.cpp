@@ -235,6 +235,9 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 		}
 	}
 
+	const float p = 0.9;
+	std::array<float,3> penalties{0.0f, 1/p, 1/(p*p)};
+
 	std::cout << "region" << std::endl;
 	//calculate regioncost
 	#pragma omp parallel for
@@ -249,17 +252,37 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 
 			if(d>= range.first && d <= range.second)
 			{
+				int delta_neg = std::max((int)range.first, d - 2) - d;
+				int delta_pos = std::min((int)range.second, d + 2) - d;
+
 				float sum_costs = 0.0f;
 				int sum_size = 0;
 				for(std::size_t j = 0; j < count; ++j)
 				{
-					sum_costs += row_costs[i][rowstride*j+idx];
-					sum_size += row_sizes[i][rowstride*j+idx];
+					float rcost = std::numeric_limits<float>::max();
+					int rsize = 0;
+					for(int delta = delta_neg; delta <= delta_pos; ++delta)
+					{
+						float cpenanlty = penalties[std::abs(delta)];
+						int csize = row_sizes[i][rowstride*j+idx+delta];
+						float ccost = row_costs[i][rowstride*j+idx+delta] / csize * cpenanlty;
+
+						if(ccost != 0 && ccost < rcost)
+						{
+							rcost = ccost;
+							rsize = csize;
+						}
+					}
+					if(rsize > 0)
+					{
+						sum_costs += rcost;
+						sum_size += rsize;
+					}
 				}
 				if(sum_size > 0)
-					regions[i].disparity_costs(d-regions[i].disparity_offset) = sum_costs/256/sum_size;
+					regions[i].disparity_costs(d-regions[i].disparity_offset) = sum_costs/256;//sum_size;
 				else
-					regions[i].disparity_costs(d-regions[i].disparity_offset) = 2.0f;
+					regions[i].disparity_costs(d-regions[i].disparity_offset) = 1.0f;
 			}
 		}
 	}
