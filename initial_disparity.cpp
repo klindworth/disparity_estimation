@@ -185,6 +185,7 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 
 	//region:y_interval*disparity_range
 	std::vector<std::vector<float> > row_costs;
+	std::vector<std::vector<int> > row_sizes;
 
 	calculator calc(base,match);
 
@@ -195,21 +196,20 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 		auto range = getSubrange(regions[i].base_disparity, delta, task);
 		regions[i].disparity_offset = range.first;
 		row_costs.emplace_back((range.second - range.first + 1) * regions[i].lineIntervals.size(), 2.0f);
+		row_sizes.emplace_back((range.second - range.first + 1) * regions[i].lineIntervals.size(), 0);
 	}
 
 	std::cout << "rowwise" << std::endl;
 	//rowwise costs
 	int width = base.cols;
-	//pragma omp parallel for
+	#pragma omp parallel for
 	for(int d = task.dispMin; d <= task.dispMax; ++d)
 	{
-		//std::cout << d << std::endl;
 		cv::Mat_<float> diff = calc(d);
 		int base_offset = std::min(0,d);
 
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
-			//std::cout << "i: " << i << std::endl;
 			auto range = getSubrange(regions[i].base_disparity, delta, task);
 			std::size_t idx = d - range.first;
 			std::size_t rowstride = range.second - range.first + 1;
@@ -219,21 +219,17 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 			{
 				for(std::size_t j = 0; j < count; ++j)
 				{
-					//std::cout << "j: " << j << std::endl;
 					const RegionInterval& cinterval = regions[i].lineIntervals[j];
 					int lower = std::max(cinterval.lower+d, 0)-d + base_offset;
 					int upper = std::min(cinterval.upper+d, width)-d + base_offset;
 					int y = cinterval.y;
-					//std::cout << "lower: " << lower << ", upper: " << upper << std::endl;
 
-					if(upper - lower> 0)
-					{
-						float sum = 0.0;
-						for(int x = lower; x < upper; ++x)
-							sum += diff(y,x);
+					float sum = 0.0;
+					for(int x = lower; x < upper; ++x)
+						sum += diff(y,x);
 
-						row_costs[i][j*rowstride+idx] = sum;
-					}
+					row_costs[i][j*rowstride+idx] = sum;
+					row_sizes[i][j*rowstride+idx] = std::max(upper-lower+1,0);
 				}
 			}
 		}
@@ -241,6 +237,7 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 
 	std::cout << "region" << std::endl;
 	//calculate regioncost
+	#pragma omp parallel for
 	for(int d = task.dispMin; d <= task.dispMax; ++d)
 	{
 		for(std::size_t i = 0; i < regions_count; ++i)
@@ -252,12 +249,17 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 
 			if(d>= range.first && d <= range.second)
 			{
-				float sum = 0.0f;
+				float sum_costs = 0.0f;
+				int sum_size = 0;
 				for(std::size_t j = 0; j < count; ++j)
 				{
-					sum += row_costs[i][rowstride*j+idx];
+					sum_costs += row_costs[i][rowstride*j+idx];
+					sum_size += row_sizes[i][rowstride*j+idx];
 				}
-				regions[i].disparity_costs(d-regions[i].disparity_offset) = sum;
+				if(sum_size > 0)
+					regions[i].disparity_costs(d-regions[i].disparity_offset) = sum_costs/256/sum_size;
+				else
+					regions[i].disparity_costs(d-regions[i].disparity_offset) = 2.0f;
 			}
 		}
 	}

@@ -37,8 +37,8 @@ sncc_disparitywise_calculator::sncc_disparitywise_calculator(const cv::Mat& pbas
 	cv::sqrt(sq_match_box - mu_match_sq, sigma_match_inv);
 	cv::pow(sigma_match_inv, -1, sigma_match_inv);
 
-	//int threads = omp_get_max_threads();
-	int threads = 1;
+	int threads = omp_get_max_threads();
+	//int threads = 1;
 	for(int i = 0; i < threads; ++i)
 		temp.emplace_back(base_float.size());
 
@@ -96,7 +96,7 @@ cv::Mat_<float> sncc_disparitywise_calculator::operator()(int d)
 	//cv::Mat_<float> result = prepare_result(cv::Size(row_length, rows), d, 100.0f);
 	cv::Mat_<float> result(cv::Size(row_length, rows), 100.0f);
 
-	int thread_idx = 0;//omp_get_thread_num();
+	int thread_idx = omp_get_thread_num();
 	preparation_kernel(temp[thread_idx][0], base_float.ptr<float>(), match_float.ptr<float>(), offset_base, offset_match, row_length+2, rows+2, base_float.cols);
 	//sncc_kernel(result[0] + offset_base, temp[thread_idx][0], mu_base[0] + offset_base, mu_match[0] + offset_match, sigma_base_inv[0] + offset_base, sigma_match_inv[0] + offset_match, rows, row_length, base_float.cols - 2);
 	sncc_kernel(result[0], temp[thread_idx][0], mu_base[0] + offset_base, mu_match[0] + offset_match, sigma_base_inv[0] + offset_base, sigma_match_inv[0] + offset_match, rows, row_length, base_float.cols - 2);
