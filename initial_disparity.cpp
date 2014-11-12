@@ -188,6 +188,7 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 
 	calculator calc(base,match);
 
+	std::cout << "allocate" << std::endl;
 	//allocate in a loop
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
@@ -196,44 +197,69 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 		row_costs.emplace_back((range.second - range.first + 1) * regions[i].lineIntervals.size(), 2.0f);
 	}
 
+	std::cout << "rowwise" << std::endl;
 	//rowwise costs
 	int width = base.cols;
-	#pragma omp parallel for
+	//pragma omp parallel for
 	for(int d = task.dispMin; d <= task.dispMax; ++d)
 	{
+		//std::cout << d << std::endl;
 		cv::Mat_<float> diff = calc(d);
 		int base_offset = std::min(0,d);
 
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
+			//std::cout << "i: " << i << std::endl;
 			auto range = getSubrange(regions[i].base_disparity, delta, task);
+			std::size_t idx = d - range.first;
+			std::size_t rowstride = range.second - range.first + 1;
+			std::size_t count = regions[i].lineIntervals.size();
 
 			if(d>= range.first && d <= range.second)
 			{
-				for(std::size_t j = 0; j < regions[i].lineIntervals.size(); ++j)
+				for(std::size_t j = 0; j < count; ++j)
 				{
-					const RegionInterval& cinterval = regions[i].lineIntervals[i];
+					//std::cout << "j: " << j << std::endl;
+					const RegionInterval& cinterval = regions[i].lineIntervals[j];
 					int lower = std::max(cinterval.lower+d, 0)-d + base_offset;
 					int upper = std::min(cinterval.upper+d, width)-d + base_offset;
 					int y = cinterval.y;
+					//std::cout << "lower: " << lower << ", upper: " << upper << std::endl;
+
 					if(upper - lower> 0)
 					{
 						float sum = 0.0;
-						for(int x = lower; lower < upper; ++x)
+						for(int x = lower; x < upper; ++x)
 							sum += diff(y,x);
 
-						row_costs[i][j] = sum;
+						row_costs[i][j*rowstride+idx] = sum;
 					}
 				}
-
 			}
 		}
 	}
 
+	std::cout << "region" << std::endl;
 	//calculate regioncost
 	for(int d = task.dispMin; d <= task.dispMax; ++d)
 	{
+		for(std::size_t i = 0; i < regions_count; ++i)
+		{
+			auto range = getSubrange(regions[i].base_disparity, delta, task);
+			std::size_t idx = d - range.first;
+			std::size_t rowstride = range.second - range.first + 1;
+			std::size_t count = regions[i].lineIntervals.size();
 
+			if(d>= range.first && d <= range.second)
+			{
+				float sum = 0.0f;
+				for(std::size_t j = 0; j < count; ++j)
+				{
+					sum += row_costs[i][rowstride*j+idx];
+				}
+				regions[i].disparity_costs(d-regions[i].disparity_offset) = sum;
+			}
+		}
 	}
 
 	for(std::size_t i=0; i < regions_count; ++i)
@@ -583,7 +609,8 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 	else if(metric == "sncc")
 	{
 		typedef slidingSAD refinement_metric;
-		disparity_function = calculate_region_generic<sncc_disparitywise_calculator>;
+		//disparity_function = calculate_region_generic<sncc_disparitywise_calculator>;
+		disparity_function = calculate_relaxed_region_generic<sncc_disparitywise_calculator>;
 		task.algoLeft = task.leftGray;
 		task.algoRight = task.rightGray;
 		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
