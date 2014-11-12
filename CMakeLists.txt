@@ -23,6 +23,7 @@ set(SOURCES main.cpp
     taskanalysis.cpp
     slidingGradient.cpp
     refinement.cpp
+    sncc_disparitywise_calculator.cpp
 
     gui/matstoreviewer.cpp
     gui/costmapviewer.cpp
@@ -43,6 +44,8 @@ set(HEADERS
     it_metrics.h
     costmap_utils.h
     region.h
+    disparitywise_calculator.h
+    sncc_disparitywise_calculator.h
 
     sparse_counter.h
     initial_disparity.h

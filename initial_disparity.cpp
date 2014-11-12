@@ -53,6 +53,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <omp.h>
 
+#include "disparitywise_calculator.h"
+#include "sncc_disparitywise_calculator.h"
+
 typedef std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<DisparityRegion>&, const std::vector<RegionInterval>&, int)> disparity_region_func;
 
 //for IT metrics (region wise)
@@ -77,8 +80,30 @@ void calculate_region_disparity_regionwise(StereoSingleTask& task, const cv::Mat
 	}
 }
 
-//for SAD (disparity wise)
-void calculate_region_sad(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, const std::vector<RegionInterval>& occ, int delta)
+class sad_disparitywise_calculator
+{
+public:
+	sad_disparitywise_calculator(const cv::Mat& pbase, const cv::Mat& pmatch) : base(pbase), match(pmatch)
+	{
+	}
+
+	cv::Mat operator ()(int d)
+	{
+		cv::Mat pbase = prepare_base(base, d);
+		cv::Mat pmatch = prepare_match(match, d);
+
+		cv::Mat diff;
+		cv::absdiff(pbase, pmatch, diff);
+
+		return diff; //TODO: result enlargement?
+	}
+
+private:
+	cv::Mat base, match;
+};
+
+template<typename calculator>
+void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, const std::vector<RegionInterval>& occ, int delta)
 {
 	std::cout << "delta: " << delta << std::endl;
 	const std::size_t regions_count = regions.size();
@@ -90,14 +115,12 @@ void calculate_region_sad(StereoSingleTask& task, const cv::Mat& base, const cv:
 	for(std::size_t i = 0; i < regions_count; ++i)
 		regions[i].disparity_costs = cv::Mat(crange, 1, CV_32FC1, cv::Scalar(500));
 
+	calculator calc(base,match);
+
 	#pragma omp parallel for
 	for(int d = task.dispMin; d <= task.dispMax; ++d)
 	{
-		cv::Mat pbase = prepare_base(base, d);
-		cv::Mat pmatch = prepare_match(match, d);
-
-		cv::Mat diff;
-		cv::absdiff(pbase, pmatch, diff);
+		cv::Mat diff = calc(d);
 
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
@@ -105,9 +128,12 @@ void calculate_region_sad(StereoSingleTask& task, const cv::Mat& base, const cv:
 			regions[i].disparity_offset = range.first;
 			if(d>= range.first && d <= range.second)
 			{
+				//std::vector<RegionInterval> filtered = filter_region(regions[i].lineIntervals, std::min(0,d), occ, base.size[1]);
 				std::vector<RegionInterval> filtered = filter_region(regions[i].lineIntervals, d, occ, base.size[1]);
 				cv::Mat diff_region = getRegionAsMat(diff, filtered, std::min(0, d));
+				//cv::Mat diff_region = getRegionAsMat(diff, regions[i].lineIntervals, 0);
 				float sum = cv::norm(diff_region, cv::NORM_L1);
+				//float sum = cv::norm(diff_region, cv::NORM_L2);
 
 				/*float sum = 0.0f;
 				foreach_warped_region_point(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end(), base.cols, d, [&](cv::Point pt)
@@ -457,14 +483,22 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 
 	disparity_region_func disparity_function;
 	refinement_func_type ref_func;
-	std::string metric = "it";
+	std::string metric = "sncc";
 	if(metric == "sad")
 	{
 		//SAD
 		typedef slidingSAD refinement_metric;
-		disparity_function = calculate_region_sad;
+		disparity_function = calculate_region_generic<sad_disparitywise_calculator>;
 		task.algoLeft = task.left;
 		task.algoRight = task.right;
+		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
+	}
+	else if(metric == "sncc")
+	{
+		typedef slidingSAD refinement_metric;
+		disparity_function = calculate_region_generic<sncc_disparitywise_calculator>;
+		task.algoLeft = task.leftGray;
+		task.algoRight = task.rightGray;
 		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
 	}
 	else

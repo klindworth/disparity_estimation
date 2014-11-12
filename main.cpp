@@ -132,9 +132,8 @@ int main(int argc, char *argv[])
 	fs >> config;
 	config.optimizer.prop_eval = prop_eval;
 	config.optimizer.prop_eval2 = prop_eval2;
-	/*config.optimizer.prop_eval_refine = prop_eval_refine;
-	config.optimizer.base_eval_refine = base_eval_refine;*/
 	config.optimizer.prop_eval_refine = prop_eval2;
+	config.optimizer.base_eval_refine = config.optimizer.base_eval2;
 	//config.enable_regionsplit = true;
 	//config.optimization_rounds = 3;
 	config.verbose = true;

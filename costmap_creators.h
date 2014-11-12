@@ -29,22 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-inline cv::Mat prepare_base(const cv::Mat& src, int d)
-{
-	if(d > 0)
-		return src(cv::Range(0, src.rows), cv::Range(0, src.cols-d));
-	else
-		return src(cv::Range(0, src.rows), cv::Range(-d, src.cols));
-}
-
-inline cv::Mat prepare_match(const cv::Mat& src, int d)
-{
-	if(d > 0)
-		return src(cv::Range(0, src.rows), cv::Range(d, src.cols));
-	else
-		return src(cv::Range(0, src.rows), cv::Range(0, src.cols+d));
-}
-
 template<typename cost_class>
 cv::Mat slidingJointWindow(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, unsigned int windowsize)
 {

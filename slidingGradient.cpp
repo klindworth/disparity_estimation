@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "stereotask.h"
 #include "costmap_creators.h"
+#include "disparitywise_calculator.h"
 #include <cmath>
 #include <opencv2/imgproc/imgproc.hpp>
 #ifdef __SSE__
