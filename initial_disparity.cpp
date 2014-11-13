@@ -83,6 +83,8 @@ void calculate_region_disparity_regionwise(StereoSingleTask& task, const cv::Mat
 class sad_disparitywise_calculator
 {
 public:
+	typedef unsigned char result_type;
+
 	sad_disparitywise_calculator(const cv::Mat& pbase, const cv::Mat& pmatch) : base(pbase), match(pmatch)
 	{
 	}
@@ -95,7 +97,7 @@ public:
 		cv::Mat diff;
 		cv::absdiff(pbase, pmatch, diff);
 
-		return diff; //TODO: result enlargement?
+		return diff; //TODO: result enlargement?, channel summation
 	}
 
 private:
@@ -205,7 +207,7 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 	#pragma omp parallel for
 	for(int d = task.dispMin; d <= task.dispMax; ++d)
 	{
-		cv::Mat_<float> diff = calc(d);
+		cv::Mat_<typename calculator::result_type> diff = calc(d);
 		int base_offset = std::min(0,d);
 
 		for(std::size_t i = 0; i < regions_count; ++i)
@@ -282,7 +284,7 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 				if(sum_size > 0)
 					regions[i].disparity_costs(d-regions[i].disparity_offset) = sum_costs/256;//sum_size;
 				else
-					regions[i].disparity_costs(d-regions[i].disparity_offset) = 1.0f;
+					regions[i].disparity_costs(d-regions[i].disparity_offset) = 2.0f;
 			}
 		}
 	}
@@ -627,6 +629,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 		//SAD
 		typedef slidingSAD refinement_metric;
 		disparity_function = calculate_region_generic<sad_disparitywise_calculator>;
+		//disparity_function = calculate_relaxed_region_generic<sad_disparitywise_calculator>;
 		task.algoLeft = task.left;
 		task.algoRight = task.right;
 		ref_func = refineInitialDisparity<refinement_metric, quantizer>;

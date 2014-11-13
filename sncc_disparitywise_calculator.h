@@ -6,6 +6,7 @@
 class sncc_disparitywise_calculator
 {
 public:
+	typedef float result_type;
 	sncc_disparitywise_calculator(const cv::Mat& pbase, const cv::Mat& pmatch);
 	cv::Mat_<float> operator()(int d);
 

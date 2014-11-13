@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
 	//TaskTestSet testset("tasks/bigset");
 	//TaskTestSet testset("tasks/localset");
 	//TaskTestSet testset("tasks/rgbset");
-	StereoTask testset("tasks/kit5"); //5, 3 neuer problemfall?
+	StereoTask testset("tasks/kit3"); //5, 3 neuer problemfall?
 
 	//std::string configfile = "tasks/config-irvl.yml";
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";
@@ -104,8 +104,8 @@ int main(int argc, char *argv[])
 	//std::string configfile = "tasks/config-debug.yml";
 	//std::string configfile = "tasks/config-rgbl-msslic.yml";
 	//std::string configfile = "tasks/config-kit-refine2.yml";
-	//std::string configfile = "tasks/config-kit.yml";
-	std::string configfile = "tasks/config-rgb-slic.yml";
+	std::string configfile = "tasks/config-kit2.yml";
+	//std::string configfile = "tasks/config-rgb-slic.yml";
 	//std::string configfile = "tasks/config-small-woopt.yml";
 
 	/*if(!task.valid())
