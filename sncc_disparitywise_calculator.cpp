@@ -60,6 +60,8 @@ void sncc_kernel(float* result, const float* temp, const float* mu_base, const f
 {
 	const float norm_factor = 1.0/9.0f;
 	float* result_ptr = result;
+
+	std::vector<float> box_temp(cols);
 	for(int y = 0; y < rows; ++y)
 	{
 		int y_offset = y*row_stride;
@@ -79,8 +81,23 @@ void sncc_kernel(float* result, const float* temp, const float* mu_base, const f
 					sum += *temp_ptr++;
 			}
 			sum *= norm_factor;
+			box_temp[x] = sum;
+		}
 
-			*result_ptr++ = 1.0f - (sum - *mu_base_ptr++ * *mu_match_ptr++) * *sigma_base_inv_ptr++ * *sigma_match_inv_ptr++;
+		const float *box_ptr = box_temp.data();
+
+		for(int x = 0; x < cols; ++x)
+		{
+			/*float sum = 0.0f;
+			for(int dy = 0; dy < 3; ++dy)
+			{
+				const float *temp_ptr = temp + (y+dy)*(cols+2)+x;
+				for(int dx = 0; dx < 3; ++dx)
+					sum += *temp_ptr++;
+			}
+			sum *= norm_factor;*/
+
+			*result_ptr++ = 1.0f - (*box_ptr++ - *mu_base_ptr++ * *mu_match_ptr++) * *sigma_base_inv_ptr++ * *sigma_match_inv_ptr++;
 		}
 	}
 }
