@@ -62,16 +62,18 @@ void sncc_kernel(float* result, const float* temp, const float* mu_base, const f
 	float* result_ptr = result;
 
 	std::vector<float> box_temp(cols);
+	std::vector<float> boxcol_temp(cols+2);
 	for(int y = 0; y < rows; ++y)
 	{
-		int y_offset = y*row_stride;
-		//float* result_ptr = result + y_offset;
-		const float* mu_base_ptr = mu_base + y_offset;
-		const float* mu_match_ptr = mu_match + y_offset;
-		const float* sigma_base_inv_ptr = sigma_base_inv + y_offset;
-		const float* sigma_match_inv_ptr = sigma_match_inv + y_offset;
-
+		const float *temp_1 = temp + (y+0)*(cols+2);
+		const float *temp_2 = temp + (y+1)*(cols+2);
+		const float *temp_3 = temp + (y+2)*(cols+2);
 		for(int x = 0; x < cols; ++x)
+		{
+			boxcol_temp[x] = *temp_1++ + *temp_2++ + *temp_3++;
+		}
+
+		/*for(int x = 0; x < cols; ++x)
 		{
 			float sum = 0.0f;
 			for(int dy = 0; dy < 3; ++dy)
@@ -82,8 +84,31 @@ void sncc_kernel(float* result, const float* temp, const float* mu_base, const f
 			}
 			sum *= norm_factor;
 			box_temp[x] = sum;
+		}*/
+		const float* boxcol_temp_ptr = boxcol_temp.data();
+		for(int x = 0; x < cols; ++x)
+		{
+			float sum = 0.0f;
+			/*for(int dy = 0; dy < 3; ++dy)
+			{
+				const float *temp_ptr = temp + (y+dy)*(cols+2)+x;
+				for(int dx = 0; dx < 3; ++dx)
+					sum += *temp_ptr++;
+			}*/
+			for(int dx = 0; dx < 3; ++dx)
+				sum += *(boxcol_temp_ptr + dx);
+			boxcol_temp_ptr++;
+
+			sum *= norm_factor;
+			box_temp[x] = sum;
 		}
 
+		int y_offset = y*row_stride;
+		//float* result_ptr = result + y_offset;
+		const float* mu_base_ptr = mu_base + y_offset;
+		const float* mu_match_ptr = mu_match + y_offset;
+		const float* sigma_base_inv_ptr = sigma_base_inv + y_offset;
+		const float* sigma_match_inv_ptr = sigma_match_inv + y_offset;
 		const float *box_ptr = box_temp.data();
 
 		for(int x = 0; x < cols; ++x)
