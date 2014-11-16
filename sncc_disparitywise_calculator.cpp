@@ -45,19 +45,20 @@ sncc_disparitywise_calculator::sncc_disparitywise_calculator(const cv::Mat& pbas
 	std::cout << "init: " << cv::getCPUTickCount() - start << std::endl;
 }
 
-void preparation_kernel(float* temp, float* base, float* match, int offset_base, int offset_match, int cols, int rows, int row_stride)
+void preparation_kernel(float* temp, const float* base, const float* match, int cols, int rows, int row_stride)
 {
 	for(int y = 0; y < rows; ++y)
 	{
-		float* base_d_ptr = base + y*row_stride+offset_base;
-		float* match_d_ptr = match + y*row_stride + offset_match;
+		const float* base_d_ptr = base + y*row_stride;
+		const float* match_d_ptr = match + y*row_stride;
 		for(int x = 0; x < cols; ++x)
 			*temp++ = *base_d_ptr++ * *match_d_ptr++;
 	}
 }
 
-void sncc_kernel(float* result, float* temp, float* mu_base, float* mu_match, float* sigma_base_inv, float* sigma_match_inv, int rows, int cols, int row_stride)
+void sncc_kernel(float* result, const float* temp, const float* mu_base, const float* mu_match, const float* sigma_base_inv, const float* sigma_match_inv, int rows, int cols, int row_stride)
 {
+	const float norm_factor = 1.0/9.0f;
 	float* result_ptr = result;
 	for(int y = 0; y < rows; ++y)
 	{
@@ -73,13 +74,11 @@ void sncc_kernel(float* result, float* temp, float* mu_base, float* mu_match, fl
 			float sum = 0.0f;
 			for(int dy = 0; dy < 3; ++dy)
 			{
+				const float *temp_ptr = temp + (y+dy)*(cols+2)+x;
 				for(int dx = 0; dx < 3; ++dx)
-				{
-					float *temp_ptr = temp + (y+dy)*(cols+2)+x+dx;
-					sum += *temp_ptr;
-				}
+					sum += *temp_ptr++;
 			}
-			sum /= 9.0f;
+			sum *= norm_factor;
 
 			*result_ptr++ = 1.0f - (sum - *mu_base_ptr++ * *mu_match_ptr++) * *sigma_base_inv_ptr++ * *sigma_match_inv_ptr++;
 		}
@@ -97,7 +96,7 @@ cv::Mat_<float> sncc_disparitywise_calculator::operator()(int d)
 	cv::Mat_<float> result(cv::Size(row_length, rows), 100.0f);
 
 	int thread_idx = omp_get_thread_num();
-	preparation_kernel(temp[thread_idx][0], base_float.ptr<float>(), match_float.ptr<float>(), offset_base, offset_match, row_length+2, rows+2, base_float.cols);
+	preparation_kernel(temp[thread_idx][0], base_float.ptr<float>() + offset_base, match_float.ptr<float>() + offset_match, row_length+2, rows+2, base_float.cols);
 	//sncc_kernel(result[0] + offset_base, temp[thread_idx][0], mu_base[0] + offset_base, mu_match[0] + offset_match, sigma_base_inv[0] + offset_base, sigma_match_inv[0] + offset_match, rows, row_length, base_float.cols - 2);
 	sncc_kernel(result[0], temp[thread_idx][0], mu_base[0] + offset_base, mu_match[0] + offset_match, sigma_base_inv[0] + offset_base, sigma_match_inv[0] + offset_match, rows, row_length, base_float.cols - 2);
 

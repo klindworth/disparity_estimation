@@ -215,7 +215,6 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 		{
 			auto range = getSubrange(regions[i].base_disparity, delta, task);
 			std::size_t idx = d - range.first;
-			std::size_t old_row = range.second - range.first + 1;
 			std::size_t count = regions[i].lineIntervals.size();
 
 			if(d>= range.first && d <= range.second)
@@ -251,7 +250,6 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 		{
 			auto range = getSubrange(regions[i].base_disparity, delta, task);
 			std::size_t idx = d - range.first;
-			std::size_t rowstride = range.second - range.first + 1;
 			std::size_t count = regions[i].lineIntervals.size();
 
 			if(d>= range.first && d <= range.second)
@@ -268,8 +266,6 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 					for(int delta = delta_neg; delta <= delta_pos; ++delta)
 					{
 						float cpenanlty = penalties[std::abs(delta)];
-						//int csize = row_sizes[i][rowstride*j+idx+delta];
-						//float ccost = row_costs[i][rowstride*j+idx+delta] / csize * cpenanlty;
 						int delta_idx = delta*count;
 						int csize = row_sizes[i][count*idx+j+delta_idx];
 						float ccost = row_costs[i][count*idx+j+delta_idx] / csize * cpenanlty;
