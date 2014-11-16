@@ -297,7 +297,7 @@ void RegionWindow::on_pbOptimize_clicked()
 
 		const std::vector<MutualRegion>& other_regions = baseRegion.other_regions[disparity-base.task.dispMin];
 		float disp_pot = getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
-		float stddev = getOtherRegionsAverage(match.regions, other_regions, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
+		//float stddev = getOtherRegionsAverage(match.regions, other_regions, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
 
 		float e_other = getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
 		float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
@@ -305,7 +305,7 @@ void RegionWindow::on_pbOptimize_clicked()
 		float confidence = std::max(getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.stats.confidence2;}), std::numeric_limits<float>::min());
 		//float mi_confidence = getOtherRegionsAverage(match.regions, other_regions, [&](const SegRegion& cregion){return cregion.confidence(-disparity-match.task.dispMin);});
 
-		float stddev_sum = stddev + baseRegion.stats.stddev;
+		//float stddev_sum = stddev + baseRegion.stats.stddev;
 
 		//float own_mi_confidence = std::max(baseRegion.confidence(disparity-base.task.dispMin), std::numeric_limits<float>::min());
 

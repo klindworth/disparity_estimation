@@ -128,13 +128,13 @@ void RegionWidget::mutualDisparity(DisparityRegion& baseRegion, RegionContainer&
 
 		float avg_disp = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return (float)cregion.disparity;});
 		float occ = 0.0;//getOtherRegionsAverage(other_regions, *it, [](const SegRegion& cregion){return cregion.occ_value;});
-		float stddev = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
+		//float stddev = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
 		float disp_pot = getOtherRegionsAverage(other_regions, *it, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(currentDisp+cregion.disparity), 10);});
 		float e_other = getOtherRegionsAverage(other_regions, *it, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-currentDisp-m_matchDispMin);});
 
 		//ratings
-		float stddev_dev = baseRegion.stats.stddev-stddev;
-		float disp_dev = std::abs(currentDisp+avg_disp);
+		//float stddev_dev = baseRegion.stats.stddev-stddev;
+		//float disp_dev = std::abs(currentDisp+avg_disp);
 
 		//float e_base = m_config->base_eval(hyp, current);
 		float e_base = baseRegion.optimization_energy(i);
@@ -166,27 +166,27 @@ void RegionWidget::mutualDisparity(DisparityRegion& baseRegion, RegionContainer&
 	}
 }
 
-void RegionWidget::neighborTree(std::vector<DisparityRegion>& regionsBase, int index, int dispMin)
+void RegionWidget::neighborTree(std::vector<DisparityRegion>& regionsBase, int index, int /*dispMin*/)
 {
 	ui->treeNeighbors->clear();
 	QStringList headers2;
 	headers2 << "Nr" << "Borderlength" << "Disparity" << "color_diff" << "entropy_diff" << "Acc(base)" << "Acc(match)" << "Acc(base)2" << "Acc(match)2";;
 	ui->treeNeighbors->setHeaderLabels(headers2);
-	cv::Mat& base_costs = regionsBase[index].disparity_costs;
+	/*cv::Mat& base_costs = regionsBase[index].disparity_costs;
 	int base_disparity_idx = regionsBase[index].disparity-dispMin;
-	stat_t* base_stat = &(regionsBase[index].stats);
+	stat_t* base_stat = &(regionsBase[index].stats);*/
 	for(const std::pair<std::size_t, std::size_t>& cpair : regionsBase[index].neighbors)
 	{
 		int cidx = cpair.first;
-		cv::Mat& match_costs = regionsBase[cidx].disparity_costs;
+		/*cv::Mat& match_costs = regionsBase[cidx].disparity_costs;
 		int match_disparity_idx = regionsBase[cidx].disparity-dispMin;
-		stat_t* match_stat = &(regionsBase[cidx].stats);
+		stat_t* match_stat = &(regionsBase[cidx].stats);*/
 
-		float accost_base_diff = base_costs.at<float>(match_disparity_idx)-base_costs.at<float>(base_disparity_idx);
+		/*float accost_base_diff = base_costs.at<float>(match_disparity_idx)-base_costs.at<float>(base_disparity_idx);
 		float accost_match_diff = match_costs.at<float>(base_disparity_idx)-match_costs.at<float>(match_disparity_idx);
 
 		float range_base = base_stat->max - base_stat->min;
-		float range_match = match_stat->max - match_stat->min;
+		float range_match = match_stat->max - match_stat->min;*/
 
 		QStringList item;
 		item << QString::number(cidx);

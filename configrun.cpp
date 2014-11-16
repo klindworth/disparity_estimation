@@ -137,8 +137,7 @@ initial_disparity_algo::initial_disparity_algo(InitialDisparityConfig &config, R
 std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(StereoTask& task)
 {
 	int subsampling = 4;
-	std::shared_ptr<segmentation_algorithm> algorithm = getSegmentationClass(m_config.segmentation);
-	return segment_based_disparity_it(task, m_config, m_refconfig, algorithm, subsampling);
+	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling);
 }
 
 void initial_disparity_algo::writeConfig(cv::FileStorage &fs)

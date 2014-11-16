@@ -185,6 +185,7 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 	for(std::size_t i = 0; i < regions_count; ++i)
 		regions[i].disparity_costs = cv::Mat(crange, 1, CV_32FC1, cv::Scalar(500));
 
+	//region:disp:y_interval
 	//region:y_interval*disparity_range
 	std::vector<std::vector<float> > row_costs;
 	std::vector<std::vector<int> > row_sizes;
@@ -207,14 +208,14 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 	#pragma omp parallel for
 	for(int d = task.dispMin; d <= task.dispMax; ++d)
 	{
-		cv::Mat_<typename calculator::result_type> diff = calc(d);
+		cv::Mat diff = calc(d);
 		int base_offset = std::min(0,d);
 
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
 			auto range = getSubrange(regions[i].base_disparity, delta, task);
 			std::size_t idx = d - range.first;
-			std::size_t rowstride = range.second - range.first + 1;
+			std::size_t old_row = range.second - range.first + 1;
 			std::size_t count = regions[i].lineIntervals.size();
 
 			if(d>= range.first && d <= range.second)
@@ -227,11 +228,12 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 					int y = cinterval.y;
 
 					float sum = 0.0;
+					const float *diff_ptr = diff.ptr<float>(y,lower);
 					for(int x = lower; x < upper; ++x)
-						sum += diff(y,x);
+						sum += *diff_ptr++;
 
-					row_costs[i][j*rowstride+idx] = sum;
-					row_sizes[i][j*rowstride+idx] = std::max(upper-lower+1,0);
+					row_costs[i][idx*count+j] = sum;
+					row_sizes[i][idx*count+j] = std::max(upper-lower+1,0);
 				}
 			}
 		}
@@ -266,8 +268,11 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 					for(int delta = delta_neg; delta <= delta_pos; ++delta)
 					{
 						float cpenanlty = penalties[std::abs(delta)];
-						int csize = row_sizes[i][rowstride*j+idx+delta];
-						float ccost = row_costs[i][rowstride*j+idx+delta] / csize * cpenanlty;
+						//int csize = row_sizes[i][rowstride*j+idx+delta];
+						//float ccost = row_costs[i][rowstride*j+idx+delta] / csize * cpenanlty;
+						int delta_idx = delta*count;
+						int csize = row_sizes[i][count*idx+j+delta_idx];
+						float ccost = row_costs[i][count*idx+j+delta_idx] / csize * cpenanlty;
 
 						if(ccost != 0 && ccost < rcost)
 						{
@@ -541,7 +546,7 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 	}
 }
 
-void segment_based_disparity_internal(StereoTask& task, std::shared_ptr<RegionContainer>& left, std::shared_ptr<RegionContainer>& right, const InitialDisparityConfig& config, std::shared_ptr<segmentation_algorithm>& algorithm, disparity_region_func disparity_func)
+void segment_based_disparity_internal(StereoTask& task, std::shared_ptr<RegionContainer>& left, std::shared_ptr<RegionContainer>& right, const InitialDisparityConfig& config, disparity_region_func disparity_func)
 {
 	auto segmentationLeft  = getSegmentationClass(config.segmentation);
 	auto segmentationRight = getSegmentationClass(config.segmentation);
@@ -591,12 +596,12 @@ cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, c
 	return convertDisparityFromPartialCostmap(createDisparity(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
 }
 
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it_internal(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, std::shared_ptr<segmentation_algorithm>& algorithm, int subsampling, disparity_region_func disp_func, refinement_func_type ref_func)
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it_internal(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling, disparity_region_func disp_func, refinement_func_type ref_func)
 {
 	std::shared_ptr<RegionContainer> left  = std::make_shared<RegionContainer>();
 	std::shared_ptr<RegionContainer> right = std::make_shared<RegionContainer>();
 
-	segment_based_disparity_internal(task, left, right, config, algorithm, disp_func);
+	segment_based_disparity_internal(task, left, right, config, disp_func);
 
 	cv::Mat disparity_left  = getDisparityBySegments(*left);
 	cv::Mat disparity_right = getDisparityBySegments(*right);
@@ -617,7 +622,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it_internal(StereoTask& task
 	return std::make_pair(disparity_left, disparity_right);
 }
 
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, std::shared_ptr<segmentation_algorithm>& algorithm, int subsampling)
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling)
 {
 	const int quantizer = 4;
 
@@ -659,5 +664,5 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
 	}
 
-	return segment_based_disparity_it_internal(task, config, refconfig, algorithm, subsampling, disparity_function, ref_func);
+	return segment_based_disparity_it_internal(task, config, refconfig, subsampling, disparity_function, ref_func);
 }

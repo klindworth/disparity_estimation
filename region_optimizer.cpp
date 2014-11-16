@@ -89,7 +89,7 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	}
 }
 
-void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd, const disparity_hypothesis_weight_vector& stat_eval)
+void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd, const disparity_hypothesis_weight_vector& stat_eval, std::vector<float>& result_vector)
 {
 	this->dispStart = dispStart;
 	const int range = dispEnd - dispStart + 1;
@@ -130,7 +130,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		neighbor_pot_values[i] = pot_sum * divider;
 	}
 
-	//color neighbor pot
+	//color neighbor pot //TODO: stays constant during iterations -> dont recalculate
 	float weight_sum = gather_neighbor_color_weights(neighbor_color_weights, baseRegion.average_color, 15.0f, left_regions, baseRegion.neighbors);
 	weight_sum = 1.0f/weight_sum;
 
@@ -153,6 +153,18 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 
 	for(int i = 0; i < range; ++i)
 		end_result[i] = stat_eval.costs * cost_values[i] + stat_eval.lr_pot * lr_pot_values[i] + stat_eval.neighbor_color_pot * neighbor_color_pot_values[i] + stat_eval.neighbor_pot * neighbor_pot_values[i] + stat_eval.occ_avg * occ_avg_values[i];
+
+	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
+	result_vector.resize(range*5);
+	float *result_ptr = result_vector.data();
+	for(int i = 0; i < range; ++i)
+	{
+		*result_ptr++ = cost_values[i];
+		*result_ptr++ = occ_avg_values[i];
+		*result_ptr++ = neighbor_pot_values[i];
+		*result_ptr++ = lr_pot_values[i];
+		*result_ptr++ = neighbor_color_pot_values[i];
+	}
 }
 
 float disparity_hypothesis_vector::operator()(int disp) const
@@ -270,7 +282,7 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
-		hyp_vec(occmaps[thread_idx], baseRegion, base.regions, match.regions, pot_trunc, dispMin, range.first, range.second, stat_eval);
+		hyp_vec(occmaps[thread_idx], baseRegion, base.regions, match.regions, pot_trunc, dispMin, range.first, range.second, stat_eval, baseRegion.optimization_vector);
 		for(short d = range.first; d <= range.second; ++d)
 		{
 			std::vector<MutualRegion>& cregionvec = baseRegion.other_regions[d-dispMin];
