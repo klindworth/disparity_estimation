@@ -130,10 +130,11 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		neighbor_pot_values[i] = pot_sum * divider;
 	}
 
-	//color neighbor pot //TODO: stays constant during iterations -> dont recalculate
+	//TODO: stays constant during iterations -> dont recalculate
 	float weight_sum = gather_neighbor_color_weights(neighbor_color_weights, baseRegion.average_color, 15.0f, left_regions, baseRegion.neighbors);
 	weight_sum = 1.0f/weight_sum;
 
+	//color neighbor pot
 	for(short i = 0; i < range; ++i)
 	{
 		float pot_sum = 0;
@@ -145,6 +146,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	}
 
 	//lr_pot
+	assert(baseRegion.other_regions.size() >= range);
 	for(short cdisp = dispStart; cdisp <= dispEnd; ++cdisp)
 		lr_pot_values[cdisp - dispStart] = getOtherRegionsAverage(right_regions, baseRegion.other_regions[cdisp-dispMin], [&](const DisparityRegion& cregion){return (float)abs_pott(cdisp, (short)-cregion.disparity, pot_trunc);});
 
@@ -165,6 +167,16 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		*result_ptr++ = lr_pot_values[i];
 		*result_ptr++ = neighbor_color_pot_values[i];
 	}
+}
+
+disparity_hypothesis::disparity_hypothesis(const std::vector<float>& optimization_vector, int dispIdx)
+{
+	const float *ptr = optimization_vector.data() + dispIdx * 5;
+	costs = *ptr++;
+	occ_avg = *ptr++;
+	neighbor_pot = *ptr++;
+	lr_pot = *ptr++;
+	neighbor_color_pot = *ptr++;
 }
 
 float calculate_end_result(const float *raw_results, const disparity_hypothesis_weight_vector& wv)
@@ -216,26 +228,6 @@ disparity_hypothesis::disparity_hypothesis(const cv::Mat_<unsigned char>& occmap
 	//misc
 	assert(disparity-dispMin >= 0);
 	costs = baseRegion.disparity_costs(disparity-baseRegion.disparity_offset);
-}
-
-disparity_hypothesis disparity_hypothesis::delta(const disparity_hypothesis& base) const
-{
-	disparity_hypothesis hyp;
-	hyp.costs   = costs - base.costs;
-	hyp.occ_avg = occ_avg - base.occ_avg;
-	hyp.neighbor_pot = neighbor_pot - base.neighbor_pot;
-
-	return hyp;
-}
-
-disparity_hypothesis disparity_hypothesis::abs_delta(const disparity_hypothesis& base) const
-{
-	disparity_hypothesis hyp;
-	hyp.costs   = std::abs(costs - base.costs);
-	hyp.occ_avg = std::abs(occ_avg - base.occ_avg);
-	hyp.neighbor_pot = std::abs(neighbor_pot - base.neighbor_pot);
-
-	return hyp;
 }
 
 template<typename T>

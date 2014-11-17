@@ -54,10 +54,8 @@ class disparity_hypothesis
 {
 public:
 	disparity_hypothesis() {}
+	disparity_hypothesis(const std::vector<float>& optimization_vector, int dispIdx);
 	disparity_hypothesis(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion> &right_regions, short pot_trunc, int dispMin);
-	disparity_hypothesis abs_delta(const disparity_hypothesis& base) const;
-	disparity_hypothesis delta(const disparity_hypothesis& base) const;
-
 	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
 };
 

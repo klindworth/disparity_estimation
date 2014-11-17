@@ -114,20 +114,25 @@ void RegionWidget::mutualDisparity(DisparityRegion& baseRegion, RegionContainer&
 
 	tree->clear();
 	QStringList header;
-	header << "Disp" << "Other Disp" << "DispDiff" << "disp_neigh_color" << /*"Conf" <<*/ "Occ" << "StdDev" << "Costs" << "own_occ" << /*"E_base" <<*/ "E" << "E_own" << "E_Other";
+	header << "Disp" << "Other Disp" << "DispDiff" << "disp_neigh_color" << "StdDev" << "Costs" << "own_occ" << /*"E_base" <<*/ "E" << "E_own" << "E_Other";
 	tree->setColumnCount(header.size());
 	tree->setHeaderLabels(header);
 
 	int pot_trunc = 10;
 
+	disparity_hypothesis_vector dhv;
+	std::vector<float> optimization_vector;
+	int dispMax = dispMin + baseRegion.other_regions.size()-1;
+	dhv(occmap, baseRegion, base.regions, other_regions, pot_trunc, dispMin, dispMin, dispMax, m_config->optimizer.base_eval, optimization_vector);
+
 	int i = 0;
 	for(auto it = baseRegion.other_regions.begin(); it != baseRegion.other_regions.end(); ++it)
 	{
+		disparity_hypothesis hyp(optimization_vector, i);
 		short currentDisp = i + dispMin;
-		disparity_hypothesis hyp(occmap, baseRegion, currentDisp, base.regions, other_regions, pot_trunc, dispMin);
+		//disparity_hypothesis hyp(occmap, baseRegion, currentDisp, base.regions, other_regions, pot_trunc, dispMin);
 
 		float avg_disp = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return (float)cregion.disparity;});
-		float occ = 0.0;//getOtherRegionsAverage(other_regions, *it, [](const SegRegion& cregion){return cregion.occ_value;});
 		//float stddev = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
 		float disp_pot = getOtherRegionsAverage(other_regions, *it, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(currentDisp+cregion.disparity), 10);});
 		float e_other = getOtherRegionsAverage(other_regions, *it, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-currentDisp-m_matchDispMin);});
@@ -144,14 +149,8 @@ void RegionWidget::mutualDisparity(DisparityRegion& baseRegion, RegionContainer&
 		QStringList item;
 		item << QString::number(i+dispMin);
 		item << QString::number(avg_disp);
-		//item << QString::number(disp_dev);
 		item << QString::number(disp_pot);
 		item << QString::number(hyp.neighbor_color_pot);
-		//item << QString::number(conf);
-		item << QString::number(occ);
-		//item << QString::number(stddev/baseRegion.stats.stddev);
-		//item << QString::number(baseRegion.confidence(i));
-		item << QString("no conf");
 		item << QString::number(hyp.costs);
 		item << QString::number(hyp.occ_avg);
 

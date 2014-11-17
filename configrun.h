@@ -34,7 +34,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class StereoTask;
 class DisparityRegion;
-class disparity_hypothesis;
 class RegionContainer;
 class TaskTestSet;
 class ClassicSearchConfig;
