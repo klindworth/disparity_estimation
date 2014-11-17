@@ -205,31 +205,6 @@ float calculate_occ_avg(const cv::Mat_<unsigned char>& occmap, const DisparityRe
 	return (count > 0 ? (float)occ_sum/count : 1.0f);
 }
 
-disparity_hypothesis::disparity_hypothesis(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short disparity, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin)
-{
-	//occ
-	/*int occ_sum = 0;
-	int count = 0;
-	foreach_warped_region_point(baseRegion.lineIntervals, occmap.cols, disparity, [&](cv::Point pt){
-		occ_sum += occmap.at<unsigned char>(pt);
-		++count;
-	});
-	occ_avg = count > 0 ? (float)occ_sum/count : 1;*/
-	occ_avg = calculate_occ_avg(occmap, baseRegion, disparity);
-
-	//neighbors
-	neighbor_pot = getNeighborhoodsAverage(left_regions, baseRegion.neighbors, [&](const DisparityRegion& cregion){return (float) abs_pott(cregion.disparity, disparity, pot_trunc);});
-
-	neighbor_color_pot = getColorWeightedNeighborhoodsAverage(baseRegion.average_color, 15.0f, left_regions, baseRegion.neighbors, [&](const DisparityRegion& cregion){return (float) abs_pott((int)cregion.disparity, (int)disparity, (int)pot_trunc);}).first;
-
-	//lr
-	lr_pot = getOtherRegionsAverage(right_regions, baseRegion.other_regions[disparity-dispMin], [&](const DisparityRegion& cregion){return (float)abs_pott((int)disparity, -cregion.disparity, (int)pot_trunc);});
-
-	//misc
-	assert(disparity-dispMin >= 0);
-	costs = baseRegion.disparity_costs(disparity-baseRegion.disparity_offset);
-}
-
 template<typename T>
 std::size_t min_idx(const cv::Mat_<T>& src, std::size_t preferred = 0)
 {
@@ -269,7 +244,6 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 
 	disparity_hypothesis_vector hyp_vec;
 	#pragma omp parallel for private(hyp_vec)
-	//for(DisparityRegion& baseRegion : base.regions)
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
 		DisparityRegion& baseRegion = base.regions[i];
@@ -290,11 +264,6 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 				//baseRegion.optimization_energy(d-dispMin) = hyp_vec(d);
 		}
 
-		//baseRegion.optimization_minimum = min_idx(baseRegion.optimization_energy);
-		//float opt_val = baseRegion.optimization_energy(baseRegion.optimization_minimum);
-		//std::transform(baseRegion.optimization_energy.begin(), baseRegion.optimization_energy.end(), baseRegion.optimization_energy.begin(), [=](const float& cval){return cval/opt_val;});
-		//for(int i = 0; i < baseRegion.optimization_energy.rows; ++i)
-			//baseRegion.optimization_energy.at<float>(i) /= opt_val;
 		intervals::addRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 	}
 }
