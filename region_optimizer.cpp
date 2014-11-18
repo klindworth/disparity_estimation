@@ -100,7 +100,7 @@ disparity_hypothesis_vector::disparity_hypothesis_vector(const std::vector<Dispa
 		color_cache[i] = base_regions[i].average_color;
 }
 
-void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd, const disparity_hypothesis_weight_vector& stat_eval, std::vector<float>& result_vector)
+void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, const disparity_hypothesis_weight_vector& stat_eval, std::vector<float>& result_vector)
 {
 	this->dispStart = dispStart;
 	const int range = dispEnd - dispStart + 1;
@@ -164,7 +164,11 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	//lr_pot
 	assert(baseRegion.other_regions.size() >= range);
 	for(short cdisp = dispStart; cdisp <= dispEnd; ++cdisp)
-		lr_pot_values[cdisp - dispStart] = getOtherRegionsAverage(right_regions, baseRegion.other_regions[cdisp-dispMin], [&](const DisparityRegion& cregion){return (float)abs_pott(cdisp, (short)-cregion.disparity, pot_trunc);});
+		lr_pot_values[cdisp - dispStart] = other_regions_average_by_index(baseRegion.other_regions[cdisp-dispMin],
+				[&](std::size_t idx){
+			return (float)abs_pott(cdisp, (short)-match_disparities_cache[idx], pot_trunc);
+		});
+		//lr_pot_values[cdisp - dispStart] = getOtherRegionsAverage(right_regions, baseRegion.other_regions[cdisp-dispMin], [&](const DisparityRegion& cregion){return (float)abs_pott(cdisp, (short)-cregion.disparity, pot_trunc);});
 
 	for(int i = 0; i < range; ++i)
 		cost_values[i] = baseRegion.disparity_costs((dispStart+i)-baseRegion.disparity_offset);
@@ -275,7 +279,7 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
-		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, base.regions, match.regions, pot_trunc, dispMin, range.first, range.second, stat_eval, baseRegion.optimization_vector);
+		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, stat_eval, baseRegion.optimization_vector);
 		for(short d = range.first; d <= range.second; ++d)
 		{
 			std::vector<MutualRegion>& cregionvec = baseRegion.other_regions[d-dispMin];

@@ -156,6 +156,17 @@ float getOtherRegionsAverage(const std::vector<DisparityRegion>& container, cons
 	return result;
 }
 
+template<typename lambda_type>
+float other_regions_average_by_index(const std::vector<MutualRegion>& cdisp, lambda_type func)
+{
+	float result = 0.0f;
+	for(const MutualRegion& cval : cdisp)
+	{
+		result += cval.percent * func(cval.index);
+	}
+	return result;
+}
+
 /*template<typename cache_type, typename lambda_type>
 void gather_other_regions_values(std::vector<cache_type>& cache, const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, lambda_type func)
 {
