@@ -38,13 +38,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <functional>
 #include <random>
 
-#if defined(ENABLE_OPENMP)
+//#if defined(ENABLE_OPENMP)
 #include <omp.h>
-#else
-typedef int omp_int_t;
-inline omp_int_t omp_get_thread_num() { return 0;}
-inline omp_int_t omp_get_max_threads() { return 1;}
-#endif
+//#else
+//typedef int omp_int_t;
+//inline omp_int_t omp_get_thread_num() { return 0;}
+//inline omp_int_t omp_get_max_threads() { return 1;}
+//#endif
 
 template<typename sum_type, typename T>
 void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv::Mat_<T>& src, const std::vector<RegionInterval>& region, int dx_min, int dx_max)
@@ -89,6 +89,17 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	}
 }
 
+disparity_hypothesis_vector::disparity_hypothesis_vector(const std::vector<DisparityRegion>& base_regions, const std::vector<DisparityRegion>& match_regions) : base_disparities_cache(base_regions.size()), match_disparities_cache(match_regions.size()), color_cache(base_regions.size())
+{
+	for(std::size_t i = 0; i < match_regions.size(); ++i)
+		match_disparities_cache[i] = match_regions[i].disparity;
+	for(std::size_t i = 0; i < base_regions.size(); ++i)
+		base_disparities_cache[i] = base_regions[i].disparity;
+
+	for(std::size_t i = 0; i < base_regions.size(); ++i)
+		color_cache[i] = base_regions[i].average_color;
+}
+
 void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd, const disparity_hypothesis_weight_vector& stat_eval, std::vector<float>& result_vector)
 {
 	this->dispStart = dispStart;
@@ -110,8 +121,13 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		occ_avg_values[i] = (occ_temp[i].first != 0) ? (float)occ_temp[i].second / occ_temp[i].first : 1;
 
 	//neighbor pot
-	gather_neighbor_values(neighbor_disparities, left_regions, baseRegion.neighbors, [](const DisparityRegion& cregion) {
+	/*gather_neighbor_values(neighbor_disparities, left_regions, baseRegion.neighbors, [](const DisparityRegion& cregion) {
 		return cregion.disparity;
+	});*/
+
+	gather_neighbor_values_idx(neighbor_disparities, baseRegion.neighbors, [&](std::size_t idx){
+		assert(base_disparities_cache.size() > idx);
+		return base_disparities_cache[idx];
 	});
 
 	/*gather_neighbor_values_idx(neighbor_disparities, left_regions, baseRegion.neighbors, [](std::size_t idx) {
@@ -131,7 +147,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	}
 
 	//TODO: stays constant during iterations -> dont recalculate
-	float weight_sum = gather_neighbor_color_weights(neighbor_color_weights, baseRegion.average_color, 15.0f, left_regions, baseRegion.neighbors);
+	float weight_sum = gather_neighbor_color_weights_from_cache(neighbor_color_weights, baseRegion.average_color, 15.0f, color_cache, baseRegion.neighbors);
 	weight_sum = 1.0f/weight_sum;
 
 	//color neighbor pot
@@ -236,14 +252,18 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 	const short dispMin = base.task.dispMin;
 	const short dispRange = base.task.dispMax - base.task.dispMin + 1;
 
+	std::vector<disparity_hypothesis_vector> hyp_vec(omp_get_max_threads(), disparity_hypothesis_vector(base.regions, match.regions));
 	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
 	for(std::size_t i = 0; i < occmaps.size(); ++i)
+	{
 		occmaps[i] = occmap.clone();
+		//hyp_vec.emplace_back(base.regions, match.regions);
+	}
 
 	std::size_t regions_count = base.regions.size();
 
-	disparity_hypothesis_vector hyp_vec;
-	#pragma omp parallel for private(hyp_vec)
+
+	#pragma omp parallel for
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
 		DisparityRegion& baseRegion = base.regions[i];
@@ -255,7 +275,7 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
-		hyp_vec(occmaps[thread_idx], baseRegion, base.regions, match.regions, pot_trunc, dispMin, range.first, range.second, stat_eval, baseRegion.optimization_vector);
+		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, base.regions, match.regions, pot_trunc, dispMin, range.first, range.second, stat_eval, baseRegion.optimization_vector);
 		for(short d = range.first; d <= range.second; ++d)
 		{
 			std::vector<MutualRegion>& cregionvec = baseRegion.other_regions[d-dispMin];

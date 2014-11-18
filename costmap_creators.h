@@ -47,7 +47,7 @@ cv::Mat slidingJointWindow(const cv::Mat& base, const cv::Mat& match, int dispMi
 	cost_class cost_agg(match, windowsize);
 	typename cost_class::thread_type thread_data;
 
-	#pragma omp parallel for default(none) shared(base,match,dispMin, dispMax, cost_agg, cost_map, windowsize) private(thread_data)
+	#pragma omp parallel for private(thread_data)
 	for(int y = y_min; y < y_max; ++y)
 	{
 		cost_agg.prepareRow(thread_data, match, y);
@@ -94,7 +94,7 @@ cv::Mat slidingParametricJointWindow(const cv::Mat& base, const cv::Mat& match, 
 	cost_class cost_agg(match);
 	typename cost_class::thread_type thread_data;
 
-	#pragma omp parallel for default(none) shared(base,match,dispMin, dispMax, cost_agg, cost_map, windowsizes) private(thread_data)
+	#pragma omp parallel for private(thread_data)
 	for(int y = y_min; y < y_max; ++y)
 	{
 		cost_agg.prepareRow(thread_data, match, y);
@@ -145,7 +145,7 @@ cv::Mat slidingParametricJointWindowFlex(const cv::Mat& base, const cv::Mat& mat
 	cost_class cost_agg(match, max_windowsize);
 	typename cost_class::thread_type thread_data;
 
-	#pragma omp parallel for default(none) shared(base,match,disparityRange, rangeCenter, cost_agg, cost_map, windowsizes, dispMin_comp, dispMax_comp) private(thread_data)
+	#pragma omp parallel for private(thread_data)
 	for(int y = y_min; y < y_max; ++y)
 	{
 		cost_agg.prepareRow(thread_data, match, y);
@@ -269,7 +269,7 @@ cv::Mat costmapCalculation(cv::Mat base, data_type data, int dispMin, int dispMa
 
 	cost_class cost_agg(base, data, dispMin);
 
-	#pragma omp parallel for default(none) shared(base, data, result, cost_agg, dispMin, dispMax)
+	#pragma omp parallel for
 	for(int y = 0; y< base.size[0]; ++y)
 	{
 		for(int x = 0; x < base.size[1]; ++x)

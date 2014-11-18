@@ -302,6 +302,15 @@ T getNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor
 	return result/(int)neighbors.size();
 }
 
+/*template<typename lambda_type>
+void index_foreach_neighborhood(const neighbor_vector& neighbors, lambda_func)
+{
+	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
+	{
+		result += func(cpair.first);
+	}
+}*/
+
 template<typename cache_type, typename reg_type, typename lambda_type>
 void gather_neighbor_values(std::vector<cache_type>& cache, const std::vector<reg_type>& container, const neighbor_vector& neighbors, lambda_type gather_caching_value)
 {

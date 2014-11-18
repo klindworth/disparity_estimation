@@ -31,6 +31,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
 #include <functional>
 
+#include <opencv2/core/core.hpp>
+
 template<typename T>
 inline T abs_pott(const T& v1, const T& v2, const T& trunc)
 {
@@ -72,11 +74,15 @@ class disparity_hypothesis_vector
 	std::vector<short> neighbor_disparities;
 	std::vector<float> neighbor_color_weights;
 
+	std::vector<short> base_disparities_cache, match_disparities_cache;
+	std::vector<cv::Vec3d> color_cache;
+
 	//end results
 	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values;
 	std::vector<float> end_result;
 
 public:
+	disparity_hypothesis_vector(const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions);
 	void operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions, short pot_trunc, int dispMin, int dispStart, int dispEnd, const disparity_hypothesis_weight_vector& stat_eval, std::vector<float>& result_vector);
 };
 

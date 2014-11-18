@@ -46,7 +46,7 @@ template<typename T>
 void fuse(fusion_work_data& data, std::vector<T>& regions, cv::Mat_<int>& labels)
 {
 	const std::size_t regions_count = regions.size();
-	#pragma omp parallel for default(none) shared(regions, data)
+	#pragma omp parallel for
 	for(std::size_t master_idx = 0; master_idx < regions_count; ++master_idx)
 	{
 		//regions[master_idx].active = data.active[master_idx];

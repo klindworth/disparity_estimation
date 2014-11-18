@@ -220,6 +220,23 @@ inline float gather_neighbor_color_weights(std::vector<float>& weights, const cv
 	return std::max(std::numeric_limits<float>::min(), sum_weight);
 }
 
+inline float gather_neighbor_color_weights_from_cache(std::vector<float>& weights, const cv::Vec3d& base_color, double color_trunc, const std::vector<cv::Vec3d>& color_cache, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors)
+{
+	std::size_t nsize = neighbors.size();
+	weights.resize(nsize);
+
+	float sum_weight = 0.0f;
+	for(std::size_t i = 0; i < nsize; ++i)
+	{
+		float diff = color_trunc - std::min(cv::norm(base_color - color_cache[neighbors[i].first]), color_trunc);
+
+		weights[i] = diff;
+		sum_weight += diff;
+	}
+
+	return std::max(std::numeric_limits<float>::min(), sum_weight);
+}
+
 cv::Mat getDisparityBySegments(const RegionContainer &container);
 
 int reenumerate(cv::Mat& labels, int old_count);

@@ -115,7 +115,7 @@ cv::Mat_<short> wta_disparity(cv::Mat base, data_type data, int dispMin, int dis
 
 	cost_class cost_agg(base, data, dispMin);
 
-	#pragma omp parallel for default(none) shared(base, data, result, cost_agg, dispMin, dispMax)
+	#pragma omp parallel for
 	for(int y = 0; y< base.size[0]; ++y)
 	{
 		for(int x = 0; x < base.size[1]; ++x)
