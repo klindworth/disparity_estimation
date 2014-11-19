@@ -22,7 +22,6 @@ public:
 private:
 	cv::Mat_<float> base_float, match_float;
 	cv::Mat_<float> mu_base, mu_match, sigma_base_inv, sigma_match_inv;
-	std::vector<cv::Mat_<float> > temp;
 	std::vector<sncc_task_cache> cache;
 };
 

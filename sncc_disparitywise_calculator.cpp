@@ -39,11 +39,6 @@ sncc_disparitywise_calculator::sncc_disparitywise_calculator(const cv::Mat& pbas
 
 	cache = std::vector<sncc_task_cache>(omp_get_max_threads(), sncc_task_cache(pbase.cols));
 
-	int threads = omp_get_max_threads();
-	//int threads = 1;
-	for(int i = 0; i < threads; ++i)
-		temp.emplace_back(base_float.size());
-
 	std::cout << "init: " << cv::getCPUTickCount() - start << std::endl;
 }
 
