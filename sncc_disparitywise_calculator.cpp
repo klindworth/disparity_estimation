@@ -37,6 +37,8 @@ sncc_disparitywise_calculator::sncc_disparitywise_calculator(const cv::Mat& pbas
 	cv::sqrt(sq_match_box - mu_match_sq, sigma_match_inv);
 	cv::pow(sigma_match_inv, -1, sigma_match_inv);
 
+	cache = std::vector<sncc_task_cache>(omp_get_max_threads(), sncc_task_cache(pbase.cols));
+
 	int threads = omp_get_max_threads();
 	//int threads = 1;
 	for(int i = 0; i < threads; ++i)
@@ -45,51 +47,36 @@ sncc_disparitywise_calculator::sncc_disparitywise_calculator(const cv::Mat& pbas
 	std::cout << "init: " << cv::getCPUTickCount() - start << std::endl;
 }
 
-void preparation_kernel(float* temp, const float* base, const float* match, int cols, int rows, int row_stride)
-{
-	for(int y = 0; y < rows; ++y)
-	{
-		const float* base_d_ptr = base + y*row_stride;
-		const float* match_d_ptr = match + y*row_stride;
-		for(int x = 0; x < cols; ++x)
-			*temp++ = *base_d_ptr++ * *match_d_ptr++;
-	}
-}
-
 inline void prepare_line(float *temp, const float* base, const float* match, int cols)
 {
 	for(int x = 0; x < cols; ++x)
 		*temp++ = *base++ * *match++;
 }
 
-void sncc_kernel(float* result, const float* mu_base, const float* mu_match, const float* sigma_base_inv, const float* sigma_match_inv, int rows, int cols, int row_stride, const float* base, const float *match)
+void sncc_kernel(float* result, const float* mu_base, const float* mu_match, const float* sigma_base_inv, const float* sigma_match_inv, int rows, int cols, int row_stride, const float* base, const float *match, sncc_task_cache& cache)
 {
 	const float norm_factor = 1.0/9.0f;
 	float* result_ptr = result;
 
-	std::vector<std::vector<float>> coltemp(3, std::vector<float>(cols+2));
-	//std::array<std::vector<float>,3> coltemp(std::vector<float>(cols+2));
 	for(int i = 0; i < 2; ++i)
-		prepare_line(coltemp[i].data(), base + i*(row_stride+2), match + i*(row_stride+2), cols+2);
-	int replace_idx = 2;
+		prepare_line(cache.coltemp[i].data(), base + i*(row_stride+2), match + i*(row_stride+2), cols+2);
+	cache.replace_idx = 2;
 
-	std::vector<float> box_temp(cols);
-	std::vector<float> boxcol_temp(cols+2);
 	for(int y = 0; y < rows; ++y)
 	{
-		prepare_line(coltemp[replace_idx].data(), base+(y+2)*(row_stride+2), match+(y+2)*(row_stride+2), cols+2);
-		replace_idx = (replace_idx+1) %3;
+		prepare_line(cache.coltemp[cache.replace_idx].data(), base+(y+2)*(row_stride+2), match+(y+2)*(row_stride+2), cols+2);
+		cache.replace_idx = (cache.replace_idx+1) %3;
 
-		const float *temp_1 = coltemp[0].data();
-		const float *temp_2 = coltemp[1].data();
-		const float *temp_3 = coltemp[2].data();
+		const float *temp_1 = cache.coltemp[0].data();
+		const float *temp_2 = cache.coltemp[1].data();
+		const float *temp_3 = cache.coltemp[2].data();
 
 		for(int x = 0; x < cols+2; ++x)
 		{
-			boxcol_temp[x] = *temp_1++ + *temp_2++ + *temp_3++;
+			cache.boxcol_temp[x] = *temp_1++ + *temp_2++ + *temp_3++;
 		}
 
-		const float* boxcol_temp_ptr = boxcol_temp.data();
+		const float* boxcol_temp_ptr = cache.boxcol_temp.data();
 		for(int x = 0; x < cols; ++x)
 		{
 			float sum = 0.0f;
@@ -98,7 +85,7 @@ void sncc_kernel(float* result, const float* mu_base, const float* mu_match, con
 			boxcol_temp_ptr++;
 
 			sum *= norm_factor;
-			box_temp[x] = sum;
+			cache.box_temp[x] = sum;
 		}
 
 		int y_offset = y*row_stride;
@@ -106,7 +93,7 @@ void sncc_kernel(float* result, const float* mu_base, const float* mu_match, con
 		const float* mu_match_ptr = mu_match + y_offset;
 		const float* sigma_base_inv_ptr = sigma_base_inv + y_offset;
 		const float* sigma_match_inv_ptr = sigma_match_inv + y_offset;
-		const float *box_ptr = box_temp.data();
+		const float *box_ptr = cache.box_temp.data();
 
 		for(int x = 0; x < cols; ++x)
 		{
@@ -126,10 +113,7 @@ cv::Mat_<float> sncc_disparitywise_calculator::operator()(int d)
 	cv::Mat_<float> result(cv::Size(row_length, rows), 100.0f);
 
 	int thread_idx = omp_get_thread_num();
-	//preparation_kernel(temp[thread_idx][0], base_float.ptr<float>() + offset_base, match_float.ptr<float>() + offset_match, row_length+2, rows+2, base_float.cols);
-	//sncc_kernel(result[0] + offset_base, temp[thread_idx][0], mu_base[0] + offset_base, mu_match[0] + offset_match, sigma_base_inv[0] + offset_base, sigma_match_inv[0] + offset_match, rows, row_length, base_float.cols - 2);
-	//sncc_kernel(result[0], temp[thread_idx][0], mu_base[0] + offset_base, mu_match[0] + offset_match, sigma_base_inv[0] + offset_base, sigma_match_inv[0] + offset_match, rows, row_length, base_float.cols - 2);
-	sncc_kernel(result[0], mu_base[0] + offset_base, mu_match[0] + offset_match, sigma_base_inv[0] + offset_base, sigma_match_inv[0] + offset_match, rows, row_length, base_float.cols - 2, base_float.ptr<float>() + offset_base, match_float.ptr<float>() + offset_match);
+	sncc_kernel(result[0], mu_base[0] + offset_base, mu_match[0] + offset_match, sigma_base_inv[0] + offset_base, sigma_match_inv[0] + offset_match, rows, row_length, base_float.cols - 2, base_float.ptr<float>() + offset_base, match_float.ptr<float>() + offset_match, cache[thread_idx]);
 
 	return result;
 }
