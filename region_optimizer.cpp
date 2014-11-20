@@ -292,6 +292,38 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 	}
 }
 
+void refresh_optimization_vector(RegionContainer& base, const RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
+{
+	cv::Mat disp = getDisparityBySegments(base);
+	cv::Mat occmap = occlusionStat<short>(disp, 1.0);
+	int pot_trunc = 10;
+
+	const short dispMin = base.task.dispMin;
+
+	std::vector<disparity_hypothesis_vector> hyp_vec(omp_get_max_threads(), disparity_hypothesis_vector(base.regions, match.regions));
+	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
+	for(std::size_t i = 0; i < occmaps.size(); ++i)
+	{
+		occmaps[i] = occmap.clone();
+	}
+
+	std::size_t regions_count = base.regions.size();
+
+
+	#pragma omp parallel for
+	for(std::size_t i = 0; i < regions_count; ++i)
+	{
+		DisparityRegion& baseRegion = base.regions[i];
+		int thread_idx = omp_get_thread_num();
+		//int thread_idx = 0;
+		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
+
+		intervals::substractRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
+		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, stat_eval, baseRegion.optimization_vector);
+		intervals::addRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
+	}
+}
+
 void optimize(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
 {
 	/*std::size_t reg_left = base.regions.size();
@@ -357,80 +389,109 @@ void optimize(RegionContainer& base, RegionContainer& match, const disparity_hyp
 	}
 }
 
+void gather_region_optimization_vector(float *dst_ptr, const DisparityRegion& baseRegion, const RegionContainer& match, int delta, const StereoSingleTask& task, const std::vector<float>& normalization_vector)
+{
+	const int vector_size = 5;
+	const int crange = task.dispMax - task.dispMin + 1;
+	auto range = getSubrange(baseRegion.base_disparity, delta, task);
+
+	std::vector<float> other_optimization_vector(crange*vector_size);
+	std::vector<float> disp_optimization_vector(vector_size);
+	for(short d = range.first; d < range.second; ++d)
+	{
+		std::fill(disp_optimization_vector.begin(), disp_optimization_vector.end(), 0.0f);
+		int corresponding_disp_idx = -d - match.task.dispMin;
+		foreach_corresponding_region(baseRegion.other_regions[d-task.dispMin], [&](std::size_t idx, float percent) {
+			const float* it = &(match.regions[idx].optimization_vector[corresponding_disp_idx*vector_size]);
+			for(int i = 0; i < vector_size; ++i)
+				disp_optimization_vector[i] += percent * *it++;
+		});
+
+		std::copy(disp_optimization_vector.begin(), disp_optimization_vector.end(), &(other_optimization_vector[(d-range.first)*vector_size]));
+	}
+
+
+
+	for(int i = 0; i < crange; ++i)
+	{
+		int offset = i*vector_size;
+		for(int j = 0; j <  vector_size; ++j)
+			*dst_ptr++ = baseRegion.optimization_vector[offset+j] * normalization_vector[j];
+		for(int j = vector_size; j < vector_size*2; ++j)
+			*dst_ptr++ = other_optimization_vector[offset+j-vector_size] * normalization_vector[j];
+	}
+}
+
 void optimize_ml(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
 {
+	const int vector_size = 10;
+	std::cout << "base" << std::endl;
+	refresh_optimization_vector(base, match, base_eval, delta);
+	refresh_optimization_vector(match, base, base_eval, delta);
+	std::cout << "optimize" << std::endl;
+
+	const int crange = base.task.dispMax - base.task.dispMin + 1;
+
+	const std::size_t regions_count = base.regions.size();
+	std::vector<float> normalization_vector(vector_size,1.0f);
+	#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
+	for(std::size_t j = 0; j < regions_count; ++j)
+	{
+		std::vector<float> region_optimization_vector(crange*vector_size); //recycle taskwise in prediction mode
+		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], match, delta, base.task, normalization_vector);
+
+		//TODO: call predict function and save result
+	}
+}
+
+void normalize_feature_vector(float *ptr, int n, const std::vector<float>& normalization_vector)
+{
+	int vector_size = normalization_vector.size();
+	for(int j = 0; j < n; ++j)
+	{
+		for(int i = 0; i < vector_size; ++i)
+			*ptr = *ptr * normalization_vector[i];
+	}
+}
+
+void train_ml_optimizer(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, int delta)
+{
+	const int vector_size = 10;
+
 	std::cout << "base" << std::endl;
 	refreshOptimizationBaseValues(base, match, base_eval, delta);
 	refreshOptimizationBaseValues(match, base, base_eval, delta);
 	std::cout << "optimize" << std::endl;
 
-	const int dispMin = base.task.dispMin;
 	const int crange = base.task.dispMax - base.task.dispMin + 1;
-	cv::Mat_<float> temp_results(crange, 1, 100.0f);
 
 	const std::size_t regions_count = base.regions.size();
-	#pragma omp parallel for default(none) shared(base, match, prop_eval, delta) private(temp_results)
+	std::vector<float> normalization_vector(vector_size,1.0f);
+	std::vector<float> featurevector(crange*vector_size*regions_count);
+
+	std::vector<float> sums(vector_size, 0.0f); //per thread!!
+	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		DisparityRegion& baseRegion = base.regions[j];
-		temp_results = cv::Mat_<float>(crange, 1, 5500.0f);
-		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
+		gather_region_optimization_vector(featurevector.data() + j*crange*vector_size, base.regions[j], match, delta, base.task, normalization_vector);
 
-		std::vector<float> other_optimization_vector(crange*5);
-		std::vector<float> disp_optimization_vector(5);
-		for(short d = range.first; d < range.second; ++d)
+		const float *src_ptr = featurevector.data() + j*crange*vector_size;
+		for(int k = 0; k < crange; ++k)
 		{
-			std::fill(disp_optimization_vector.begin(), disp_optimization_vector.end(), 0.0f);
-			int corresponding_disp_idx = -d - match.task.dispMin;
-			foreach_corresponding_region(baseRegion.other_regions[d-base.task.dispMin], [&](std::size_t idx, float percent) {
-				const float* it = &(match.regions[idx].optimization_vector[corresponding_disp_idx*5]);
-				for(int i = 0; i < 5; ++i)
-					disp_optimization_vector[i] += percent * *it++;
-			});
-
-			std::copy(disp_optimization_vector.begin(), disp_optimization_vector.end(), &(other_optimization_vector[(d-range.first)*5]));
+			for(int i = 0; i < vector_size; ++i)
+				sums[i] += *src_ptr++;
 		}
-
-		std::vector<float> region_optimization_vector(crange*10);
-		std::vector<float> normalization_vector(10,1.0f);
-
-		float* dst_ptr = region_optimization_vector.data();
-		for(int i = 0; i < crange; ++i)
-		{
-			int offset = i*5;
-			for(int j = 0; j <  5; ++j)
-				*dst_ptr++ = baseRegion.optimization_vector[offset+j] * normalization_vector[j];
-			for(int j = 5; j < 10; ++j)
-				*dst_ptr++ = other_optimization_vector[offset+j-5] * normalization_vector[j];
-		}
-
-		for(short d = range.first; d < range.second; ++d)
-		{
-			if(!baseRegion.other_regions[d-dispMin].empty())
-			{
-				int disparity = d;
-				const std::vector<MutualRegion>& other_regions = baseRegion.other_regions[disparity-base.task.dispMin];
-				//unneccessary
-				float disp_pot = getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
-
-				//TODO: replace
-				float e_other = getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
-				float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
-
-				//remain? maybe useless, because the confidence calculation uses only costs
-				float confidence_own = baseRegion.stats.confidence2;
-				float confidence_other = std::max(getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.stats.confidence2;}), std::numeric_limits<float>::min());
-
-				float result = (confidence_own *e_base+confidence_other*e_other) / (confidence_other + confidence_own) + disp_pot/2.5f;
-
-				temp_results(d-dispMin) = result;
-			}
-		}
-
-		short ndisparity = min_idx(temp_results, baseRegion.disparity - dispMin) + dispMin;
-
-		baseRegion.disparity = ndisparity;
 	}
+
+	//gather normalization
+	float sum_normalizer = regions_count * crange;
+	for(int i = 0; i < vector_size; ++i)
+		sums[i] = sum_normalizer / sums[i];
+
+	//apply normalization
+	normalize_feature_vector(featurevector.data(), regions_count*crange, sums);
+
+	//TODO: call training function
 }
 
 void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement)
