@@ -318,7 +318,7 @@ void optimize(RegionContainer& base, RegionContainer& match, const disparity_hyp
 	cv::Mat_<float> temp_results(crange, 1, 100.0f);
 
 	const std::size_t regions_count = base.regions.size();
-	#pragma omp parallel for default(none) shared(base, match, prop_eval, delta) private(random_dist, random_gen, temp_results)
+	//pragma omp parallel for default(none) shared(base, match, prop_eval, delta) private(random_dist, random_gen, temp_results)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
 		DisparityRegion& baseRegion = base.regions[j];
@@ -354,6 +354,82 @@ void optimize(RegionContainer& base, RegionContainer& match, const disparity_hyp
 			else
 				baseRegion.damping_history = 0;
 		}
+	}
+}
+
+void optimize_ml(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
+{
+	std::cout << "base" << std::endl;
+	refreshOptimizationBaseValues(base, match, base_eval, delta);
+	refreshOptimizationBaseValues(match, base, base_eval, delta);
+	std::cout << "optimize" << std::endl;
+
+	const int dispMin = base.task.dispMin;
+	const int crange = base.task.dispMax - base.task.dispMin + 1;
+	cv::Mat_<float> temp_results(crange, 1, 100.0f);
+
+	const std::size_t regions_count = base.regions.size();
+	#pragma omp parallel for default(none) shared(base, match, prop_eval, delta) private(temp_results)
+	for(std::size_t j = 0; j < regions_count; ++j)
+	{
+		DisparityRegion& baseRegion = base.regions[j];
+		temp_results = cv::Mat_<float>(crange, 1, 5500.0f);
+		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
+
+		std::vector<float> other_optimization_vector(crange*5);
+		std::vector<float> disp_optimization_vector(5);
+		for(short d = range.first; d < range.second; ++d)
+		{
+			std::fill(disp_optimization_vector.begin(), disp_optimization_vector.end(), 0.0f);
+			int corresponding_disp_idx = -d - match.task.dispMin;
+			foreach_corresponding_region(baseRegion.other_regions[d-base.task.dispMin], [&](std::size_t idx, float percent) {
+				const float* it = &(match.regions[idx].optimization_vector[corresponding_disp_idx*5]);
+				for(int i = 0; i < 5; ++i)
+					disp_optimization_vector[i] += percent * *it++;
+			});
+
+			std::copy(disp_optimization_vector.begin(), disp_optimization_vector.end(), &(other_optimization_vector[(d-range.first)*5]));
+		}
+
+		std::vector<float> region_optimization_vector(crange*10);
+		std::vector<float> normalization_vector(10,1.0f);
+
+		float* dst_ptr = region_optimization_vector.data();
+		for(int i = 0; i < crange; ++i)
+		{
+			int offset = i*5;
+			for(int j = 0; j <  5; ++j)
+				*dst_ptr++ = baseRegion.optimization_vector[offset+j] * normalization_vector[j];
+			for(int j = 5; j < 10; ++j)
+				*dst_ptr++ = other_optimization_vector[offset+j-5] * normalization_vector[j];
+		}
+
+		for(short d = range.first; d < range.second; ++d)
+		{
+			if(!baseRegion.other_regions[d-dispMin].empty())
+			{
+				int disparity = d;
+				const std::vector<MutualRegion>& other_regions = baseRegion.other_regions[disparity-base.task.dispMin];
+				//unneccessary
+				float disp_pot = getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
+
+				//TODO: replace
+				float e_other = getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
+				float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
+
+				//remain? maybe useless, because the confidence calculation uses only costs
+				float confidence_own = baseRegion.stats.confidence2;
+				float confidence_other = std::max(getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.stats.confidence2;}), std::numeric_limits<float>::min());
+
+				float result = (confidence_own *e_base+confidence_other*e_other) / (confidence_other + confidence_own) + disp_pot/2.5f;
+
+				temp_results(d-dispMin) = result;
+			}
+		}
+
+		short ndisparity = min_idx(temp_results, baseRegion.disparity - dispMin) + dispMin;
+
+		baseRegion.disparity = ndisparity;
 	}
 }
 

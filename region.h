@@ -89,6 +89,8 @@ public:
 	float confidence3;
 
 	MutualRegion getMutualRegion(std::size_t idx, std::size_t disparity_idx);
+
+	std::vector<float> complete;
 };
 
 struct RegionContainer : public segmentation_image<DisparityRegion>
@@ -165,6 +167,13 @@ float other_regions_average_by_index(const std::vector<MutualRegion>& cdisp, lam
 		result += cval.percent * func(cval.index);
 	}
 	return result;
+}
+
+template<typename lambda_type>
+void foreach_corresponding_region(const std::vector<MutualRegion>& cdisp, lambda_type func)
+{
+	for(const MutualRegion& cval : cdisp)
+		func(cval.index, cval.percent);
 }
 
 /*template<typename cache_type, typename lambda_type>
