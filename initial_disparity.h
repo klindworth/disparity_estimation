@@ -29,6 +29,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <functional>
 #include <memory>
+#include "configrun.h"
+#include "refinement.h"
 
 namespace cv {
 	class Mat;
@@ -50,5 +52,35 @@ void generateRegionInformation(RegionContainer& left, RegionContainer& right);
 //void getRegionDisparity(SegRegion& pixel_idx, const cv::Mat &base, const cv::Mat &match, int dispMin, int dispMax, unsigned int dilate_grow);
 std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config, const RefinementConfig& refconfig, int subsampling);
 //std::pair<cv::Mat, cv::Mat> segment_based_disparity_lss(StereoTask& task, const InitialDisparityConfig &config, std::shared_ptr<segmentation_algorithm>& algorithm);
+
+class InitialDisparityConfig
+{
+public:
+	std::string name;
+	unsigned int dilate;
+	int dilate_step;
+	bool dilate_grow;
+	bool enable_refinement;
+	bool enable_costsmoothing;
+	int occ_rounds;
+	int region_refinement_delta;
+	int region_refinement_rounds;
+
+	segmentation_settings segmentation;
+	optimizer_settings optimizer;
+	bool verbose;
+};
+
+class initial_disparity_algo : public disparity_estimator_algo
+{
+public:
+	initial_disparity_algo(InitialDisparityConfig& config, RefinementConfig& refconfig);
+	virtual std::pair<cv::Mat, cv::Mat> operator()(StereoTask& task);
+	virtual void writeConfig(cv::FileStorage& fs);
+
+private:
+	InitialDisparityConfig m_config;
+	RefinementConfig m_refconfig;
+};
 
 #endif // INITIAL_DISPARITY_H

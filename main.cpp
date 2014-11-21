@@ -146,10 +146,6 @@ int main(int argc, char *argv[])
 
 	loggedRun(testset, config, refconfig);
 
-	MatStoreViewer sviewer;
-	sviewer.refreshList(matstore);
-	sviewer.show();
-
 	ImageStore imviewer;
 	imviewer.refreshList(matstore);
 	imviewer.show();

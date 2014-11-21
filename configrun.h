@@ -49,35 +49,10 @@ public:
 	virtual void writeConfig(cv::FileStorage& fs) = 0;
 };
 
-class InitialDisparityConfig
-{
-public:
-	std::string name;
-	unsigned int dilate;
-	int dilate_step;
-	bool dilate_grow;
-	bool enable_refinement;
-	bool enable_costsmoothing;
-	int occ_rounds;
-	int region_refinement_delta;
-	int region_refinement_rounds;
-
-	segmentation_settings segmentation;
-	optimizer_settings optimizer;
-	bool verbose;
-};
-
-template<typename charT, typename traits>
-inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const InitialDisparityConfig& config)
-{
-	stream << "segmentation: " << config.segmentation.algorithm << "\ndilate: " << config.dilate << "\nrefinement: " << config.enable_refinement << "\nregionsplit: " << config.segmentation.enable_regionsplit << "\nfusion: " << config.segmentation.enable_fusion << "\noptimization_rounds:" << config.optimizer.rounds << "\ncost_smoothing" << config.enable_costsmoothing;
-	return stream;
-}
-
 cv::FileStorage& operator<<(cv::FileStorage& stream, const InitialDisparityConfig& config);
 cv::FileStorage& operator>>(cv::FileStorage& stream, InitialDisparityConfig& config);
 
-void singleLoggedRun(StereoTask& task, disparity_estimator_algo &disparity_estimator, cv::FileStorage& fs, const std::string& filename);
+std::pair<cv::Mat, cv::Mat> singleLoggedRun(StereoTask& task, disparity_estimator_algo &disparity_estimator, cv::FileStorage& fs, const std::string& filename);
 void loggedRun(StereoTask& task, InitialDisparityConfig& config, RefinementConfig& refconfig);
 void loggedRun(TaskCollection& testset, InitialDisparityConfig& config, RefinementConfig& refconfig);
 void classicLoggedRun(TaskCollection& taskset, ClassicSearchConfig& config);

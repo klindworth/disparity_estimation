@@ -65,12 +65,12 @@ std::string timestampString()
 	return std::string(buffer);
 }
 
-void singleLoggedRun(StereoTask& task, disparity_estimator_algo& disparity_estimator, cv::FileStorage& fs, const std::string& filename)
+std::pair<cv::Mat, cv::Mat> singleLoggedRun(StereoTask& task, disparity_estimator_algo& disparity_estimator, cv::FileStorage& fs, const std::string& filename)
 {
+	bool logging = true;
 	int subsampling = 1; //TODO: avoid this
 	std::time_t starttime;
 	std::time(&starttime);
-
 
 	std::pair<cv::Mat, cv::Mat> disparity = disparity_estimator(task);
 
@@ -81,33 +81,42 @@ void singleLoggedRun(StereoTask& task, disparity_estimator_algo& disparity_estim
 	std::cout << "finished" << std::endl;
 
 	TaskAnalysis analysis(task, disparity.first, disparity.second, subsampling);
-
-	fs << "taskname" << task.name;
-	fs << "total_runtime" << total_runtime;
-	fs << task;
-	fs << analysis;
-
-	matToFile(disparity.first, filename + "-left.cvmat");
-	matToFile(disparity.second, filename + "-right.cvmat");
 	cv::Mat disp_left  = createDisparityImage(disparity.first);
 	cv::Mat disp_right = createDisparityImage(disparity.second);
-	cv::imwrite(filename + "-left.png",  disp_left);
-	cv::imwrite(filename + "-right.png", disp_right);
+	if(logging)
+	{
+		fs << "taskname" << task.name;
+		fs << "total_runtime" << total_runtime;
+		fs << task;
+		fs << analysis;
+
+		matToFile(disparity.first, filename + "-left.cvmat");
+		matToFile(disparity.second, filename + "-right.cvmat");
+
+		cv::imwrite(filename + "-left.png",  disp_left);
+		cv::imwrite(filename + "-right.png", disp_right);
+	}
+
 	matstore.addMat(disp_left,  "disp_left");
 	matstore.addMat(disp_right, "disp_right");
+
 	if(task.groundLeft.data)
 	{
 		cv::Mat err_image = getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_left);
-		cv::imwrite(filename + "_error-left.png", err_image);
+		if(logging)
+			cv::imwrite(filename + "_error-left.png", err_image);
 		matstore.addMat(err_image, "ground-diff-left");
 		matstore.addMat(task.groundLeft, "groundLeft");
 	}
 	if(task.groundRight.data)
 	{
 		cv::Mat err_image = getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_right);
-		cv::imwrite(filename + "_error-right.png", err_image);
+		if(logging)
+			cv::imwrite(filename + "_error-right.png", err_image);
 		matstore.addMat(err_image, "ground-diff-right");
 	}
+
+	return disparity;
 }
 
 void loggedRun(StereoTask& task, InitialDisparityConfig& config, RefinementConfig& refconfig)
@@ -118,34 +127,6 @@ void loggedRun(StereoTask& task, InitialDisparityConfig& config, RefinementConfi
 	loggedRun(testset, config, refconfig);
 }
 
-
-class initial_disparity_algo : public disparity_estimator_algo
-{
-public:
-	initial_disparity_algo(InitialDisparityConfig& config, RefinementConfig& refconfig);
-	virtual std::pair<cv::Mat, cv::Mat> operator()(StereoTask& task);
-	virtual void writeConfig(cv::FileStorage& fs);
-
-private:
-	InitialDisparityConfig m_config;
-	RefinementConfig m_refconfig;
-};
-
-initial_disparity_algo::initial_disparity_algo(InitialDisparityConfig &config, RefinementConfig &refconfig) : m_config(config), m_refconfig(refconfig)
-{
-}
-
-std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(StereoTask& task)
-{
-	int subsampling = 4;
-	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling);
-}
-
-void initial_disparity_algo::writeConfig(cv::FileStorage &fs)
-{
-	fs << m_config;
-	fs << m_refconfig;
-}
 
 void loggedRun(TaskCollection& testset, disparity_estimator_algo& disparity_estimator)
 {

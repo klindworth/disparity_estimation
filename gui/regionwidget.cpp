@@ -114,7 +114,7 @@ void RegionWidget::mutualDisparity(DisparityRegion& baseRegion, RegionContainer&
 
 	tree->clear();
 	QStringList header;
-	header << "Disp" << "Other Disp" << "DispDiff" << "disp_neigh_color" << "StdDev" << "Costs" << "own_occ" << /*"E_base" <<*/ "E" << "E_own" << "E_Other";
+	header << "Disp" << "Other Disp" << "DispDiff" << "disp_neigh_color" << "Costs" << "own_occ" << /*"E_base" <<*/ "E" << "E_own" << "E_Other";
 	tree->setColumnCount(header.size());
 	tree->setHeaderLabels(header);
 

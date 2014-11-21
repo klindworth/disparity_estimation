@@ -542,80 +542,9 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 	}
 }
 
-void segment_based_disparity_internal(StereoTask& task, std::shared_ptr<RegionContainer>& left, std::shared_ptr<RegionContainer>& right, const InitialDisparityConfig& config, disparity_region_func disparity_func)
-{
-	auto segmentationLeft  = getSegmentationClass(config.segmentation);
-	auto segmentationRight = getSegmentationClass(config.segmentation);
-
-	fillRegionContainer(left, task.forward, segmentationLeft);
-	fillRegionContainer(right, task.backward, segmentationRight);
-
-	for(DisparityRegion& cregion : left->regions)
-		cregion.base_disparity = 0;
-	for(DisparityRegion& cregion : right->regions)
-		cregion.base_disparity = 0;
-
-	single_pass_region_disparity(task, *left, *right, config, false, disparity_func);
-
-	//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_fused_left");
-	//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_fused_right");
-
-	InitialDisparityConfig config2 = config;
-	for(int i = 0; i < config2.region_refinement_rounds; ++i)
-	{
-		//regionwise refinement
-		if(config2.region_refinement_delta != 0)
-		{
-			std::cout << "refine: " << config2.region_refinement_delta << std::endl;
-			//segmentationLeft->refine(*left);
-			//segmentationRight->refine(*right);
-			segmentationLeft->std_refinement(*left);
-			segmentationRight->std_refinement(*right);
-
-			//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_unfused_left");
-			//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_unfused_right");
-
-			single_pass_region_disparity(task, *left, *right, config2, true, disparity_func);
-
-			config2.region_refinement_delta /= 2;
-
-			for(DisparityRegion cregion : left->regions)
-				cregion.base_disparity = cregion.disparity;
-			for(DisparityRegion cregion : right->regions)
-				cregion.base_disparity = cregion.disparity;
-		}
-	}
-}
-
 cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, const RefinementConfig& refconfig, int subsampling = 1)
 {
 	return convertDisparityFromPartialCostmap(createDisparity(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
-}
-
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it_internal(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling, disparity_region_func disp_func, refinement_func_type ref_func)
-{
-	std::shared_ptr<RegionContainer> left  = std::make_shared<RegionContainer>();
-	std::shared_ptr<RegionContainer> right = std::make_shared<RegionContainer>();
-
-	segment_based_disparity_internal(task, left, right, config, disp_func);
-
-	cv::Mat disparity_left  = getDisparityBySegments(*left);
-	cv::Mat disparity_right = getDisparityBySegments(*right);
-
-	//pixelwise refinement
-	if(config.enable_refinement)
-	{
-		cv::Mat costmap_left  = ref_func(disparity_left, task.forward,  task.algoLeft,  task.algoRight, *left,  refconfig);
-		cv::Mat costmap_right = ref_func(disparity_right, task.backward, task.algoRight, task.algoLeft,  *right, refconfig);
-
-		disparity_left  = getNormalDisparity(disparity_left,  costmap_left, refconfig, subsampling);
-		disparity_right = getNormalDisparity(disparity_right, costmap_right, refconfig, subsampling);
-	}
-
-	if(config.verbose)
-		matstore.setRegionContainer(left, right);
-
-	return std::make_pair(disparity_left, disparity_right);
 }
 
 std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling)
@@ -660,5 +589,87 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
 	}
 
-	return segment_based_disparity_it_internal(task, config, refconfig, subsampling, disparity_function, ref_func);
+	std::shared_ptr<RegionContainer> left  = std::make_shared<RegionContainer>();
+	std::shared_ptr<RegionContainer> right = std::make_shared<RegionContainer>();
+
+	//segment_based_disparity_internal(task, left, right, config, disparity_function);
+
+	auto segmentationLeft  = getSegmentationClass(config.segmentation);
+	auto segmentationRight = getSegmentationClass(config.segmentation);
+
+	fillRegionContainer(left, task.forward, segmentationLeft);
+	fillRegionContainer(right, task.backward, segmentationRight);
+
+	for(DisparityRegion& cregion : left->regions)
+		cregion.base_disparity = 0;
+	for(DisparityRegion& cregion : right->regions)
+		cregion.base_disparity = 0;
+
+	single_pass_region_disparity(task, *left, *right, config, false, disparity_function);
+
+	//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_fused_left");
+	//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_fused_right");
+
+	InitialDisparityConfig config2 = config;
+	for(int i = 0; i < config2.region_refinement_rounds; ++i)
+	{
+		//regionwise refinement
+		if(config2.region_refinement_delta != 0)
+		{
+			std::cout << "refine: " << config2.region_refinement_delta << std::endl;
+			//segmentationLeft->refine(*left);
+			//segmentationRight->refine(*right);
+			segmentationLeft->std_refinement(*left);
+			segmentationRight->std_refinement(*right);
+
+			//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_unfused_left");
+			//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_unfused_right");
+
+			single_pass_region_disparity(task, *left, *right, config2, true, disparity_function);
+
+			config2.region_refinement_delta /= 2;
+
+			for(DisparityRegion cregion : left->regions)
+				cregion.base_disparity = cregion.disparity;
+			for(DisparityRegion cregion : right->regions)
+				cregion.base_disparity = cregion.disparity;
+		}
+	}
+
+	cv::Mat disparity_left  = getDisparityBySegments(*left);
+	cv::Mat disparity_right = getDisparityBySegments(*right);
+
+	//pixelwise refinement
+	if(config.enable_refinement)
+	{
+		cv::Mat costmap_left  = ref_func(disparity_left, task.forward,  task.algoLeft,  task.algoRight, *left,  refconfig);
+		cv::Mat costmap_right = ref_func(disparity_right, task.backward, task.algoRight, task.algoLeft,  *right, refconfig);
+
+		disparity_left  = getNormalDisparity(disparity_left,  costmap_left, refconfig, subsampling);
+		disparity_right = getNormalDisparity(disparity_right, costmap_right, refconfig, subsampling);
+	}
+
+	if(config.verbose)
+		matstore.setRegionContainer(left, right);
+
+	return std::make_pair(disparity_left, disparity_right);
 }
+
+
+
+initial_disparity_algo::initial_disparity_algo(InitialDisparityConfig &config, RefinementConfig &refconfig) : m_config(config), m_refconfig(refconfig)
+{
+}
+
+std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(StereoTask& task)
+{
+	int subsampling = 1; //TODO avoid this
+	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling);
+}
+
+void initial_disparity_algo::writeConfig(cv::FileStorage &fs)
+{
+	fs << m_config;
+	fs << m_refconfig;
+}
+
