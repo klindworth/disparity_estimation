@@ -50,6 +50,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 int main(int argc, char *argv[])
 {
 
+	FolderTestSet ftest("tasks/kitti-training");
+
+	return 0;
+
 	split_region_test();
 	//return 0;
 

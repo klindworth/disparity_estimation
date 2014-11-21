@@ -92,4 +92,19 @@ public:
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const TaskTestSet& testset);
 
+class FolderTestSet
+{
+public:
+	FolderTestSet(const std::string& filename);
+	std::string name;
+	std::vector<StereoTask> tasks;
+
+	std::string left, right, dispLeft, dispRight;
+	std::string fileextension_images, fileextension_gt;
+	std::vector<std::string> filenames;
+
+	int dispRange;
+	unsigned char subsamplingGroundTruth;
+};
+
 #endif // STEREOTASK_H

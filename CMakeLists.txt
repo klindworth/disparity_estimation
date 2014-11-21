@@ -4,6 +4,7 @@ project(disparity_estimation)
 
 find_package(Qt4 REQUIRED QtCore QtGui)
 find_package(OpenCV REQUIRED)
+find_package(Boost REQUIRED filesystem system)
 find_package(OpenMP)
 include(${QT_USE_FILE})
 
@@ -98,7 +99,7 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-    ${QT_LIBRARIES} ${OpenCV_LIBS} cvwidgets cvsegmentation_lib
+    ${QT_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES} cvwidgets cvsegmentation_lib
 )
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++11 -O0")
@@ -138,5 +139,5 @@ qt4_wrap_ui(FORMS_ANALYZER_HEADERS ${FORMS_ANALYZER})
 add_executable(${PROJECT_NAME}_loganalyzer ${SOURCES_ANALYZER} ${HEADERS_ANALYZER_MOC} ${FORMS_ANALYZER_HEADERS})
 
 target_link_libraries(${PROJECT_NAME}_loganalyzer
-    ${QT_LIBRARIES} ${OpenCV_LIBS} cvwidgets cvsegmentation_lib
+    ${QT_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES} cvwidgets cvsegmentation_lib
 )
