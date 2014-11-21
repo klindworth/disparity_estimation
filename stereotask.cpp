@@ -230,7 +230,7 @@ void StereoTask::initSingleTasks()
 	backward.dispMax = dispRange-1;
 }
 
-TaskTestSet::TaskTestSet(const std::string& filename) : name(filename)
+TaskTestSet::TaskTestSet(const std::string& filename) : TaskCollection(filename)
 {
 	cv::FileStorage stream(filename + ".yml", cv::FileStorage::READ);
 	if(!stream.isOpened())
@@ -318,7 +318,7 @@ void enforce_completeness(std::vector<std::string>& filenames, const boost::file
 	}), filenames.end());
 }
 
-FolderTestSet::FolderTestSet(const std::string& filename) : name(filename)
+FolderTestSet::FolderTestSet(const std::string& filename) : TaskCollection(filename)
 {
 	cv::FileStorage stream(filename + ".yml", cv::FileStorage::READ);
 	if(!stream.isOpened())

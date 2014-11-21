@@ -80,24 +80,29 @@ inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, t
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const StereoTask& task);
 
-/// Container for StereoTasks. It can read a testset file, which contain the filenames for the single StereoTasks
-class TaskTestSet
+class TaskCollection
 {
 public:
-	TaskTestSet () {}
-	TaskTestSet(const std::string& filename);
+	TaskCollection(const std::string& filename) : name(filename) {}
+	TaskCollection() = default;
 	std::string name;
 	std::vector<StereoTask> tasks;
 };
 
+/// Container for StereoTasks. It can read a testset file, which contain the filenames for the single StereoTasks
+class TaskTestSet : public TaskCollection
+{
+public:
+	TaskTestSet () {}
+	TaskTestSet(const std::string& filename);
+};
+
 cv::FileStorage& operator<<(cv::FileStorage& stream, const TaskTestSet& testset);
 
-class FolderTestSet
+class FolderTestSet : public TaskCollection
 {
 public:
 	FolderTestSet(const std::string& filename);
-	std::string name;
-	std::vector<StereoTask> tasks;
 
 	std::string left, right, dispLeft, dispRight;
 	std::string fileextension_images, fileextension_gt;

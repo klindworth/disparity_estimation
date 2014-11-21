@@ -49,11 +49,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int main(int argc, char *argv[])
 {
-
-	FolderTestSet ftest("tasks/kitti-training");
-
-	return 0;
-
 	split_region_test();
 	//return 0;
 
@@ -99,7 +94,8 @@ int main(int argc, char *argv[])
 	//TaskTestSet testset("tasks/bigset");
 	//TaskTestSet testset("tasks/localset");
 	//TaskTestSet testset("tasks/rgbset");
-	StereoTask testset("tasks/kit3"); //5, 3 neuer problemfall?
+	//StereoTask testset("tasks/kit3"); //5, 3 neuer problemfall?
+	FolderTestSet testset("tasks/kitti-training_small");
 
 	//std::string configfile = "tasks/config-irvl.yml";
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";
@@ -140,7 +136,7 @@ int main(int argc, char *argv[])
 	config.optimizer.base_eval_refine = config.optimizer.base_eval2;
 	//config.enable_regionsplit = true;
 	//config.optimization_rounds = 3;
-	config.verbose = true;
+	//config.verbose = true;
 
 	RefinementConfig refconfig;
 	fs >> refconfig;

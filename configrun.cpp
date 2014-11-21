@@ -67,7 +67,7 @@ std::string timestampString()
 
 void singleLoggedRun(StereoTask& task, disparity_estimator_algo& disparity_estimator, cv::FileStorage& fs, const std::string& filename)
 {
-	int subsampling = 4;
+	int subsampling = 1; //TODO: avoid this
 	std::time_t starttime;
 	std::time(&starttime);
 
@@ -100,6 +100,7 @@ void singleLoggedRun(StereoTask& task, disparity_estimator_algo& disparity_estim
 		cv::Mat err_image = getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_left);
 		cv::imwrite(filename + "_error-left.png", err_image);
 		matstore.addMat(err_image, "ground-diff-left");
+		matstore.addMat(task.groundLeft, "groundLeft");
 	}
 	if(task.groundRight.data)
 	{
@@ -146,7 +147,7 @@ void initial_disparity_algo::writeConfig(cv::FileStorage &fs)
 	fs << m_refconfig;
 }
 
-void loggedRun(TaskTestSet& testset, disparity_estimator_algo& disparity_estimator)
+void loggedRun(TaskCollection& testset, disparity_estimator_algo& disparity_estimator)
 {
 	std::string filename = "results/" + dateString() + "_" + timestampString();
 	cv::FileStorage fs(filename + ".yml", cv::FileStorage::WRITE);
@@ -174,7 +175,7 @@ void loggedRun(TaskTestSet& testset, disparity_estimator_algo& disparity_estimat
 	//fs << refconfig;
 }
 
-void loggedRun(TaskTestSet& testset, InitialDisparityConfig& config, RefinementConfig& refconfig)
+void loggedRun(TaskCollection& testset, InitialDisparityConfig& config, RefinementConfig& refconfig)
 {
 	initial_disparity_algo algo(config, refconfig);
 
@@ -274,7 +275,7 @@ void singleClassicRun(StereoTask& task, ClassicSearchConfig& config, std::string
 	}
 }
 
-void classicLoggedRun(TaskTestSet& taskset, ClassicSearchConfig& config)
+void classicLoggedRun(TaskCollection& taskset, ClassicSearchConfig& config)
 {
 	std::vector<std::string> names {"_mi", "_vi", "_nvi", "_ndi"};
 
