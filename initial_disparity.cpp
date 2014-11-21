@@ -56,11 +56,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparitywise_calculator.h"
 #include "sncc_disparitywise_calculator.h"
 
-typedef std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<DisparityRegion>&, const std::vector<RegionInterval>&, int)> disparity_region_func;
+typedef std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<DisparityRegion>&, int)> disparity_region_func;
 
 //for IT metrics (region wise)
 template<typename cost_type>
-void calculate_region_disparity_regionwise(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, const std::vector<RegionInterval>& occ, int delta)
+void calculate_region_disparity_regionwise(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, int delta)
 {
 	const std::size_t regions_count = regions.size();
 
@@ -71,12 +71,12 @@ void calculate_region_disparity_regionwise(StereoSingleTask& task, const cv::Mat
 	cost_type cost_agg(base, match, it->size() * 3);
 	typename cost_type::thread_type cost_thread;
 
-	#pragma omp parallel for default(none) shared(task, regions, base, match, occ, delta, cost_agg) private(cost_thread)
+	#pragma omp parallel for default(none) shared(task, regions, base, match, delta, cost_agg) private(cost_thread)
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
 		auto range = getSubrange(regions[i].base_disparity, delta, task);
 		regions[i].disparity_offset = range.first;
-		getRegionDisparity<cost_type >(cost_agg, cost_thread, regions[i], base, match, range.first, range.second, occ);
+		getRegionDisparity<cost_type >(cost_agg, cost_thread, regions[i], base, match, range.first, range.second);
 	}
 }
 
@@ -105,7 +105,7 @@ private:
 };
 
 template<typename calculator>
-void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, const std::vector<RegionInterval>& occ, int delta)
+void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, int delta)
 {
 	std::cout << "delta: " << delta << std::endl;
 	const std::size_t regions_count = regions.size();
@@ -134,7 +134,7 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 			if(d>= range.first && d <= range.second)
 			{
 				//std::vector<RegionInterval> filtered = filter_region(regions[i].lineIntervals, std::min(0,d), occ, base.size[1]);
-				std::vector<RegionInterval> filtered = filter_region(regions[i].lineIntervals, d, occ, base.size[1]);
+				std::vector<RegionInterval> filtered = getFilteredPixelIdx(base.size[1], regions[i].lineIntervals, d);
 				cv::Mat diff_region = getRegionAsMat(diff, filtered, std::min(0, d));
 				//cv::Mat diff_region = getRegionAsMat(diff, regions[i].lineIntervals, 0);
 				float sum = cv::norm(diff_region, cv::NORM_L1);
@@ -173,7 +173,7 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 }
 
 template<typename calculator>
-void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, const std::vector<RegionInterval>& occ, int delta)
+void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<DisparityRegion>& regions, int delta)
 {
 	std::cout << "delta: " << delta << std::endl;
 	const std::size_t regions_count = regions.size();
@@ -463,82 +463,67 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 
 	std::cout << "init disp" << std::endl;
 
-	std::vector<RegionInterval> occ_left, occ_right;
-
-	assert(config.occ_rounds >= 1);
-	for(int j = 0; j < config.occ_rounds;++j)
+	for(DisparityRegion& cregion : left.regions)
 	{
-		for(DisparityRegion& cregion : left.regions)
-		{
-			cregion.dilation = 0;
-			cregion.old_dilation = -1;
-			cregion.disparity_offset = task.forward.dispMin;
-		}
-		for(DisparityRegion& cregion : right.regions)
-		{
-			cregion.dilation = 0;
-			cregion.old_dilation = -1;
-			cregion.disparity_offset = task.backward.dispMin;
-		}
-		for(unsigned int i = 0; i <= config.dilate; i+= config.dilate_step)
-		{
-			std::cout << i << std::endl;
-			disparity_calculator(task.forward,  task.algoLeft,  task.algoRight, left.regions, occ_left, refinement);
-			std::cout << i << ",back" << std::endl;
-			disparity_calculator(task.backward, task.algoRight, task.algoLeft, right.regions, occ_right, refinement);
+		cregion.dilation = 0;
+		cregion.old_dilation = -1;
+		cregion.disparity_offset = task.forward.dispMin;
+	}
+	for(DisparityRegion& cregion : right.regions)
+	{
+		cregion.dilation = 0;
+		cregion.old_dilation = -1;
+		cregion.disparity_offset = task.backward.dispMin;
+	}
+	for(unsigned int i = 0; i <= config.dilate; i+= config.dilate_step)
+	{
+		std::cout << i << std::endl;
+		disparity_calculator(task.forward,  task.algoLeft,  task.algoRight, left.regions, refinement);
+		std::cout << i << ",back" << std::endl;
+		disparity_calculator(task.backward, task.algoRight, task.algoLeft, right.regions, refinement);
 
-			std::cout << "dilateLR" << std::endl;
-			dilateLR(task.forward,  left.regions,  right.regions, config.dilate_step, refinement);
-			dilateLR(task.backward, right.regions, left.regions,  config.dilate_step, refinement);
-		}
-		std::cout << "fin" << std::endl;
+		std::cout << "dilateLR" << std::endl;
+		dilateLR(task.forward,  left.regions,  right.regions, config.dilate_step, refinement);
+		dilateLR(task.backward, right.regions, left.regions,  config.dilate_step, refinement);
+	}
+	std::cout << "fin" << std::endl;
 
+	if(config.verbose)
+	{
 		cv::Mat initial_disp_left  = getDisparityBySegments(left);
 		cv::Mat initial_disp_right = getDisparityBySegments(right);
 
-		if(config.verbose)
-		{
-			matstore.addMat(createDisparityImage(initial_disp_left), "init_left");
-			matstore.addMat(createDisparityImage(initial_disp_right), "right_left");
-		}
+		matstore.addMat(createDisparityImage(initial_disp_left), "init_left");
+		matstore.addMat(createDisparityImage(initial_disp_right), "right_left");
+	}
 
-		generateFundamentalRegionInformation(task, left, right, refinement);
+	generateFundamentalRegionInformation(task, left, right, refinement);
 
-		run_optimization(task, left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
+	run_optimization(task, left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
 
-		assert(checkLabelsIntervalsInvariant(left.regions, left.labels, left.regions.size()));
-		assert(checkLabelsIntervalsInvariant(right.regions, right.labels, right.regions.size()));
+	assert(checkLabelsIntervalsInvariant(left.regions, left.labels, left.regions.size()));
+	assert(checkLabelsIntervalsInvariant(right.regions, right.labels, right.regions.size()));
 
-		cv::Mat opt_disp_left  = getDisparityBySegments(left);
-		cv::Mat opt_disp_right = getDisparityBySegments(right);
+	cv::Mat opt_disp_left  = getDisparityBySegments(left);
+	cv::Mat opt_disp_right = getDisparityBySegments(right);
 
-		cv::Mat exp_left  = occlusionStat<short>(opt_disp_left, 1.0f);
-		cv::Mat exp_right = occlusionStat<short>(opt_disp_right, 1.0f);
+	if(config.verbose)
+	{
+		matstore.addMat(regionWiseImage<unsigned char>(left, [](const DisparityRegion& region){return (unsigned char)region.stats.minima.size();}), "minima-left");
+		matstore.addMat(regionWiseImage<float>(left, [](const DisparityRegion& region){return region.stats.stddev;}), "stddev-left");
+		matstore.addMat(regionWiseImage<float>(right, [](const DisparityRegion& region){return region.stats.stddev;}), "stddev-right");
+		matstore.addMat(regionWiseImage<float>(left, [](const DisparityRegion& region){return region.stats.mean;}), "mean-left");
+		matstore.addMat(regionWiseImage<float>(left ,[](const DisparityRegion& region){return region.stats.confidence2;}), "confidence2-left");
+		matstore.addMat(regionWiseImage<float>(right ,[](const DisparityRegion& region){return region.stats.confidence2;}), "confidence2-right");
+		matstore.addMat(regionWiseImage<float>(left, [](const DisparityRegion& region){return region.stats.stddev/region.stats.mean;}), "stddev-norm");
+		//matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [&](const SegRegion& region){return region.disparity_costs(region.disparity-task.forward.dispMin);}), "opt-left");
+		//matstore.addMat(regionWiseImage<float>(task.backward, right.regions, [&](const SegRegion& region){return region.disparity_costs(region.disparity-task.backward.dispMin);}), "opt-right");
+		//matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [&](const SegRegion& region){return region.confidence(region.disparity-task.forward.dispMin);}), "mi-conf-left");
+		//matstore.addMat(regionWiseImage<float>(task.backward, right.regions, [&](const SegRegion& region){return region.confidence(region.disparity-task.backward.dispMin);}), "mi-conf-right");
 
-		occ_right = exposureVector(exp_left);
-		occ_left  = exposureVector(exp_right);
-
-
-		if(config.verbose)
-		{
-			matstore.addMat(regionWiseImage<unsigned char>(left, [](const DisparityRegion& region){return (unsigned char)region.stats.minima.size();}), "minima-left");
-			matstore.addMat(regionWiseImage<float>(left, [](const DisparityRegion& region){return region.stats.stddev;}), "stddev-left");
-			matstore.addMat(regionWiseImage<float>(right, [](const DisparityRegion& region){return region.stats.stddev;}), "stddev-right");
-			matstore.addMat(regionWiseImage<float>(left, [](const DisparityRegion& region){return region.stats.mean;}), "mean-left");
-			matstore.addMat(regionWiseImage<float>(left ,[](const DisparityRegion& region){return region.stats.confidence2;}), "confidence2-left");
-			matstore.addMat(regionWiseImage<float>(right ,[](const DisparityRegion& region){return region.stats.confidence2;}), "confidence2-right");
-			matstore.addMat(regionWiseImage<float>(left, [](const DisparityRegion& region){return region.stats.stddev/region.stats.mean;}), "stddev-norm");
-			//matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [&](const SegRegion& region){return region.disparity_costs(region.disparity-task.forward.dispMin);}), "opt-left");
-			//matstore.addMat(regionWiseImage<float>(task.backward, right.regions, [&](const SegRegion& region){return region.disparity_costs(region.disparity-task.backward.dispMin);}), "opt-right");
-			//matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [&](const SegRegion& region){return region.confidence(region.disparity-task.forward.dispMin);}), "mi-conf-left");
-			//matstore.addMat(regionWiseImage<float>(task.backward, right.regions, [&](const SegRegion& region){return region.confidence(region.disparity-task.backward.dispMin);}), "mi-conf-right");
-			matstore.addMat(getValueScaledImage<unsigned char, unsigned char>(exp_left), "exp-left");
-			matstore.addMat(getValueScaledImage<unsigned char, unsigned char>(exp_right), "exp-right");
-
-			cv::Mat warped = warpDisparity<short>(opt_disp_left);
-			cv::Mat occ_mat = occlusionMap<short>(opt_disp_left, warped);
-			matstore.addMat(getValueScaledImage<unsigned char, unsigned char>(occ_mat), "occ");
-		}
+		cv::Mat warped = warpDisparity<short>(opt_disp_left);
+		cv::Mat occ_mat = occlusionMap<short>(opt_disp_left, warped);
+		matstore.addMat(getValueScaledImage<unsigned char, unsigned char>(occ_mat), "occ");
 	}
 }
 
