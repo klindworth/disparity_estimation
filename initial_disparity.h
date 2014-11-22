@@ -57,6 +57,7 @@ class InitialDisparityConfig
 {
 public:
 	std::string name;
+	std::string metric_type;
 	unsigned int dilate;
 	int dilate_step;
 	bool dilate_grow;

@@ -299,6 +299,7 @@ void classicLoggedRun(TaskCollection& taskset, ClassicSearchConfig& config)
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const InitialDisparityConfig& config)
 {
+	stream << "metric_type" << config.metric_type;
 	stream << "configname" << config.name;
 	stream << "cost_smoothing" << config.enable_costsmoothing;
 	stream << "dilate" << (int)config.dilate << "refinement" << config.enable_refinement;
@@ -316,6 +317,7 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const InitialDisparityConfi
 void readInitialDisparityConfig(const cv::FileNode& stream, InitialDisparityConfig& config)
 {
 	int dilate;
+	stream["metric_type"] >> config.metric_type;
 	stream["configname"] >> config.name;
 	stream["dilate_step"] >> config.dilate_step;
 	stream["dilate_grow"] >> config.dilate_grow;

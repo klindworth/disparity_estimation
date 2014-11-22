@@ -533,8 +533,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 
 	disparity_region_func disparity_function;
 	refinement_func_type ref_func;
-	std::string metric = "it";
-	if(metric == "sad")
+	if(config.metric_type == "sad")
 	{
 		//SAD
 		typedef slidingSAD refinement_metric;
@@ -544,7 +543,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 		task.algoRight = task.right;
 		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
 	}
-	else if(metric == "sncc")
+	else if(config.metric_type == "sncc")
 	{
 		typedef slidingSAD refinement_metric;
 		//disparity_function = calculate_region_generic<sncc_disparitywise_calculator>;
