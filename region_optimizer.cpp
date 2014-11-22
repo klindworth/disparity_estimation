@@ -247,7 +247,7 @@ std::size_t min_idx(const cv::Mat_<T>& src, std::size_t preferred = 0)
 	return idx;
 }
 
-void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
+void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, RegionContainer& base, const RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
 {
 	cv::Mat disp = getDisparityBySegments(base);
 	cv::Mat occmap = occlusionStat<short>(disp, 1.0);
@@ -272,27 +272,25 @@ void refreshOptimizationBaseValues(RegionContainer& base, RegionContainer& match
 	{
 		DisparityRegion& baseRegion = base.regions[i];
 		int thread_idx = omp_get_thread_num();
-		//int thread_idx = 0;
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
 		intervals::substractRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
-		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, stat_eval, baseRegion.optimization_vector);
+		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, stat_eval, optimization_vectors[i]);
 		for(short d = range.first; d <= range.second; ++d)
 		{
 			std::vector<MutualRegion>& cregionvec = baseRegion.other_regions[d-dispMin];
 			if(!cregionvec.empty())
-				baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - range.first), baseRegion.optimization_vector.data(), stat_eval);
-				//baseRegion.optimization_energy(d-dispMin) = hyp_vec(d);
+				baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - range.first), optimization_vectors[i].data(), stat_eval);
 		}
 
 		intervals::addRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 	}
 }
 
-void refresh_optimization_vector(RegionContainer& base, const RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
+void refresh_optimization_vector(std::vector<std::vector<float>>& optimization_vectors, RegionContainer& base, const RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
 {
 	cv::Mat disp = getDisparityBySegments(base);
 	cv::Mat occmap = occlusionStat<short>(disp, 1.0);
@@ -319,16 +317,16 @@ void refresh_optimization_vector(RegionContainer& base, const RegionContainer& m
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
 		intervals::substractRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
-		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, stat_eval, baseRegion.optimization_vector);
+		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, stat_eval, optimization_vectors[i]);
 		intervals::addRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 	}
 }
 
-void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
+void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
 {
 	//std::cout << "base" << std::endl;
-	refreshOptimizationBaseValues(base, match, base_eval, delta);
-	refreshOptimizationBaseValues(match, base, base_eval, delta);
+	refreshOptimizationBaseValues(optimization_vectors_base, base, match, base_eval, delta);
+	refreshOptimizationBaseValues(optimization_vectors_match, match, base, base_eval, delta);
 	//std::cout << "optimize" << std::endl;
 
 	std::random_device random_dev;
@@ -379,7 +377,7 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 	}
 }
 
-void gather_region_optimization_vector(float *dst_ptr, const DisparityRegion& baseRegion, const RegionContainer& match, int delta, const StereoSingleTask& task, const std::vector<float>& normalization_vector)
+/*void gather_region_optimization_vector(float *dst_ptr, std::vector<float>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, const DisparityRegion& baseRegion, const RegionContainer& match, int delta, const StereoSingleTask& task, const std::vector<float>& normalization_vector)
 {
 	const int vector_size = 5;
 	const int crange = task.dispMax - task.dispMin + 1;
@@ -392,7 +390,7 @@ void gather_region_optimization_vector(float *dst_ptr, const DisparityRegion& ba
 		std::fill(disp_optimization_vector.begin(), disp_optimization_vector.end(), 0.0f);
 		int corresponding_disp_idx = -d - match.task.dispMin;
 		foreach_corresponding_region(baseRegion.other_regions[d-task.dispMin], [&](std::size_t idx, float percent) {
-			const float* it = &(match.regions[idx].optimization_vector[corresponding_disp_idx*vector_size]);
+			const float* it = &(optimization_vectors_match[idx][corresponding_disp_idx*vector_size]);
 			for(int i = 0; i < vector_size; ++i)
 				disp_optimization_vector[i] += percent * *it++;
 		});
@@ -408,14 +406,14 @@ void gather_region_optimization_vector(float *dst_ptr, const DisparityRegion& ba
 		for(int j = vector_size; j < vector_size*2; ++j)
 			*dst_ptr++ = other_optimization_vector[offset+j-vector_size] * normalization_vector[j];
 	}
-}
+}*/
 
 void optimize_ml(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
 {
 	const int vector_size = 10;
 	std::cout << "base" << std::endl;
-	refresh_optimization_vector(base, match, base_eval, delta);
-	refresh_optimization_vector(match, base, base_eval, delta);
+	//refresh_optimization_vector(base, match, base_eval, delta);
+	//refresh_optimization_vector(match, base, base_eval, delta);
 	std::cout << "optimize" << std::endl;
 
 	const int crange = base.task.dispMax - base.task.dispMin + 1;
@@ -426,7 +424,7 @@ void optimize_ml(RegionContainer& base, RegionContainer& match, const disparity_
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
 		std::vector<float> region_optimization_vector(crange*vector_size); //recycle taskwise in prediction mode
-		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], match, delta, base.task, normalization_vector);
+		//gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], match, delta, base.task, normalization_vector);
 
 		//TODO: call predict function and save result
 	}
@@ -442,13 +440,13 @@ void normalize_feature_vector(float *ptr, int n, const std::vector<float>& norma
 	}
 }
 
-void train_ml_optimizer(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, int delta)
+/*void train_ml_optimizer(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, int delta)
 {
 	const int vector_size = 10;
 
 	std::cout << "base" << std::endl;
-	refreshOptimizationBaseValues(base, match, base_eval, delta);
-	refreshOptimizationBaseValues(match, base, base_eval, delta);
+	//refreshOptimizationBaseValues(base, match, base_eval, delta);
+	//refreshOptimizationBaseValues(match, base, base_eval, delta);
 	std::cout << "optimize" << std::endl;
 
 	const int crange = base.task.dispMax - base.task.dispMin + 1;
@@ -480,7 +478,7 @@ void train_ml_optimizer(RegionContainer& base, RegionContainer& match, const dis
 	normalize_feature_vector(featurevector.data(), regions_count*crange, sums);
 
 	//TODO: call training function
-}
+}*/
 
 void manual_region_optimizer::reset(const RegionContainer &left, const RegionContainer &right)
 {
@@ -489,6 +487,9 @@ void manual_region_optimizer::reset(const RegionContainer &left, const RegionCon
 
 	damping_history_right.resize(right.regions.size());
 	std::fill(damping_history_right.begin(), damping_history_right.end(), 0);
+
+	optimization_vectors_left.resize(left.regions.size());
+	optimization_vectors_right.resize(right.regions.size());
 }
 
 void manual_region_optimizer::run(RegionContainer &left, RegionContainer &right, const optimizer_settings &config, int refinement)
@@ -498,23 +499,23 @@ void manual_region_optimizer::run(RegionContainer &left, RegionContainer &right,
 	for(int i = 0; i < config.rounds; ++i)
 	{
 		std::cout << "optimization round" << std::endl;
-		optimize(damping_history_left, left, right, config.base_eval, config.prop_eval, refinement);
+		optimize(damping_history_left, optimization_vectors_left, optimization_vectors_right, left, right, config.base_eval, config.prop_eval, refinement);
 		refreshWarpedIdx(left);
-		optimize(damping_history_right, right, left, config.base_eval, config.prop_eval, refinement);
+		optimize(damping_history_right, optimization_vectors_right, optimization_vectors_left, right, left, config.base_eval, config.prop_eval, refinement);
 		refreshWarpedIdx(right);
 	}
 	for(int i = 0; i < config.rounds; ++i)
 	{
 		std::cout << "optimization round2" << std::endl;
-		optimize(damping_history_left, left, right, config.base_eval2, config.prop_eval2, refinement);
+		optimize(damping_history_left, optimization_vectors_left, optimization_vectors_right, left, right, config.base_eval2, config.prop_eval2, refinement);
 		refreshWarpedIdx(left);
-		optimize(damping_history_right, right, left, config.base_eval2, config.prop_eval2, refinement);
+		optimize(damping_history_right, optimization_vectors_right, optimization_vectors_left, right, left, config.base_eval2, config.prop_eval2, refinement);
 		refreshWarpedIdx(right);
 	}
 	if(config.rounds == 0)
 	{
-		refreshOptimizationBaseValues(left, right, config.base_eval, refinement);
-		refreshOptimizationBaseValues(right, left, config.base_eval, refinement);
+		refreshOptimizationBaseValues(optimization_vectors_left, left, right, config.base_eval, refinement);
+		refreshOptimizationBaseValues(optimization_vectors_right, right, left, config.base_eval, refinement);
 	}
 }
 

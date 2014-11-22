@@ -333,10 +333,12 @@ void RegionWindow::on_pbOptimize_clicked()
 
 	std::vector<unsigned char> left_damping_history(m_left->regions.size(), 0);
 	std::vector<unsigned char> right_damping_history(m_right->regions.size(), 0);
+	std::vector<std::vector<float>> left_optimization_vectors, right_optimization_vectors;
+
 	std::cout << "optimization" << std::endl;
-	optimizer->optimize(left_damping_history, *m_left, *m_right, wv, prop_eval, 0);
+	optimizer->optimize(left_damping_history, left_optimization_vectors, right_optimization_vectors, *m_left, *m_right, wv, prop_eval, 0);
 	generateRegionInformation(*m_left, *m_right);
-	optimizer->optimize(right_damping_history, *m_right, *m_left, wv, prop_eval, 0);
+	optimizer->optimize(right_damping_history, right_optimization_vectors, left_optimization_vectors, *m_right, *m_left, wv, prop_eval, 0);
 	generateRegionInformation(*m_left, *m_right);
 	std::cout << "finished" << std::endl;
 	setData(m_left, m_right);
@@ -345,7 +347,8 @@ void RegionWindow::on_pbOptimize_clicked()
 void RegionWindow::on_pbRefreshBase_clicked()
 {
 	disparity_hypothesis_weight_vector wv = get_weight_vector();
-	refreshOptimizationBaseValues(*m_left, *m_right, wv, 0);
+	std::vector<std::vector<float>> optimization_vectors(m_left->regions.size());
+	refreshOptimizationBaseValues(optimization_vectors, *m_left, *m_right, wv, 0);
 }
 
 void resetContainerDisparities(RegionContainer& container)

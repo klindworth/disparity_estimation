@@ -68,7 +68,7 @@ public:
 	cv::Mat_<float> confidence;
 	cv::Mat_<float> optimization_energy;
 
-	std::vector<float> optimization_vector;
+	//std::vector<float> optimization_vector;
 
 	stat_t stats;
 	short disparity;

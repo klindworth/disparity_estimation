@@ -55,7 +55,7 @@ void RegionWidget::warpTree(int index, DisparityRegion& baseRegion, std::vector<
 {
 	tree->clear();
 	QStringList headers;
-	headers << "Nr" << "Disparity-Dev" << "Disparity" << "Pixelcount" << "Mutual pixels" << "% (base)" << "% (match)" << "stddev" << "e_base";
+	headers << "Nr" << "Disparity-Dev" << "Disparity" << "Pixelcount" << "% (base)" << "% (match)" << "stddev" << "e_base";
 	tree->setHeaderLabels(headers);
 	tree->setColumnCount(headers.size());
 
@@ -81,12 +81,7 @@ void RegionWidget::warpTree(int index, DisparityRegion& baseRegion, std::vector<
 		matchItem << QString::number(std::abs(matchRegion.disparity + currentDisparity));
 		matchItem << QString::number(matchRegion.disparity);
 		matchItem << QString::number(matchRegion.m_size);
-		//matchItem << QString::number(matchRegion.other_labels.value(index));
-		//matchItem << QString::number(cregion.pixelcount);
-		matchItem << "na";
 		matchItem << QString::number(mutual_percent*100, 'f', 2) + "%";
-		//matchItem << QString::number((float)(matchRegion.other_labels.value(index)) / matchRegion.other_labels.total()*100, 'f', 2) + "%";
-		//matchItem << QString::number(matchRegion.mutualRegion(index, ))
 		matchItem << QString::number(matchRegion.getMutualRegion(index, -currentDisparity-m_matchDispMin).percent*100, 'f', 2) + "%";
 		matchItem << QString::number(matchRegion.stats.stddev/baseRegion.stats.stddev);
 		if(matchRegion.optimization_energy.data)
