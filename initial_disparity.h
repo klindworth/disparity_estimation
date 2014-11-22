@@ -50,7 +50,7 @@ void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleT
 void generateRegionInformation(RegionContainer& left, RegionContainer& right);
 
 //void getRegionDisparity(SegRegion& pixel_idx, const cv::Mat &base, const cv::Mat &match, int dispMin, int dispMax, unsigned int dilate_grow);
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config, const RefinementConfig& refconfig, int subsampling);
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config, const RefinementConfig& refconfig, int subsampling, manual_region_optimizer optimizer);
 //std::pair<cv::Mat, cv::Mat> segment_based_disparity_lss(StereoTask& task, const InitialDisparityConfig &config, std::shared_ptr<segmentation_algorithm>& algorithm);
 
 class InitialDisparityConfig
@@ -77,6 +77,7 @@ public:
 	initial_disparity_algo(InitialDisparityConfig& config, RefinementConfig& refconfig);
 	virtual std::pair<cv::Mat, cv::Mat> operator()(StereoTask& task);
 	virtual void writeConfig(cv::FileStorage& fs);
+	void train(std::vector<StereoTask>& tasks);
 
 private:
 	InitialDisparityConfig m_config;

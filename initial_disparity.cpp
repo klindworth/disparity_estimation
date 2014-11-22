@@ -167,8 +167,6 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 		step.searchrange_end = range.second;
 		step.base_disparity = regions[i].base_disparity;
 		regions[i].results.push_back(step);
-		//TODO: needed?
-		regions[i].old_dilation = regions[i].dilation;
 	}
 }
 
@@ -302,8 +300,6 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 		step.searchrange_end = range.second;
 		step.base_disparity = regions[i].base_disparity;
 		regions[i].results.push_back(step);
-		//TODO: needed?
-		regions[i].old_dilation = regions[i].dilation;
 	}
 }
 
@@ -446,7 +442,7 @@ void dilateLR(StereoSingleTask& task, std::vector<DisparityRegion>& regions_base
 	});
 }
 
-void single_pass_region_disparity(StereoTask& task, RegionContainer& left, RegionContainer& right, const InitialDisparityConfig& config, bool b_refinement, disparity_region_func disparity_calculator)
+void single_pass_region_disparity(StereoTask& task, RegionContainer& left, RegionContainer& right, const InitialDisparityConfig& config, bool b_refinement, disparity_region_func disparity_calculator, manual_region_optimizer optimizer)
 {
 	int refinement = 0;
 	if(b_refinement)
@@ -456,8 +452,6 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 	calculate_all_average_colors(task.backward.base, right.regions);
 
 	std::cout << "lr-check" << std::endl;
-	//labelLRCheck(left.labels, right.labels, left.regions, task.forward, 0);
-	//labelLRCheck(right.labels, left.labels, right.regions, task.backward, 0);
 	labelLRCheck(left, right, 0);
 	labelLRCheck(right, left, 0);
 
@@ -499,8 +493,6 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 
 	generateFundamentalRegionInformation(task, left, right, refinement);
 
-
-	manual_region_optimizer optimizer;
 	optimizer.run(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
 	//run_optimization(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
 
@@ -535,7 +527,7 @@ cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, c
 	return convertDisparityFromPartialCostmap(createDisparity(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
 }
 
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling)
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling, manual_region_optimizer optimizer)
 {
 	const int quantizer = 4;
 
@@ -593,7 +585,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 	for(DisparityRegion& cregion : right->regions)
 		cregion.base_disparity = 0;
 
-	single_pass_region_disparity(task, *left, *right, config, false, disparity_function);
+	single_pass_region_disparity(task, *left, *right, config, false, disparity_function, optimizer);
 
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_fused_left");
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_fused_right");
@@ -613,7 +605,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 			//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_unfused_left");
 			//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_unfused_right");
 
-			single_pass_region_disparity(task, *left, *right, config2, true, disparity_function);
+			single_pass_region_disparity(task, *left, *right, config2, true, disparity_function, optimizer);
 
 			config2.region_refinement_delta /= 2;
 
@@ -652,7 +644,16 @@ initial_disparity_algo::initial_disparity_algo(InitialDisparityConfig &config, R
 std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(StereoTask& task)
 {
 	int subsampling = 1; //TODO avoid this
-	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling);
+	manual_region_optimizer optimizer;
+	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling, optimizer);
+}
+
+void initial_disparity_algo::train(std::vector<StereoTask>& tasks)
+{
+	int subsampling = 1; //TODO avoid this
+	manual_region_optimizer optimizer;
+	for(StereoTask& ctask : tasks)
+		segment_based_disparity_it(ctask, m_config, m_refconfig, subsampling, optimizer);
 }
 
 void initial_disparity_algo::writeConfig(cv::FileStorage &fs)
