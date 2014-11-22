@@ -44,25 +44,6 @@ void analyzeDisparityRange2(DisparityRegion& region)
 
 	region.stats.confidence_range = region.stats.minima_ranges.size();
 	region.stats.confidence_variance = (float)minima_width/region.disparity_costs.total();
-
-	region.confidence3 = 0.0f;
-	if(region.stats.minima_ranges.size() > 1)
-	{
-		std::vector<float> range_sums(region.stats.minima_ranges.size());
-		for(std::size_t i = 0; i < region.stats.minima_ranges.size(); ++i)
-		{
-			float* ptr = region.disparity_costs.ptr<float>(region.stats.minima_ranges[i].lower);
-			std::size_t length = region.stats.minima_ranges[i].length();
-			range_sums[i] = std::accumulate(ptr, ptr + length, 0.0f) / length;
-		}
-		float max_range = *(std::max_element(range_sums.begin(), range_sums.end()));
-		std::transform(range_sums.begin(), range_sums.end(), range_sums.begin(), [=](const float& cval){return max_range-cval;});
-		float conf_sum = std::accumulate(range_sums.begin(), range_sums.end(), 0.0f);
-		max_range = *(std::max_element(range_sums.begin(), range_sums.end()));
-		region.confidence3 = max_range/conf_sum/region.stats.confidence_variance;
-	}
-	else if(region.stats.minima_ranges.size() == 1)
-		region.confidence3 = 1/region.stats.confidence_variance;
 }
 
 void analyzeDisparityRange(stat_t& cstat, const float* src_ptr, const float* derived_ptr, int range)

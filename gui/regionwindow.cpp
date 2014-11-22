@@ -313,8 +313,6 @@ void RegionWindow::on_pbOptimize_clicked()
 
 		//float own_mi_confidence = std::max(baseRegion.confidence(disparity-base.task.dispMin), std::numeric_limits<float>::min());
 
-		float conf3 = std::max(getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.confidence3;}), std::numeric_limits<float>::min());
-
 		//float rating = disp_pot * baseRegion.stats.stddev/stddev + e_base;
 		//float rating = e_other + e_base;
 		float rating;
@@ -326,8 +324,6 @@ void RegionWindow::on_pbOptimize_clicked()
 			rating = e_base+e_other+pot_factor*disp_pot;
 		else if(choosen == 4)
 			rating = e_base +pot_factor*disp_pot;
-		else if(choosen == 5)
-			rating = (baseRegion.confidence3 *e_base+conf3*e_other) / (conf3 + baseRegion.confidence3)+pot_factor*disp_pot;
 		return rating;
 	};
 

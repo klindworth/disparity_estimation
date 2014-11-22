@@ -76,7 +76,7 @@ public:
 
 	std::vector<EstimationStep> results;
 
-	float confidence3;
+	//float confidence3;
 
 	MutualRegion getMutualRegion(std::size_t idx, std::size_t disparity_idx);
 };
