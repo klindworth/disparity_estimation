@@ -65,7 +65,6 @@ public:
 	std::vector<RegionInterval> warped_interval;
 	std::vector<std::vector< MutualRegion >> other_regions;
 	cv::Mat_<float> disparity_costs;
-	cv::Mat_<float> confidence;
 	cv::Mat_<float> optimization_energy;
 
 	stat_t stats;

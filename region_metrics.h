@@ -149,48 +149,12 @@ public:
 	}
 };
 
-template<typename cost_calc, int quantizer>
-class RegionInfoDisparityConf
-{
-public:
-	typedef RegionInfoThread<quantizer> thread_type;
-	static const int bins = 256/quantizer;
-
-	cv::Mat_<float> entropy_table;
-
-	cost_calc calculator;
-
-	cv::Mat m_base, m_match;
-
-	RegionInfoDisparityConf(const cv::Mat& base, const cv::Mat& match, int size) : m_base(base), m_match(match)
-	{
-		fill_entropytable_unnormalized(entropy_table, size*9);
-	}
-
-	static float normalizationValue()
-	{
-		return cost_calc::upper_bound();
-	}
-
-	std::pair<float,float> operator()(thread_type& thread, int d, const std::vector<RegionInterval>& region)
-	{
-		cv::Mat base_region  = getRegionAsMat(m_base,  region, 0);
-		cv::Mat match_region = getRegionAsMat(m_match, region, d);
-
-		assert(base_region.total() == match_region.total());
-
-		auto result = entropies_calculator<float, bins>(thread.counter_joint, thread.counter_array, entropy_table, base_region, match_region);
-
-		return std::make_pair(calculator(std::get<0>(result), std::get<1>(result), std::get<2>(result)), std::get<1>(result)+ std::get<2>(result)-std::get<0>(result));
-	}
-};
-
 template<typename cost_type>
 void getRegionDisparityInternal(std::vector<RegionInterval>& actual_region, cost_type& cost_agg, typename cost_type::thread_type& thread, DisparityRegion &cregion, const cv::Mat&, const cv::Mat& match, int dispMin, int dispMax)
 {
 	int length = getSizeOfRegion(actual_region);
 
-	cregion.confidence = cv::Mat(dispMax-dispMin+1, 1, CV_32FC1, cv::Scalar(0));
+	//cregion.confidence = cv::Mat(dispMax-dispMin+1, 1, CV_32FC1, cv::Scalar(0));
 	cregion.disparity_costs = cv::Mat(dispMax-dispMin+1, 1, CV_32FC1, cv::Scalar(cost_agg.normalizationValue()));
 
 	float minCost = std::numeric_limits<float>::max();
@@ -203,17 +167,16 @@ void getRegionDisparityInternal(std::vector<RegionInterval>& actual_region, cost
 
 		if((float)filtered_length/(float)length > 0.6f && filtered_length > 10) //0.4
 		{
-			std::pair<float, float> cost = cost_agg(thread, d, filtered);
+			float cost = cost_agg(thread, d, filtered);
 
 			assert(d-dispMin >= 0 && d-dispMin < cregion.disparity_costs.size[0]);
 
-			cregion.disparity_costs(d-dispMin) = cost.first;
-			cregion.confidence(d-dispMin) = cost.second;
+			cregion.disparity_costs(d-dispMin) = cost;
 
-			if(minCost > cost.first)
+			if(minCost > cost)
 			{
 				minD = d;
-				minCost = cost.first;
+				minCost = cost;
 			}
 		}
 	}

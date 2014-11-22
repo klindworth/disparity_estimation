@@ -533,7 +533,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 
 	disparity_region_func disparity_function;
 	refinement_func_type ref_func;
-	std::string metric = "sncc";
+	std::string metric = "it";
 	if(metric == "sad")
 	{
 		//SAD
@@ -559,7 +559,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 		//typedef normalized_variation_of_information_calc<float> it_metric;
 		//typedef variation_of_information_calc<float> it_metric;
 
-		typedef RegionInfoDisparityConf<it_metric, quantizer> disparity_metric;
+		typedef RegionInfoDisparity<it_metric, quantizer> disparity_metric;
 
 		//IT
 		typedef slidingEntropyFlex<it_metric, quantizer> refinement_metric;

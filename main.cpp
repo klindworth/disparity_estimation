@@ -87,7 +87,7 @@ int main(int argc, char *argv[])
 	//StereoTask testset("tasks/ir-vl");
 
 	//multispectral
-	//StereoTask testset("tasks/multi1-big");
+	StereoTask testset("tasks/multi1-big");
 	//StereoTask testset("tasks/multi2-big");
 	//TaskTestSet testset("tasks/debugset");
 	//TaskTestSet testset("tasks/smallset2");
@@ -95,16 +95,16 @@ int main(int argc, char *argv[])
 	//TaskTestSet testset("tasks/localset");
 	//TaskTestSet testset("tasks/rgbset");
 	//StereoTask testset("tasks/kit3"); //5, 3 neuer problemfall?
-	FolderTestSet testset("tasks/kitti-training_small");
+	//FolderTestSet testset("tasks/kitti-training_small");
 
 	//std::string configfile = "tasks/config-irvl.yml";
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";
-	//std::string configfile = "tasks/config-big-msslic.yml";
+	std::string configfile = "tasks/config-big-msslic.yml";
 	//std::string configfile = "tasks/config-small-msslic-refine.yml";
 	//std::string configfile = "tasks/config-debug.yml";
 	//std::string configfile = "tasks/config-rgbl-msslic.yml";
 	//std::string configfile = "tasks/config-kit-refine2.yml";
-	std::string configfile = "tasks/config-kit2.yml";
+	//std::string configfile = "tasks/config-kit2.yml";
 	//std::string configfile = "tasks/config-rgb-slic.yml";
 	//std::string configfile = "tasks/config-small-woopt.yml";
 
