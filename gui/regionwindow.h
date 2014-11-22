@@ -36,6 +36,7 @@ class DisparityRegion;
 class DebugMatStore;
 class InitialDisparityConfig;
 class disparity_hypothesis_weight_vector;
+class manual_region_optimizer;
 
 namespace Ui {
 class RegionWindow;
@@ -76,6 +77,8 @@ private:
 	std::shared_ptr<RegionContainer> m_left, m_right;
 	DebugMatStore *m_store;
 	InitialDisparityConfig *m_config;
+
+	manual_region_optimizer *optimizer;
 };
 
 #endif // REGIONWINDOW_H

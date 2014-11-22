@@ -42,6 +42,8 @@ RegionWindow::RegionWindow(QWidget *parent) :
 	QMainWindow(parent),
 	ui(new Ui::RegionWindow)
 {
+	optimizer = new manual_region_optimizer();
+
 	ui->setupUi(this);
 
 	ui->regionLeft->setInverted(true);
@@ -61,6 +63,8 @@ void RegionWindow::setData(std::shared_ptr<RegionContainer>& left, std::shared_p
 	{
 		m_left = left;
 		m_right = right;
+
+		optimizer->reset(*m_left, *m_right);
 
 		QStringList headers;
 		headers << "Nr" << "Disparity" << "Pixelcount";
@@ -330,9 +334,9 @@ void RegionWindow::on_pbOptimize_clicked()
 	std::vector<unsigned char> left_damping_history(m_left->regions.size(), 0);
 	std::vector<unsigned char> right_damping_history(m_right->regions.size(), 0);
 	std::cout << "optimization" << std::endl;
-	optimize(left_damping_history, *m_left, *m_right, wv, prop_eval, 0);
+	optimizer->optimize(left_damping_history, *m_left, *m_right, wv, prop_eval, 0);
 	generateRegionInformation(*m_left, *m_right);
-	optimize(right_damping_history, *m_right, *m_left, wv, prop_eval, 0);
+	optimizer->optimize(right_damping_history, *m_right, *m_left, wv, prop_eval, 0);
 	generateRegionInformation(*m_left, *m_right);
 	std::cout << "finished" << std::endl;
 	setData(m_left, m_right);
@@ -368,10 +372,7 @@ void resetContainerDisparities(RegionContainer& container)
 
 void RegionWindow::on_pbResetOptimization_clicked()
 {
-	/*for(DisparityRegion& cregion : m_left->regions)
-		cregion.damping_history = 0;
-	for(DisparityRegion& cregion : m_right->regions)
-		cregion.damping_history = 0;*/
+	optimizer->reset(*m_left, *m_right);
 
 	resetContainerDisparities(*m_left);
 	resetContainerDisparities(*m_right);

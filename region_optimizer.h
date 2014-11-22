@@ -97,14 +97,15 @@ public:
 };
 
 std::vector<std::size_t> regionSplitUp(RegionContainer& base, RegionContainer& match);
-void optimize(std::vector<unsigned char>& damping_history, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
 void refreshOptimizationBaseValues(RegionContainer& left, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, int delta);
 
 
-class man_region_optimizer
+class manual_region_optimizer
 {
 public:
 	void run(RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement= 0);
+	void optimize(std::vector<unsigned char>& damping_history, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
+	void reset(const RegionContainer& left, const RegionContainer& right);
 
 private:
 	std::vector<unsigned char> damping_history_left, damping_history_right;

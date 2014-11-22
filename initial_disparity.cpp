@@ -76,7 +76,7 @@ void calculate_region_disparity_regionwise(StereoSingleTask& task, const cv::Mat
 	{
 		auto range = getSubrange(regions[i].base_disparity, delta, task);
 		regions[i].disparity_offset = range.first;
-		getRegionDisparity<cost_type >(cost_agg, cost_thread, regions[i], base, match, range.first, range.second);
+		getRegionDisparity<cost_type>(cost_agg, cost_thread, regions[i], base, match, range.first, range.second);
 	}
 }
 
@@ -436,7 +436,7 @@ std::vector<RegionInterval> exposureVector(const cv::Mat& occlusionMap)
 	return exposure;
 }
 
-void dilateLR(StereoSingleTask& task, std::vector<DisparityRegion>& regions_base, std::vector<DisparityRegion>& /*regions_match*/, int dilate_step, int delta)
+void dilateLR(StereoSingleTask& task, std::vector<DisparityRegion>& regions_base, int dilate_step, int delta)
 {
 	parallel_region(regions_base, [&](DisparityRegion& cregion) {
 		generateStats(cregion, task, delta);
@@ -483,8 +483,8 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 		disparity_calculator(task.backward, task.algoRight, task.algoLeft, right.regions, refinement);
 
 		std::cout << "dilateLR" << std::endl;
-		dilateLR(task.forward,  left.regions,  right.regions, config.dilate_step, refinement);
-		dilateLR(task.backward, right.regions, left.regions,  config.dilate_step, refinement);
+		dilateLR(task.forward,  left.regions,  config.dilate_step, refinement);
+		dilateLR(task.backward, right.regions, config.dilate_step, refinement);
 	}
 	std::cout << "fin" << std::endl;
 
@@ -500,7 +500,7 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 	generateFundamentalRegionInformation(task, left, right, refinement);
 
 
-	man_region_optimizer optimizer;
+	manual_region_optimizer optimizer;
 	optimizer.run(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
 	//run_optimization(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
 

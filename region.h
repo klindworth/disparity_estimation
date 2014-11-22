@@ -70,27 +70,18 @@ public:
 
 	std::vector<float> optimization_vector;
 
-
 	stat_t stats;
 	short disparity;
 	short base_disparity;
 	short disparity_offset;
-	//short optimization_minimum;
 	unsigned char dilation;
 	char old_dilation;
-	//int damping_history;
 
 	std::vector<EstimationStep> results;
-
-	//int out_of_image;
-	//std::array<int, 5> occlusion;
-	//float occ_value;
 
 	float confidence3;
 
 	MutualRegion getMutualRegion(std::size_t idx, std::size_t disparity_idx);
-
-	std::vector<float> complete;
 };
 
 struct RegionContainer : public segmentation_image<DisparityRegion>
