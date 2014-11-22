@@ -499,7 +499,10 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 
 	generateFundamentalRegionInformation(task, left, right, refinement);
 
-	run_optimization(task, left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
+
+	man_region_optimizer optimizer;
+	optimizer.run(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
+	//run_optimization(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
 
 	assert(checkLabelsIntervalsInvariant(left.regions, left.labels, left.regions.size()));
 	assert(checkLabelsIntervalsInvariant(right.regions, right.labels, right.regions.size()));

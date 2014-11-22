@@ -326,10 +326,13 @@ void RegionWindow::on_pbOptimize_clicked()
 			rating = (baseRegion.confidence3 *e_base+conf3*e_other) / (conf3 + baseRegion.confidence3)+pot_factor*disp_pot;
 		return rating;
 	};
+
+	std::vector<unsigned char> left_damping_history(m_left->regions.size(), 0);
+	std::vector<unsigned char> right_damping_history(m_right->regions.size(), 0);
 	std::cout << "optimization" << std::endl;
-	optimize(*m_left, *m_right, wv, prop_eval, 0);
+	optimize(left_damping_history, *m_left, *m_right, wv, prop_eval, 0);
 	generateRegionInformation(*m_left, *m_right);
-	optimize(*m_right, *m_left, wv, prop_eval, 0);
+	optimize(right_damping_history, *m_right, *m_left, wv, prop_eval, 0);
 	generateRegionInformation(*m_left, *m_right);
 	std::cout << "finished" << std::endl;
 	setData(m_left, m_right);
@@ -365,10 +368,10 @@ void resetContainerDisparities(RegionContainer& container)
 
 void RegionWindow::on_pbResetOptimization_clicked()
 {
-	for(DisparityRegion& cregion : m_left->regions)
+	/*for(DisparityRegion& cregion : m_left->regions)
 		cregion.damping_history = 0;
 	for(DisparityRegion& cregion : m_right->regions)
-		cregion.damping_history = 0;
+		cregion.damping_history = 0;*/
 
 	resetContainerDisparities(*m_left);
 	resetContainerDisparities(*m_right);

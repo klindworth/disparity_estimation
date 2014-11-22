@@ -78,7 +78,7 @@ public:
 	//short optimization_minimum;
 	unsigned char dilation;
 	char old_dilation;
-	int damping_history;
+	//int damping_history;
 
 	std::vector<EstimationStep> results;
 

@@ -324,7 +324,7 @@ void refresh_optimization_vector(RegionContainer& base, const RegionContainer& m
 	}
 }
 
-void optimize(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
+void optimize(std::vector<unsigned char>& damping_history, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
 {
 	/*std::size_t reg_left = base.regions.size();
 	base.disparity.resize(reg_left);
@@ -367,8 +367,8 @@ void optimize(RegionContainer& base, RegionContainer& match, const disparity_hyp
 
 		//damping
 		if(ndisparity != baseRegion.disparity)
-			++baseRegion.damping_history;
-		if(baseRegion.damping_history < 2)
+			damping_history[j] += 1;
+		if(damping_history[j] < 2)
 		{
 			baseRegion.disparity = ndisparity;
 			EstimationStep step;
@@ -384,7 +384,7 @@ void optimize(RegionContainer& base, RegionContainer& match, const disparity_hyp
 				baseRegion.results.push_back(step);
 			}
 			else
-				baseRegion.damping_history = 0;
+				damping_history[j] = 0;
 		}
 	}
 }
@@ -494,49 +494,35 @@ void train_ml_optimizer(RegionContainer& base, RegionContainer& match, const dis
 	//TODO: call training function
 }
 
-void run_optimization(StereoTask& task, RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement)
+void man_region_optimizer::run(RegionContainer &left, RegionContainer &right, const optimizer_settings &config, int refinement)
 {
-	for(DisparityRegion& cregion : left.regions)
-		cregion.damping_history = 0;
-	for(DisparityRegion& cregion : right.regions)
-		cregion.damping_history = 0;
+	damping_history_left.resize(left.regions.size());
+	std::fill(damping_history_left.begin(), damping_history_left.end(), 0);
 
-	//optimize L/R
-	//if(refinement == 0)
+	damping_history_right.resize(right.regions.size());
+	std::fill(damping_history_right.begin(), damping_history_right.end(), 0);
+
+	for(int i = 0; i < config.rounds; ++i)
 	{
-		for(int i = 0; i < config.rounds; ++i)
-		{
-			std::cout << "optimization round" << std::endl;
-			optimize(left, right, config.base_eval, config.prop_eval, refinement);
-			refreshWarpedIdx(left);
-			optimize(right, left, config.base_eval, config.prop_eval, refinement);
-			refreshWarpedIdx(right);
-		}
-		for(int i = 0; i < config.rounds; ++i)
-		{
-			std::cout << "optimization round2" << std::endl;
-			optimize(left, right, config.base_eval2, config.prop_eval2, refinement);
-			refreshWarpedIdx(left);
-			optimize(right, left, config.base_eval2, config.prop_eval2, refinement);
-			refreshWarpedIdx(right);
-		}
-		if(config.rounds == 0)
-		{
-			refreshOptimizationBaseValues(left, right, config.base_eval, refinement);
-			refreshOptimizationBaseValues(right, left, config.base_eval, refinement);
-		}
+		std::cout << "optimization round" << std::endl;
+		optimize(damping_history_left, left, right, config.base_eval, config.prop_eval, refinement);
+		refreshWarpedIdx(left);
+		optimize(damping_history_right, right, left, config.base_eval, config.prop_eval, refinement);
+		refreshWarpedIdx(right);
 	}
-	/*else
+	for(int i = 0; i < config.rounds; ++i)
 	{
-		for(int i = 0; i < config.rounds; ++i)
-		{
-			std::cout << "optimization round-refine" << std::endl;
-			optimize(left, right, config.base_eval_wv, config.prop_eval_refine, refinement);
-			refreshWarpedIdx(left);
-			optimize(right, left, config.base_eval_wv, config.prop_eval_refine, refinement);
-			refreshWarpedIdx(right);
-		}
-	}*/
+		std::cout << "optimization round2" << std::endl;
+		optimize(damping_history_left, left, right, config.base_eval2, config.prop_eval2, refinement);
+		refreshWarpedIdx(left);
+		optimize(damping_history_right, right, left, config.base_eval2, config.prop_eval2, refinement);
+		refreshWarpedIdx(right);
+	}
+	if(config.rounds == 0)
+	{
+		refreshOptimizationBaseValues(left, right, config.base_eval, refinement);
+		refreshOptimizationBaseValues(right, left, config.base_eval, refinement);
+	}
 }
 
 const cv::FileNode& operator>>(const cv::FileNode& node, disparity_hypothesis_weight_vector& config)
