@@ -75,16 +75,13 @@ public:
 	char old_dilation;
 
 	std::vector<EstimationStep> results;
-
-	//float confidence3;
-
 	MutualRegion getMutualRegion(std::size_t idx, std::size_t disparity_idx);
 };
 
 struct RegionContainer : public segmentation_image<DisparityRegion>
 {
 	StereoSingleTask task;
-	std::vector<short> disparity;
+	//std::vector<short> disparity;
 };
 
 template<typename T>
@@ -255,10 +252,6 @@ void generateStats(DisparityRegion& region, const StereoSingleTask& task, int de
 
 void labelLRCheck(RegionContainer& base, const RegionContainer& match, int delta);
 void refreshWarpedIdx(RegionContainer& container);
-std::pair<float,float> getOtherRegionsAverageCond(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, std::function<float(const DisparityRegion&)> func, std::function<float(const DisparityRegion&)> cond_eval);
-
-void calculate_all_average_colors(const cv::Mat &image, std::vector<DisparityRegion> &regions);
-
 std::vector<RegionInterval> getFilteredPixelIdx(int width, const std::vector<RegionInterval> &pixel_idx, int d);
 
 bool checkLabelsIntervalsInvariant(const std::vector<DisparityRegion>& regions, const cv::Mat_<int>& labels, int segcount);

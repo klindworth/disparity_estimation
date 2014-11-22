@@ -37,14 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iterator>
 #include <functional>
 #include <random>
-
-//#if defined(ENABLE_OPENMP)
 #include <omp.h>
-//#else
-//typedef int omp_int_t;
-//inline omp_int_t omp_get_thread_num() { return 0;}
-//inline omp_int_t omp_get_max_threads() { return 1;}
-//#endif
 
 template<typename sum_type, typename T>
 void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv::Mat_<T>& src, const std::vector<RegionInterval>& region, int dx_min, int dx_max)

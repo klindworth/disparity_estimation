@@ -58,21 +58,6 @@ std::vector<RegionInterval> getFilteredPixelIdx(int width, const std::vector<Reg
 	return filtered;
 }
 
-std::pair<float,float> getOtherRegionsAverageCond(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, std::function<float(const DisparityRegion&)> func, std::function<float(const DisparityRegion&)> cond_eval)
-{
-	float result = 0.0f;
-	float cond_true = 0.0f;
-	for(const MutualRegion& cval : cdisp)
-	{
-		if(cond_eval(container[cval.index]))
-		{
-			result += cval.percent * func(container[cval.index]);
-			cond_true += cval.percent;
-		}
-	}
-	return std::make_pair(result/cond_true, cond_true);
-}
-
 void labelLRCheck(const cv::Mat_<int>& labelsMatch, DisparityRegion& region, const short dispMin, const short dispMax)
 {
 	const int dispRange = dispMax-dispMin + 1;
@@ -82,13 +67,6 @@ void labelLRCheck(const cv::Mat_<int>& labelsMatch, DisparityRegion& region, con
 	{
 		int cdisparity = i + dispMin;
 		sparse_histogramm hist;
-		/*std::vector<RegionInterval> filteredIntervals = getFilteredPixelIdx(labelsMatch.cols, region.lineIntervals, cdisparity);
-		for(const RegionInterval& cinterval : filteredIntervals)
-		{
-			for(int x = cinterval.lower; x < cinterval.upper; ++x)
-				hist.increment(labelsMatch.at<int>(cinterval.y, x + cdisparity));
-		}*/
-
 		foreach_warped_region_point(region.lineIntervals.begin(), region.lineIntervals.end(), labelsMatch.cols, cdisparity, [&](cv::Point pt)
 		{
 			hist.increment(labelsMatch(pt));
@@ -175,11 +153,6 @@ void generateStats(DisparityRegion& region, const StereoSingleTask& task, int de
 	analyzeDisparityRange2(region);
 
 	delete[] derived;
-}
-
-void calculate_all_average_colors(const cv::Mat& image, std::vector<DisparityRegion>& regions)
-{
-	calculate_all_average_colors(image, regions.begin(), regions.end());
 }
 
 cv::Mat getDisparityBySegments(const RegionContainer& container)
