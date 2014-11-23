@@ -144,7 +144,7 @@ void loggedRun(TaskCollection& testset, disparity_estimator_algo& disparity_esti
 			return;
 		}
 
-		matstore.startNewTask(ctask.name, ctask);
+		//matstore.startNewTask(ctask.name, ctask);
 		fs << "{:";
 		singleLoggedRun(ctask, disparity_estimator, fs, filename + "_" + ctask.name);
 		fs << "}";

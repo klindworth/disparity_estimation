@@ -146,7 +146,9 @@ int main(int argc, char *argv[])
 	if(config.verbose)
 		std::cout << "warning: verbose activated" << std::endl;
 
-	loggedRun(testset, config, refconfig);
+	//loggedRun(testset, config, refconfig);
+	initial_disparity_algo algo(config, refconfig);
+	algo.train(testset.tasks);
 
 	ImageStore imviewer;
 	imviewer.refreshList(matstore);

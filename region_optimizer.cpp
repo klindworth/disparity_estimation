@@ -71,7 +71,6 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 			}
 			if(hyp_interval.upper != old_interval.upper)
 			{
-				//sum += src(hyp_interval.y, hyp_interval.upper - 1);
 				sum += src(old_interval.y, old_interval.upper);
 				++count;
 			}
@@ -93,7 +92,7 @@ disparity_hypothesis_vector::disparity_hypothesis_vector(const std::vector<Dispa
 		color_cache[i] = base_regions[i].average_color;
 }
 
-void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, const disparity_hypothesis_weight_vector& stat_eval, std::vector<float>& result_vector)
+void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector)
 {
 	this->dispStart = dispStart;
 	const int range = dispEnd - dispStart + 1;
@@ -104,7 +103,6 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	neighbor_color_pot_values.resize(range);
 	lr_pot_values.resize(range);
 	cost_values.resize(range);
-	end_result.resize(range);
 
 	//assert(dispRange == range);
 	//occ_avg
@@ -165,9 +163,6 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 
 	for(int i = 0; i < range; ++i)
 		cost_values[i] = baseRegion.disparity_costs((dispStart+i)-baseRegion.disparity_offset);
-
-	for(int i = 0; i < range; ++i)
-		end_result[i] = stat_eval.costs * cost_values[i] + stat_eval.lr_pot * lr_pot_values[i] + stat_eval.neighbor_color_pot * neighbor_color_pot_values[i] + stat_eval.neighbor_pot * neighbor_pot_values[i] + stat_eval.occ_avg * occ_avg_values[i];
 
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
 	result_vector.resize(range*5);
@@ -271,7 +266,7 @@ void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
-		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, stat_eval, optimization_vectors[i]);
+		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, optimization_vectors[i]);
 		for(short d = range.first; d <= range.second; ++d)
 		{
 			std::vector<MutualRegion>& cregionvec = baseRegion.other_regions[d-dispMin];
@@ -310,7 +305,7 @@ void refresh_optimization_vector(std::vector<std::vector<float>>& optimization_v
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
 		intervals::substractRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
-		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, stat_eval, optimization_vectors[i]);
+		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, optimization_vectors[i]);
 		intervals::addRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 	}
 }
@@ -472,6 +467,16 @@ void normalize_feature_vector(float *ptr, int n, const std::vector<float>& norma
 
 	//TODO: call training function
 }*/
+
+void manual_region_optimizer::set_training_mode()
+{
+
+}
+
+void manual_region_optimizer::training()
+{
+	 std::cout << "training" << std::endl;
+}
 
 void manual_region_optimizer::reset(const RegionContainer &left, const RegionContainer &right)
 {

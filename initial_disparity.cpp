@@ -643,6 +643,7 @@ initial_disparity_algo::initial_disparity_algo(InitialDisparityConfig &config, R
 std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(StereoTask& task)
 {
 	int subsampling = 1; //TODO avoid this
+	matstore.startNewTask(task.name, task);
 	manual_region_optimizer optimizer;
 	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling, optimizer);
 }
@@ -651,8 +652,13 @@ void initial_disparity_algo::train(std::vector<StereoTask>& tasks)
 {
 	int subsampling = 1; //TODO avoid this
 	manual_region_optimizer optimizer;
+	optimizer.set_training_mode();
 	for(StereoTask& ctask : tasks)
+	{
+		matstore.startNewTask(ctask.name, ctask);
 		segment_based_disparity_it(ctask, m_config, m_refconfig, subsampling, optimizer);
+	}
+	optimizer.training();
 }
 
 void initial_disparity_algo::writeConfig(cv::FileStorage &fs)

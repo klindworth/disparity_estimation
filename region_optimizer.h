@@ -79,11 +79,10 @@ class disparity_hypothesis_vector
 
 	//end results
 	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values;
-	std::vector<float> end_result;
 
 public:
 	disparity_hypothesis_vector(const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions);
-	void operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, const disparity_hypothesis_weight_vector& stat_eval, std::vector<float>& result_vector);
+	void operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector);
 };
 
 class optimizer_settings
@@ -106,6 +105,9 @@ public:
 	void run(RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement= 0);
 	void optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
 	void reset(const RegionContainer& left, const RegionContainer& right);
+
+	void set_training_mode();
+	void training();
 
 private:
 	std::vector<unsigned char> damping_history_left, damping_history_right;
