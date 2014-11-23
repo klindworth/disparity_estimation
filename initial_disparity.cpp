@@ -443,7 +443,7 @@ void dilateLR(StereoSingleTask& task, std::vector<DisparityRegion>& regions_base
 	});
 }
 
-void single_pass_region_disparity(StereoTask& task, RegionContainer& left, RegionContainer& right, const InitialDisparityConfig& config, bool b_refinement, disparity_region_func disparity_calculator, manual_region_optimizer optimizer)
+void single_pass_region_disparity(StereoTask& task, RegionContainer& left, RegionContainer& right, const InitialDisparityConfig& config, bool b_refinement, disparity_region_func disparity_calculator, region_optimizer& optimizer)
 {
 	int refinement = 0;
 	if(b_refinement)
@@ -528,7 +528,7 @@ cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, c
 	return convertDisparityFromPartialCostmap(createDisparity(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
 }
 
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling, manual_region_optimizer& optimizer)
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling, region_optimizer& optimizer)
 {
 	const int quantizer = 4;
 

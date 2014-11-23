@@ -26,7 +26,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef COSTMAP_UTILS_H
 #define COSTMAP_UTILS_H
 
-#include <opencv2/core/core.hpp>
+#include <vector>
+
+namespace cv {
+class Mat;
+}
 
 class RegionInterval;
 class DisparityRegion;
@@ -41,7 +45,6 @@ typedef struct statistics {
 	float confidence2;
 	float confidence_range;
 	float confidence_variance;
-	float occ_val;
 	int disparity_idx;
 	std::vector<int> minima;
 	std::vector<int> bad_minima;

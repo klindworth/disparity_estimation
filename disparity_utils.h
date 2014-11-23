@@ -30,6 +30,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "stereotask.h"
 
+/**
+ * Calls for every pixel a function with the coordinates of the original pixel and the warped pixel and passes additionally the disparity.
+ * The function is only called, if the coordinate in the warped space is still valid, that means within the bodunaries of the image
+ * @param disparity Matrix with the disparity
+ * @param scaling Scaling factor of the passed disparity matrix. In most cases the disparity matrix is scaled due to subsampling, while the matrix remains integer.
+ * That means, if you have a subsampling factor of four, your disparity matrix is scaled by four.
+ * @param func Function that will be called for every pixel
+ */
 template<typename disparity_type, typename T>
 void foreach_warped_pixel(const cv::Mat& disparity, float scaling, T func)
 {
@@ -49,6 +57,12 @@ void foreach_warped_pixel(const cv::Mat& disparity, float scaling, T func)
 	}
 }
 
+/**
+ * Creates a matrix, in which every positions contains the number of correspondences or explained differently: The number of pixels which warp to that position
+ * @param disparity Matrix with the disparity
+ * @param scaling Scaling factor of the passed disparity matrix. In most cases the disparity matrix is scaled due to subsampling, while the matrix remains integer.
+ * That means, if you have a subsampling factor of four, your disparity matrix is scaled by four.
+ */
 template<typename disparity_type>
 cv::Mat occlusionStat(const cv::Mat& disparity, float scaling = 1.0f)
 {
@@ -74,9 +88,9 @@ cv::Mat occlusionMap(const cv::Mat& disparity, const cv::Mat& warped, float scal
 	return occ_image;
 }
 
-//warps an image
+///warps an image
 template<typename image_type, typename disparity_type>
-cv::Mat warpImage(const cv::Mat& image, const cv::Mat& disparity, float scaling = 1.0f)
+cv::Mat warp_image(const cv::Mat& image, const cv::Mat& disparity, float scaling = 1.0f)
 {
 	cv::Mat warpedImage(image.size(), image.type(), cv::Scalar(0));
 

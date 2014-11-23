@@ -27,8 +27,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define REGION_OPTIMIZER_H
 
 #include <vector>
-#include <cmath>
-#include <algorithm>
 #include <functional>
 
 #include <opencv2/core/core.hpp>
@@ -44,13 +42,13 @@ class DisparityRegion;
 class InitialDisparityConfig;
 class StereoTask;
 
-namespace cv {
+/*namespace cv {
 	class Mat;
 	template<typename T>
 	class Mat_;
 	class FileStorage;
 	class FileNode;
-}
+}*/
 
 class disparity_hypothesis
 {
@@ -95,7 +93,17 @@ public:
 	disparity_hypothesis_weight_vector base_eval, base_eval2, base_eval_refine;
 };
 
-std::vector<std::size_t> regionSplitUp(RegionContainer& base, RegionContainer& match);
+class region_optimizer
+{
+public:
+	virtual void run(RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement= 0) = 0;
+	//void optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
+	virtual void reset(const RegionContainer& left, const RegionContainer& right) = 0;
+
+	virtual void set_training_mode() = 0;
+	virtual void training() = 0;
+};
+
 void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, RegionContainer& left, const RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, int delta);
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const optimizer_settings& config);
