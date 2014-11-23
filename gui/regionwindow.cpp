@@ -34,6 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "debugmatstore.h"
 #include "region_optimizer.h"
 #include "initial_disparity.h"
+#include "manual_region_optimizer.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>

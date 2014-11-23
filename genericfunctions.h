@@ -187,6 +187,28 @@ cv::Mat_<dst_t> getValueScaledImage(const cv::Mat& image)
 	return result;
 }
 
+template<typename T>
+std::size_t min_idx(const cv::Mat_<T>& src, std::size_t preferred = 0)
+{
+	std::size_t idx = preferred;
+	T value = src(preferred);
+
+	const T* ptr = src[0];
+	std::size_t size = src.total();
+
+	for(std::size_t i = 0; i < size; ++i)
+	{
+		if(*ptr < value)
+		{
+			value = *ptr;
+			idx = i;
+		}
+		++ptr;
+	}
+
+	return idx;
+}
+
 cv::Mat cutImageBorder(const cv::Mat &input, int windowsize);
 cv::Mat lowerDimensionality(const cv::Mat &input);
 

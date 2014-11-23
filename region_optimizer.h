@@ -98,22 +98,6 @@ public:
 std::vector<std::size_t> regionSplitUp(RegionContainer& base, RegionContainer& match);
 void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, RegionContainer& left, const RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, int delta);
 
-
-class manual_region_optimizer
-{
-public:
-	void run(RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement= 0);
-	void optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
-	void reset(const RegionContainer& left, const RegionContainer& right);
-
-	void set_training_mode();
-	void training();
-
-private:
-	std::vector<unsigned char> damping_history_left, damping_history_right;
-	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
-};
-
 cv::FileStorage& operator<<(cv::FileStorage& stream, const optimizer_settings& config);
 const cv::FileNode& operator>>(const cv::FileNode& stream, optimizer_settings& config);
 

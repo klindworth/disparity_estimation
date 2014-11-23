@@ -25,6 +25,7 @@ set(SOURCES main.cpp
     slidingGradient.cpp
     refinement.cpp
     sncc_disparitywise_calculator.cpp
+    manual_region_optimizer.cpp
 
     gui/matstoreviewer.cpp
     gui/costmapviewer.cpp
@@ -56,6 +57,7 @@ set(HEADERS
     disparity_utils.h
 
     region_optimizer.h
+    manual_region_optimizer.h
     configrun.h
     taskanalysis.h
     

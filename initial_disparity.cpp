@@ -55,6 +55,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "disparitywise_calculator.h"
 #include "sncc_disparitywise_calculator.h"
+#include "manual_region_optimizer.h"
 
 typedef std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<DisparityRegion>&, int)> disparity_region_func;
 
@@ -527,7 +528,7 @@ cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, c
 	return convertDisparityFromPartialCostmap(createDisparity(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
 }
 
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling, manual_region_optimizer optimizer)
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling, manual_region_optimizer& optimizer)
 {
 	const int quantizer = 4;
 
