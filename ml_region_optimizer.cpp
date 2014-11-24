@@ -24,13 +24,12 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 
 	std::size_t regions_count = base.regions.size();
 
-
+	optimization_vectors.resize(regions_count);
 	#pragma omp parallel for
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
 		const DisparityRegion& baseRegion = base.regions[i];
 		int thread_idx = omp_get_thread_num();
-		//int thread_idx = 0;
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
 		intervals::substractRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
@@ -175,4 +174,7 @@ void ml_region_optimizer::reset(const RegionContainer& /*left*/, const RegionCon
 
 void ml_region_optimizer::training()
 {
+	std::cout << "start actual training" << std::endl;
+	//TODO: ground truth
+	//cv::Mat_<float> samples
 }

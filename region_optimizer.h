@@ -79,6 +79,7 @@ class disparity_hypothesis_vector
 	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values;
 
 public:
+	static const int vector_size = 6;
 	disparity_hypothesis_vector(const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions);
 	void operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector);
 };

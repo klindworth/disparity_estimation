@@ -13,7 +13,7 @@ public:
 
 	void training() override;
 
-	const static int vector_size = 5;
+	const static int vector_size = 6;
 private:
 	void refresh_base_optimization_vector(const RegionContainer& base, const RegionContainer& match, int delta);
 	void prepare_training(std::vector<float>& dst, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta);
@@ -23,6 +23,7 @@ private:
 	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
 
 	std::vector<std::vector<float>> samples_left, samples_right;
+	std::vector<int> samples_gt_left, samples_gt_right;
 };
 
 #endif

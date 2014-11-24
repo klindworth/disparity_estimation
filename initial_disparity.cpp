@@ -56,6 +56,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparitywise_calculator.h"
 #include "sncc_disparitywise_calculator.h"
 #include "manual_region_optimizer.h"
+#include "ml_region_optimizer.h"
 
 typedef std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<DisparityRegion>&, int)> disparity_region_func;
 
@@ -652,7 +653,7 @@ std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(StereoTask& task
 void initial_disparity_algo::train(std::vector<StereoTask>& tasks)
 {
 	int subsampling = 1; //TODO avoid this
-	manual_region_optimizer optimizer;
+	ml_region_optimizer optimizer;
 	optimizer.set_training_mode(true);
 	for(StereoTask& ctask : tasks)
 	{
