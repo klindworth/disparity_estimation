@@ -653,7 +653,7 @@ void initial_disparity_algo::train(std::vector<StereoTask>& tasks)
 {
 	int subsampling = 1; //TODO avoid this
 	manual_region_optimizer optimizer;
-	optimizer.set_training_mode();
+	optimizer.set_training_mode(true);
 	for(StereoTask& ctask : tasks)
 	{
 		matstore.startNewTask(ctask.name, ctask);

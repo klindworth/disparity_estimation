@@ -7,7 +7,7 @@
 #include "disparity_utils.h"
 #include "genericfunctions.h"
 
-void refresh_optimization_vector(std::vector<std::vector<float>>& optimization_vectors, RegionContainer& base, const RegionContainer& match, int delta)
+void refresh_base_optimization_vector(std::vector<std::vector<float>>& optimization_vectors, RegionContainer& base, const RegionContainer& match, int delta)
 {
 	cv::Mat disp = getDisparityBySegments(base);
 	cv::Mat occmap = occlusionStat<short>(disp, 1.0);
@@ -43,9 +43,9 @@ void refresh_optimization_vector(std::vector<std::vector<float>>& optimization_v
 
 
 
-/*void gather_region_optimization_vector(float *dst_ptr, std::vector<float>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, const DisparityRegion& baseRegion, const RegionContainer& match, int delta, const StereoSingleTask& task, const std::vector<float>& normalization_vector)
+void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, const DisparityRegion& baseRegion, std::vector<float>& optimization_vector_base, std::vector<std::vector<float>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task, const std::vector<float>& normalization_vector)
 {
-	const int vector_size = 5;
+	const int vector_size = this->vector_size;
 	const int crange = task.dispMax - task.dispMin + 1;
 	auto range = getSubrange(baseRegion.base_disparity, delta, task);
 
@@ -68,16 +68,18 @@ void refresh_optimization_vector(std::vector<std::vector<float>>& optimization_v
 	{
 		int offset = i*vector_size;
 		for(int j = 0; j <  vector_size; ++j)
-			*dst_ptr++ = baseRegion.optimization_vector[offset+j] * normalization_vector[j];
+			*dst_ptr++ = optimization_vector_base[offset+j] * normalization_vector[j];
 		for(int j = vector_size; j < vector_size*2; ++j)
 			*dst_ptr++ = other_optimization_vector[offset+j-vector_size] * normalization_vector[j];
 	}
-}*/
+}
 
-void optimize_ml(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
+void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta)
 {
-	const int vector_size = 10;
+	const int vector_size = this->vector_size*2;
 	std::cout << "base" << std::endl;
+	refresh_base_optimization_vector(optimization_vectors_base, base, match, delta);
+	refresh_base_optimization_vector(optimization_vectors_match, match, base, delta);
 	//refresh_optimization_vector(base, match, base_eval, delta);
 	//refresh_optimization_vector(match, base, base_eval, delta);
 	std::cout << "optimize" << std::endl;
@@ -85,13 +87,13 @@ void optimize_ml(RegionContainer& base, RegionContainer& match, const disparity_
 	const int crange = base.task.dispMax - base.task.dispMin + 1;
 
 	const std::size_t regions_count = base.regions.size();
-	std::vector<float> normalization_vector(vector_size,1.0f);
-	#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
+	std::vector<float> normalization_vector(vector_size*2,1.0f);
+	#pragma omp parallel for
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		std::vector<float> region_optimization_vector(crange*vector_size); //recycle taskwise in prediction mode
+		std::vector<float> region_optimization_vector(crange*vector_size*2); //recycle taskwise in prediction mode
 		//gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], match, delta, base.task, normalization_vector);
-
+		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task, normalization_vector);
 		//TODO: call predict function and save result
 	}
 }
@@ -108,10 +110,9 @@ void normalize_feature_vector(float *ptr, int n, const std::vector<float>& norma
 	}
 }
 
-/*void train_ml_optimizer(RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, int delta)
+void ml_region_optimizer::train_ml_optimizer(std::vector<std::vector<float>>& base_optimization_vectors, std::vector<std::vector<float>>& match_optimization_vectors, RegionContainer& base, RegionContainer& match, int delta)
 {
-	const int vector_size = 10;
-
+	const int vector_size = this->vector_size *2;
 	std::cout << "base" << std::endl;
 	//refreshOptimizationBaseValues(base, match, base_eval, delta);
 	//refreshOptimizationBaseValues(match, base, base_eval, delta);
@@ -127,7 +128,7 @@ void normalize_feature_vector(float *ptr, int n, const std::vector<float>& norma
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		gather_region_optimization_vector(featurevector.data() + j*crange*vector_size, base.regions[j], match, delta, base.task, normalization_vector);
+		gather_region_optimization_vector(featurevector.data() + j*crange*vector_size, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector);
 
 		const float *src_ptr = featurevector.data() + j*crange*vector_size;
 		for(int k = 0; k < crange; ++k)
@@ -146,6 +147,29 @@ void normalize_feature_vector(float *ptr, int n, const std::vector<float>& norma
 	normalize_feature_vector(featurevector.data(), regions_count*crange, sums);
 
 	//TODO: call training function
-}*/
+}
 
+void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement)
+{
+	if(training_mode)
+	{
+		train_ml_optimizer(optimization_vectors_left, optimization_vectors_right, left, right, refinement);
+		train_ml_optimizer(optimization_vectors_right, optimization_vectors_left, right, left, refinement);
+	}
+	else
+	{
+		optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement);
+		optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement);
+	}
+	refresh_base_optimization_vector(optimization_vectors_left, left, right, refinement);
+	refresh_base_optimization_vector(optimization_vectors_right, right, left, refinement);
+}
 
+void ml_region_optimizer::reset(const RegionContainer &left, const RegionContainer &right)
+{
+
+}
+
+void ml_region_optimizer::training()
+{
+}

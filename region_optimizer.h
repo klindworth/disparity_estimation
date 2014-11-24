@@ -96,12 +96,16 @@ public:
 class region_optimizer
 {
 public:
+	region_optimizer() {training_mode = false;}
 	virtual void run(RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement= 0) = 0;
 	//void optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
 	virtual void reset(const RegionContainer& left, const RegionContainer& right) = 0;
 
-	virtual void set_training_mode() = 0;
+	virtual void set_training_mode(bool training) {training_mode = training;}
 	virtual void training() = 0;
+
+protected:
+	bool training_mode;
 };
 
 void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, RegionContainer& left, const RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, int delta);

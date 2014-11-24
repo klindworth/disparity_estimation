@@ -59,11 +59,6 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 	}
 }
 
-void manual_region_optimizer::set_training_mode()
-{
-
-}
-
 void manual_region_optimizer::training()
 {
 	 std::cout << "training" << std::endl;
