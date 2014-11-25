@@ -45,13 +45,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparity_utils.h"
 #include "refinement.h"
 
-#include <segmentation/segmentation_refinement.h>
-
 int main(int argc, char *argv[])
 {
-	//split_region_test();
-	//return 0;
-
 	QApplication app(argc, argv);
 
 	auto prop_eval = [](const DisparityRegion& baseRegion, const RegionContainer& base, const RegionContainer& match, int disparity) {
