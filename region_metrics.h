@@ -162,7 +162,7 @@ void getRegionDisparityInternal(std::vector<RegionInterval>& actual_region, cost
 
 	for(int d = dispMin; d <= dispMax; ++d)
 	{
-		std::vector<RegionInterval> filtered = getFilteredPixelIdx(match.size[1], actual_region, d);
+		std::vector<RegionInterval> filtered = filtered_region(match.size[1], actual_region, d);
 		int filtered_length = getSizeOfRegion(filtered);
 
 		if((float)filtered_length/(float)length > 0.6f && filtered_length > 10) //0.4

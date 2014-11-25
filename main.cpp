@@ -45,8 +45,58 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparity_utils.h"
 #include "refinement.h"
 
+#include <opencv2/highgui/highgui.hpp>
+
+template<typename region_type>
+std::vector<unsigned char> region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<unsigned char> gt)
+{
+	std::vector<unsigned char> averages(regions.size());
+	for(std::size_t i = 0; i < regions.size(); ++i)
+	{
+		int sum = 0;
+		int count = 0;
+
+		intervals::foreach_region_point(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end(), [&](cv::Point pt){
+			unsigned char value = gt(pt);
+			if(value != 0)
+			{
+				sum += value;
+				++count;
+			}
+		});
+
+		averages[i] = count > 0 ? std::round(sum/count) : 0;
+	}
+
+	return averages;
+}
+
 int main(int argc, char *argv[])
 {
+	cv::Mat image = cv::imread("test.png");
+	segmentation_settings seg_settings;
+	seg_settings.algorithm = "superpixel";
+	seg_settings.superpixel_size = 225;
+	seg_settings.superpixel_compactness = 20.0f;
+	std::shared_ptr<segmentation_algorithm> segm = getSegmentationClass(seg_settings);
+	std::shared_ptr<segmentation_image<RegionDescriptor>> seg_image = segm->getSegmentationImage<segmentation_image<RegionDescriptor>>(image);
+
+	cv::Mat test = getWrongColorSegmentationImage(*seg_image);
+	cv::Mat_<unsigned char> disp = cv::imread("disp2.png", CV_LOAD_IMAGE_GRAYSCALE);
+
+	std::vector<unsigned char> averages = region_ground_truth(seg_image->regions, disp);
+	cv::Mat_<unsigned char> avg_image(disp.size());
+
+	for(std::size_t i = 0; i < seg_image->regions.size(); ++i)
+		intervals::setRegionValue(avg_image, seg_image->regions[i].lineIntervals, averages[i]);
+
+	cv::imshow("avg", avg_image);
+
+	cv::imshow("test", test);
+	cv::waitKey();
+
+	return 0;
+
 	QApplication app(argc, argv);
 
 	auto prop_eval = [](const DisparityRegion& baseRegion, const RegionContainer& base, const RegionContainer& match, int disparity) {

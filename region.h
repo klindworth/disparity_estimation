@@ -252,7 +252,7 @@ void generateStats(DisparityRegion& region, const StereoSingleTask& task, int de
 
 void labelLRCheck(RegionContainer& base, const RegionContainer& match, int delta);
 void refreshWarpedIdx(RegionContainer& container);
-std::vector<RegionInterval> getFilteredPixelIdx(int width, const std::vector<RegionInterval> &pixel_idx, int d);
+std::vector<RegionInterval> filtered_region(int width, const std::vector<RegionInterval> &pixel_idx, int d);
 
 bool checkLabelsIntervalsInvariant(const std::vector<DisparityRegion>& regions, const cv::Mat_<int>& labels, int segcount);
 #endif // REGION_H

@@ -136,7 +136,7 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 			if(d>= range.first && d <= range.second)
 			{
 				//std::vector<RegionInterval> filtered = filter_region(regions[i].lineIntervals, std::min(0,d), occ, base.size[1]);
-				std::vector<RegionInterval> filtered = getFilteredPixelIdx(base.size[1], regions[i].lineIntervals, d);
+				std::vector<RegionInterval> filtered = filtered_region(base.size[1], regions[i].lineIntervals, d);
 				cv::Mat diff_region = getRegionAsMat(diff, filtered, std::min(0, d));
 				//cv::Mat diff_region = getRegionAsMat(diff, regions[i].lineIntervals, 0);
 				float sum = cv::norm(diff_region, cv::NORM_L1);

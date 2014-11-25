@@ -42,12 +42,12 @@ DisparityRegion::DisparityRegion()
 	dilation = 0;
 }
 
-std::vector<RegionInterval> getFilteredPixelIdx(int width, const std::vector<RegionInterval> &pixel_idx, int d)
+std::vector<RegionInterval> filtered_region(int width, const std::vector<RegionInterval> &old_region, int d)
 {
 	std::vector<RegionInterval> filtered;
-	filtered.reserve(pixel_idx.size());
+	filtered.reserve(old_region.size());
 
-	for(const RegionInterval& cinterval : pixel_idx)
+	for(const RegionInterval& cinterval : old_region)
 	{
 		int lower = std::max(cinterval.lower+d, 0)-d;
 		int upper = std::min(cinterval.upper+d, width)-d;
@@ -170,7 +170,7 @@ void refreshWarpedIdx(RegionContainer& container)
 		DisparityRegion& cregion = container.regions[i];
 		cregion.warped_interval.clear();
 		cregion.warped_interval.reserve(cregion.lineIntervals.size());
-		cregion.warped_interval = getFilteredPixelIdx(container.task.base.cols, cregion.lineIntervals, cregion.disparity);
+		cregion.warped_interval = filtered_region(container.task.base.cols, cregion.lineIntervals, cregion.disparity);
 		for(RegionInterval& cinterval : cregion.warped_interval)
 		{
 			cinterval.lower += cregion.disparity;
