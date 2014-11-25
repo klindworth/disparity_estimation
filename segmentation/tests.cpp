@@ -89,8 +89,7 @@ bool mismatch_output(Iterator it1begin, Iterator it1end, Iterator it2begin)
 	return true;
 }
 
-//ported
-bool simple_interval_test()
+TEST(Interval, Simple1)
 {
 	std::vector<RegionInterval> base {RegionInterval(0, 2, 6), RegionInterval(0, 10, 19), RegionInterval(0,22,29), RegionInterval(0,30,36), RegionInterval(1,2,6), RegionInterval(2,4,9)};
 	std::vector<RegionInterval> match {RegionInterval(0, 3,5), RegionInterval(0,9,13), RegionInterval(0,15,21), RegionInterval(0,23,26), RegionInterval(0,36, 41), RegionInterval(2,5,7)};
@@ -110,18 +109,14 @@ bool simple_interval_test()
 	std::cout << std::endl;
 
 	std::cout << "difference" << std::endl;*/
-	if(!mismatch_output(difference.begin(), difference.end(), difference_desired.begin()))
-		return false;
+	EXPECT_TRUE(mismatch_output(difference.begin(), difference.end(), difference_desired.begin()));
 
 	/*std::cout << "intersection" << std::endl;
 	if(!mismatch_output(intersection.begin(), intersection.end(), intersection_desired.begin()))
 		return false;*/
-
-	return true;
 }
 
-//ported
-bool simple_interval_test2()
+TEST(Interval, Simple2)
 {
 	std::vector<RegionInterval> base {RegionInterval(0,1,2), RegionInterval(0, 2, 6), RegionInterval(0, 10, 19), RegionInterval(0,22,29), RegionInterval(0,30,36), RegionInterval(1,2,6), RegionInterval(2,4,9), RegionInterval(5,1,9), RegionInterval(6,2,6)};
 	std::vector<RegionInterval> match {RegionInterval(0,1,2), RegionInterval(0, 3,5), RegionInterval(0,9,13), RegionInterval(0,15,21), RegionInterval(0,23,26), RegionInterval(0,36, 41), RegionInterval(2,5,7), RegionInterval(3,5,9), RegionInterval(5,3,6), RegionInterval(6,2,6)};
@@ -141,18 +136,14 @@ bool simple_interval_test2()
 	std::cout << std::endl;*/
 
 	//std::cout << "difference" << std::endl;
-	if(!mismatch_output(difference.begin(), difference.end(), difference_desired.begin()))
-		return false;
+	EXPECT_TRUE(mismatch_output(difference.begin(), difference.end(), difference_desired.begin()));
 
 	/*std::cout << "intersection" << std::endl;
 	if(!mismatch_output(intersection.begin(), intersection.end(), intersection_desired.begin()))
 		return false;*/
-
-	return true;
 }
 
-//ported
-bool simple_interval_test3()
+TEST(Interval, Simple3)
 {
 	std::vector<RegionInterval> base  {RegionInterval(0, 319, 329), RegionInterval(1, 318, 329), RegionInterval(2, 318, 329), RegionInterval(4, 318,329), RegionInterval(5, 318,329), RegionInterval(11, 317,318), RegionInterval(12, 317,318)};
 	std::vector<RegionInterval> match {RegionInterval(0, 327, 328), RegionInterval(1, 326, 328), RegionInterval(2, 322, 328), RegionInterval(4, 321,322), RegionInterval(4, 323,328)};
@@ -172,8 +163,7 @@ bool simple_interval_test3()
 	std::cout << std::endl;*/
 
 	//std::cout << "difference" << std::endl;
-	if(!mismatch_output(difference.begin(), difference.end(), difference_desired.begin()))
-		return false;
+	EXPECT_TRUE(mismatch_output(difference.begin(), difference.end(), difference_desired.begin()));
 
 	/*std::cout << "intersection" << std::endl;
 	if(!mismatch_output(intersection.begin(), intersection.end(), intersection_desired.begin()))
@@ -186,12 +176,9 @@ bool simple_interval_test3()
 	std::cout << "difference2" << std::endl;
 	if(!mismatch_output(diff_test.begin(), diff_test.end(), difference_desired.begin()))
 		return false;*/
-
-	return true;
 }
 
-//ported
-bool simple_interval_test_disparity()
+TEST(Interval, SimpleDisparity)
 {
 	std::vector<RegionInterval> base {RegionInterval(0, 2, 6), RegionInterval(0, 10, 19), RegionInterval(0,22,29), RegionInterval(0,30,36), RegionInterval(1,2,6), RegionInterval(2,4,9)};
 	std::vector<RegionInterval> match {RegionInterval(0, 3,5), RegionInterval(0,9,13), RegionInterval(0,15,21), RegionInterval(0,23,26), RegionInterval(0,36, 41), RegionInterval(2,5,7)};
@@ -211,17 +198,13 @@ bool simple_interval_test_disparity()
 	std::cout << std::endl;*/
 
 	//std::cout << "difference" << std::endl;
-	if(!mismatch_output(difference.begin(), difference.end(), difference_desired.begin()))
-		return false;
+	EXPECT_TRUE(mismatch_output(difference.begin(), difference.end(), difference_desired.begin()));
 
 	/*std::cout << "intersection" << std::endl;
 	if(!mismatch_output(intersection.begin(), intersection.end(), intersection_desired.begin()))
 		return false;*/
-
-	return true;
 }
 
-//ported
 TEST(Interval, ValueRegion)
 {
 	cv::Mat mat(1, 20, CV_8UC1, cv::Scalar(0));
@@ -245,7 +228,6 @@ TEST(Interval, ValueRegion)
 	EXPECT_TRUE(mismatch_output(calc.begin(), calc.end(), desired.begin()));
 }
 
-//ported
 TEST(Interval, ThresholdConvert)
 {
 	cv::Mat_<unsigned char> test(1, 20, 15);
@@ -299,14 +281,5 @@ TEST(Interval, Intersecting)
 
 
 }*/
-
-TEST(Interval, Basic)
-{
-	EXPECT_TRUE(simple_interval_test());
-	EXPECT_TRUE(simple_interval_test2());
-	EXPECT_TRUE(simple_interval_test3());
-	EXPECT_TRUE(simple_interval_test_disparity());
-	//EXPECT_TRUE(value_interval_test());
-}
 
 
