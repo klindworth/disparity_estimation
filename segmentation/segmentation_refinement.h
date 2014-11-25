@@ -6,7 +6,7 @@ class RegionDescriptor;
 #include <vector>
 
 //int split_region(const RegionDescriptor& descriptor, int min_size, std::back_insert_iterator<std::vector<RegionDescriptor>> it);
-void split_region_test();
+//void split_region_test();
 //cv::Mat_<int> segmentation_iteration(std::vector<DisparityRegion>& regions, cv::Size size);
 
 

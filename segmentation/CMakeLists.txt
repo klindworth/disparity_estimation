@@ -5,7 +5,6 @@ project(cvsegmentation_lib)
 find_package(OpenCV REQUIRED)
 find_package(OpenMP)
 
-
 set(SOURCES
     region_descriptor.cpp
     segmentation.cpp
@@ -88,9 +87,15 @@ add_library(${PROJECT_NAME} SHARED
 )
 
 target_link_libraries(${PROJECT_NAME}
-    ${OpenCV_LIBS} cvwidgets
+    ${OpenCV_LIBS}
 )
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -std=c++11 -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++11 -DNDEBUG -O3")
+
+enable_testing()
+find_package(GTest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIRS})
+add_executable(${PROJECT_NAME}_tests tests.cpp ${SOURCES})
+target_link_libraries(${PROJECT_NAME}_tests ${OpenCV_LIBS} ${GTEST_BOTH_LIBRARIES})
 
