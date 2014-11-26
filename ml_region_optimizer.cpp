@@ -63,6 +63,30 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 	}
 }
 
+template<typename region_type>
+std::vector<unsigned char> region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<unsigned char> gt)
+{
+	std::vector<unsigned char> averages(regions.size());
+	for(std::size_t i = 0; i < regions.size(); ++i)
+	{
+		int sum = 0;
+		int count = 0;
+
+		intervals::foreach_region_point(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end(), [&](cv::Point pt){
+			unsigned char value = gt(pt);
+			if(value != 0)
+			{
+				sum += value;
+				++count;
+			}
+		});
+
+		averages[i] = count > 0 ? std::round(sum/count) : 0;
+	}
+
+	return averages;
+}
+
 void ml_region_optimizer::refresh_base_optimization_vector(const RegionContainer& left, const RegionContainer& right, int delta)
 {
 	refresh_base_optimization_vector_internal(optimization_vectors_left, left, right, delta);
@@ -180,8 +204,10 @@ void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, con
 	{
 		samples_left.emplace_back();
 		prepare_training(samples_left.back(), optimization_vectors_left, optimization_vectors_right, left, right, refinement);
-		samples_right.emplace_back();
-		prepare_training(samples_right.back(), optimization_vectors_right, optimization_vectors_left, right, left, refinement);
+		//samples_right.emplace_back();
+		//prepare_training(samples_right.back(), optimization_vectors_right, optimization_vectors_left, right, left, refinement);
+
+		samples_gt.push_back(region_ground_truth(left.regions, left.task.groundTruth));
 	}
 	else
 	{

@@ -48,7 +48,7 @@ private:
 	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
 
 	std::vector<std::vector<float>> samples_left, samples_right;
-	std::vector<int> samples_gt_left, samples_gt_right;
+	std::vector<std::vector<int>> samples_gt;
 };
 
 #endif

@@ -47,29 +47,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/highgui/highgui.hpp>
 
-template<typename region_type>
-std::vector<unsigned char> region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<unsigned char> gt)
-{
-	std::vector<unsigned char> averages(regions.size());
-	for(std::size_t i = 0; i < regions.size(); ++i)
-	{
-		int sum = 0;
-		int count = 0;
 
-		intervals::foreach_region_point(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end(), [&](cv::Point pt){
-			unsigned char value = gt(pt);
-			if(value != 0)
-			{
-				sum += value;
-				++count;
-			}
-		});
-
-		averages[i] = count > 0 ? std::round(sum/count) : 0;
-	}
-
-	return averages;
-}
 
 int main(int argc, char *argv[])
 {
