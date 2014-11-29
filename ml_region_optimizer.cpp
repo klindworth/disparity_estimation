@@ -97,38 +97,39 @@ void ml_region_optimizer::refresh_base_optimization_vector(const RegionContainer
 
 void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, const DisparityRegion& baseRegion, const std::vector<float>& optimization_vector_base, const std::vector<std::vector<float>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task, const std::vector<float>& normalization_vector)
 {
-	const int vector_size = ml_region_optimizer::vector_size;
 	const int crange = task.dispMax - task.dispMin + 1;
 	auto range = getSubrange(baseRegion.base_disparity, delta, task);
 
-	std::vector<float> other_optimization_vector(crange*vector_size);
-	std::vector<float> disp_optimization_vector(vector_size);
+	std::vector<float> other_optimization_vector(crange*vector_size_per_disp);
+	std::vector<float> disp_optimization_vector(vector_size_per_disp);
 	for(short d = range.first; d < range.second; ++d)
 	{
 		std::fill(disp_optimization_vector.begin(), disp_optimization_vector.end(), 0.0f);
 		int corresponding_disp_idx = -d - match.task.dispMin;
 		foreach_corresponding_region(baseRegion.other_regions[d-task.dispMin], [&](std::size_t idx, float percent) {
-			const float* it = &(optimization_vectors_match[idx][corresponding_disp_idx*vector_size]);
-			for(int i = 0; i < vector_size; ++i)
+			const float* it = &(optimization_vectors_match[idx][corresponding_disp_idx*vector_size_per_disp]);
+			for(int i = 0; i < vector_size_per_disp; ++i)
 				disp_optimization_vector[i] += percent * *it++;
 		});
 
-		std::copy(disp_optimization_vector.begin(), disp_optimization_vector.end(), &(other_optimization_vector[(d-range.first)*vector_size]));
+		std::copy(disp_optimization_vector.begin(), disp_optimization_vector.end(), &(other_optimization_vector[(d-range.first)*vector_size_per_disp]));
 	}
 
 	for(int i = 0; i < crange; ++i)
 	{
-		int offset = i*vector_size;
-		for(int j = 0; j <  vector_size; ++j)
+		int offset = i*vector_size_per_disp*2;
+		for(int j = 0; j < vector_size_per_disp*2; ++j)
 			*dst_ptr++ = optimization_vector_base[offset+j] * normalization_vector[j];
-		for(int j = vector_size; j < vector_size*2; ++j)
-			*dst_ptr++ = other_optimization_vector[offset+j-vector_size] * normalization_vector[j];
+	}
+	for(int i = 0; i < vector_size; ++i)
+	{
+		int idx = crange*vector_size_per_disp+i;
+		*dst_ptr++ = optimization_vector_base[idx] * normalization_vector[vector_size_per_disp*2+i];
 	}
 }
 
 void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta)
 {
-	const int vector_size = ml_region_optimizer::vector_size*2;
 	std::cout << "base" << std::endl;
 	refresh_base_optimization_vector(base, match, delta);
 	//refresh_optimization_vector(base, match, base_eval, delta);
@@ -138,43 +139,44 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& ma
 	const int crange = base.task.dispMax - base.task.dispMin + 1;
 
 	const std::size_t regions_count = base.regions.size();
-	std::vector<float> normalization_vector(vector_size*2,1.0f);
+	std::vector<float> normalization_vector(normalizer_size,1.0f);
 	#pragma omp parallel for
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		std::vector<float> region_optimization_vector(crange*vector_size*2); //recycle taskwise in prediction mode
+		std::vector<float> region_optimization_vector(crange*vector_size_per_disp*2); //recycle taskwise in prediction mode
 		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task, normalization_vector);
 		//TODO: call predict function and save result
 	}
 }
 
-
-
 void normalize_feature_vector(float *ptr, int n, const std::vector<float>& normalization_vector)
 {
-	int vector_size = normalization_vector.size();
-	for(int j = 0; j < n; ++j)
+	int cmax = (n - ml_region_optimizer::vector_size) / ml_region_optimizer::vector_size_per_disp / 2;
+	assert((n - ml_region_optimizer::vector_size) % (ml_region_optimizer::vector_size_per_disp * 2) == 0);
+	for(int j = 0; j < cmax; ++j)
 	{
-		for(int i = 0; i < vector_size; ++i)
-			*ptr = *ptr * normalization_vector[i];
+		for(int i = 0; i < ml_region_optimizer::vector_size_per_disp*2; ++i)
+			*ptr++ *= normalization_vector[i];
 	}
 }
 
-void ml_region_optimizer::prepare_training(std::vector<float>& dst, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
+void normalize_feature_vector(std::vector<float>& data, const std::vector<float>& normalization_vector)
 {
-	const int vector_size = ml_region_optimizer::vector_size *2;
-	//std::cout << "base" << std::endl;
-	//refresh_base_optimization_vector(base, match, delta);
-	std::cout << "optimize" << std::endl;
+	normalize_feature_vector(data.data(), data.size(), normalization_vector);
+}
+
+void ml_region_optimizer::prepare_training_sample(std::vector<float>& dst, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
+{
+	const int vector_size = ml_region_optimizer::vector_size_per_disp *2;
 
 	const int crange = base.task.dispMax - base.task.dispMin + 1;
 
 	const std::size_t regions_count = base.regions.size();
-	std::vector<float> normalization_vector(vector_size,1.0f);
+	std::vector<float> normalization_vector(normalizer_size,1.0f);
 	dst.resize(crange*vector_size*regions_count);
 	float* dst_ptr = dst.data();
 
-	std::vector<float> sums(vector_size, 0.0f); //per thread!!
+	std::vector<float> sums(normalizer_size, 0.0f); //per thread!!
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
@@ -185,16 +187,9 @@ void ml_region_optimizer::prepare_training(std::vector<float>& dst, const std::v
 		{
 			for(int i = 0; i < vector_size; ++i)
 				sums[i] += *src_ptr++;
+			++norm_count;
 		}
 	}
-
-	//gather normalization
-	float sum_normalizer = regions_count * crange;
-	for(int i = 0; i < vector_size; ++i)
-		sums[i] = sum_normalizer / sums[i];
-
-	//apply normalization
-	normalize_feature_vector(dst_ptr, regions_count*crange, sums);
 }
 
 void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, const optimizer_settings& /*config*/, int refinement)
@@ -203,9 +198,9 @@ void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, con
 	if(training_mode)
 	{
 		samples_left.emplace_back();
-		prepare_training(samples_left.back(), optimization_vectors_left, optimization_vectors_right, left, right, refinement);
+		prepare_training_sample(samples_left.back(), optimization_vectors_left, optimization_vectors_right, left, right, refinement);
 		//samples_right.emplace_back();
-		//prepare_training(samples_right.back(), optimization_vectors_right, optimization_vectors_left, right, left, refinement);
+		//prepare_training_sample(samples_right.back(), optimization_vectors_right, optimization_vectors_left, right, left, refinement);
 
 		samples_gt.push_back(region_ground_truth(left.regions, left.task.groundTruth));
 	}
@@ -217,15 +212,46 @@ void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, con
 	}
 }
 
-void ml_region_optimizer::reset(const RegionContainer& /*left*/, const RegionContainer& /*right*/)
+void ml_region_optimizer::reset_internal()
 {
 	samples_left.clear();
 	samples_right.clear();
+
+	std::fill(norm_sums.begin(), norm_sums.end(), 0);
+	norm_count = 0;
+}
+
+ml_region_optimizer::ml_region_optimizer()
+{
+	reset_internal();
+}
+
+void ml_region_optimizer::reset(const RegionContainer& /*left*/, const RegionContainer& /*right*/)
+{
+	reset_internal();
 }
 
 void ml_region_optimizer::training()
 {
+	int crange = 128;
+
 	std::cout << "start actual training" << std::endl;
+
+	//gather normalization
+	float sum_normalizer = 1.0f / norm_count;
+	for(int i = 0; i < vector_size_per_disp*2; ++i)
+		norm_sums[i] *= sum_normalizer;
+	for(int i = vector_size_per_disp*2; i < vector_size_per_disp*2+vector_size; ++i)
+		norm_sums[i] /= optimization_vectors_left.size();
+
+	std::vector<float> normalization_vector(normalizer_size);
+	std::copy(norm_sums.begin(), norm_sums.end(), normalization_vector.begin());
+
+
+	//apply normalization
+	for(auto& cvec : optimization_vectors_left)
+		normalize_feature_vector(cvec.data(), cvec.size(), normalization_vector);
+
 	//TODO: ground truth
 	//cv::Mat_<float> samples
 }

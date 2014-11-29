@@ -51,7 +51,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 int main(int argc, char *argv[])
 {
-	cv::Mat image = cv::imread("test.png");
+	/*cv::Mat image = cv::imread("test.png");
 	segmentation_settings seg_settings;
 	seg_settings.algorithm = "superpixel";
 	seg_settings.superpixel_size = 225;
@@ -73,7 +73,7 @@ int main(int argc, char *argv[])
 	cv::imshow("test", test);
 	cv::waitKey();
 
-	return 0;
+	return 0;*/
 
 	QApplication app(argc, argv);
 
