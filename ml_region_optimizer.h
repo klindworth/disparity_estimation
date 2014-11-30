@@ -53,7 +53,7 @@ private:
 	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
 
 	std::vector<std::vector<float>> samples_left, samples_right;
-	std::vector<std::vector<unsigned char>> samples_gt;
+	std::vector<unsigned char> samples_gt;
 	std::array<float, vector_size_per_disp*2+vector_size> norm_sums;
 	int norm_count;
 };

@@ -63,8 +63,8 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 	}
 }
 
-template<typename region_type>
-std::vector<unsigned char> region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<unsigned char> gt)
+template<typename region_type, typename InsertIterator>
+void region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<unsigned char> gt, InsertIterator it)
 {
 	std::vector<unsigned char> averages(regions.size());
 	for(std::size_t i = 0; i < regions.size(); ++i)
@@ -81,10 +81,9 @@ std::vector<unsigned char> region_ground_truth(const std::vector<region_type>& r
 			}
 		});
 
-		averages[i] = count > 0 ? std::round(sum/count) : 0;
+		*it = count > 0 ? std::round(sum/count) : 0;
+		++it;
 	}
-
-	return averages;
 }
 
 void ml_region_optimizer::refresh_base_optimization_vector(const RegionContainer& left, const RegionContainer& right, int delta)
@@ -202,7 +201,8 @@ void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, con
 		//samples_right.emplace_back();
 		//prepare_training_sample(samples_right.back(), optimization_vectors_right, optimization_vectors_left, right, left, refinement);
 
-		samples_gt.push_back(region_ground_truth(left.regions, left.task.groundTruth));
+		samples_gt.reserve(samples_gt.size() + left.regions.size());
+		region_ground_truth(left.regions, left.task.groundTruth, std::back_inserter(samples_gt));
 	}
 	else
 	{
@@ -242,15 +242,32 @@ void ml_region_optimizer::training()
 	for(int i = 0; i < vector_size_per_disp*2; ++i)
 		norm_sums[i] *= sum_normalizer;
 	for(int i = vector_size_per_disp*2; i < vector_size_per_disp*2+vector_size; ++i)
-		norm_sums[i] /= optimization_vectors_left.size();
+		norm_sums[i] /= samples_left.size();
 
 	std::vector<float> normalization_vector(normalizer_size);
 	std::copy(norm_sums.begin(), norm_sums.end(), normalization_vector.begin());
 
 
 	//apply normalization
-	for(auto& cvec : optimization_vectors_left)
+	for(auto& cvec : samples_left)
 		normalize_feature_vector(cvec.data(), cvec.size(), normalization_vector);
+
+	//clean invalid gt samples
+	assert(samples_left.size() == samples_gt.size());
+
+	std::size_t last_valid_idx = samples_left.size() -1;
+	for(std::size_t i = 0; i <= last_valid_idx; ++i)
+	{
+		if(samples_gt[i] == 0)
+		{
+			std::swap(samples_left[i], samples_left[last_valid_idx]);
+			samples_gt[i] = samples_gt[last_valid_idx];
+			--last_valid_idx;
+		}
+	}
+	samples_left.erase(samples_left.begin() + last_valid_idx + 1, samples_left.end());
+	samples_gt.erase(samples_gt.begin() + last_valid_idx + 1, samples_gt.end());
+	assert(samples_left.size() == samples_gt.size());
 
 	//TODO: ground truth
 	//cv::Mat_<float> samples

@@ -165,7 +165,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		cost_values[i] = baseRegion.disparity_costs((dispStart+i)-baseRegion.disparity_offset);
 
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
-	result_vector.resize(range*vector_size);//+1);
+	result_vector.resize(range*vector_size);
 	int org_size = baseRegion.size();
 	float *result_ptr = result_vector.data();
 	for(int i = 0; i < range; ++i)
