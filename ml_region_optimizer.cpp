@@ -166,31 +166,24 @@ void normalize_feature_vector(std::vector<float>& data, const std::vector<float>
 
 void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>>& dst, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
 {
-	const int vector_size = ml_region_optimizer::vector_size_per_disp *2;
-
-	const int crange = base.task.dispMax - base.task.dispMin + 1;
+	const int crange = base.task.range_size();
 
 	const std::size_t regions_count = base.regions.size();
 	std::vector<float> normalization_vector(normalizer_size,1.0f);
-	//dst.emplace_back(crange*vector_size*regions_count);
-	//dst.resize();
 	dst.reserve(dst.size() + base_optimization_vectors.size());
-	//float* dst_ptr = dst.back().data();
 
 	std::vector<float> sums(normalizer_size, 0.0f); //per thread!!
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		dst.emplace_back(vector_size*crange);
+		dst.emplace_back(vector_size_per_disp*2*crange+vector_size);
 		float *dst_ptr = dst.back().data();
-		//gather_region_optimization_vector(dst_ptr + j*crange*vector_size, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector);
 		gather_region_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector);
 
-		const float *src_ptr = dst_ptr;// + j*crange*vector_size;
 		for(int k = 0; k < crange; ++k)
 		{
-			for(int i = 0; i < vector_size; ++i)
-				sums[i] += *src_ptr++;
+			for(int i = 0; i < vector_size_per_disp*2; ++i)
+				sums[i] += *dst_ptr++;
 			++norm_count;
 		}
 	}

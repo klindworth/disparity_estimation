@@ -41,7 +41,7 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 	std::uniform_int_distribution<> random_dist(0, 1);
 
 	const int dispMin = base.task.dispMin;
-	const int crange = base.task.dispMax - base.task.dispMin + 1;
+	const int crange = base.task.range_size();
 	cv::Mat_<float> temp_results(crange, 1, 100.0f);
 
 	const std::size_t regions_count = base.regions.size();

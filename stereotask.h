@@ -38,6 +38,8 @@ public:
 	cv::Mat base, match, baseGray, matchGray, groundTruth, occ;
 	int dispMin, dispMax;
 	unsigned char groundTruthSampling;
+
+	inline int range_size() const { return dispMax - dispMin + 1; }
 };
 
 /// Class for saving a StereoTask, forward and backward

@@ -112,7 +112,7 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 	std::cout << "delta: " << delta << std::endl;
 	const std::size_t regions_count = regions.size();
 
-	int crange = task.dispMax - task.dispMin + 1;
+	int crange = task.range_size();
 	if(delta != 0)
 		crange = 2*delta+1;
 
@@ -178,7 +178,7 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 	std::cout << "delta: " << delta << std::endl;
 	const std::size_t regions_count = regions.size();
 
-	int crange = task.dispMax - task.dispMin + 1;
+	int crange = task.range_size();
 	if(delta != 0)
 		crange = 2*delta+1;
 
