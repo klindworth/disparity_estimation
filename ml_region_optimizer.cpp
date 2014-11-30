@@ -164,7 +164,7 @@ void normalize_feature_vector(std::vector<float>& data, const std::vector<float>
 	normalize_feature_vector(data.data(), data.size(), normalization_vector);
 }
 
-void ml_region_optimizer::prepare_training_sample(std::vector<float>& dst, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
+void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>>& dst, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
 {
 	const int vector_size = ml_region_optimizer::vector_size_per_disp *2;
 
@@ -172,16 +172,21 @@ void ml_region_optimizer::prepare_training_sample(std::vector<float>& dst, const
 
 	const std::size_t regions_count = base.regions.size();
 	std::vector<float> normalization_vector(normalizer_size,1.0f);
-	dst.resize(crange*vector_size*regions_count);
-	float* dst_ptr = dst.data();
+	//dst.emplace_back(crange*vector_size*regions_count);
+	//dst.resize();
+	dst.reserve(dst.size() + base_optimization_vectors.size());
+	//float* dst_ptr = dst.back().data();
 
 	std::vector<float> sums(normalizer_size, 0.0f); //per thread!!
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		gather_region_optimization_vector(dst_ptr + j*crange*vector_size, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector);
+		dst.emplace_back(vector_size*crange);
+		float *dst_ptr = dst.back().data();
+		//gather_region_optimization_vector(dst_ptr + j*crange*vector_size, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector);
+		gather_region_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector);
 
-		const float *src_ptr = dst_ptr + j*crange*vector_size;
+		const float *src_ptr = dst_ptr;// + j*crange*vector_size;
 		for(int k = 0; k < crange; ++k)
 		{
 			for(int i = 0; i < vector_size; ++i)
@@ -196,8 +201,10 @@ void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, con
 	refresh_base_optimization_vector(left, right, refinement);
 	if(training_mode)
 	{
-		samples_left.emplace_back();
-		prepare_training_sample(samples_left.back(), optimization_vectors_left, optimization_vectors_right, left, right, refinement);
+		//samples_left.emplace_back();
+		//std::size_t start_idx = samples_left.size();
+		//samples_left.resize(samples_left.size() + left.regions.size() * (vector_size_per_disp*2+vector_size) * (left.task.dispMax - left.task.dispMin + 1));
+		prepare_training_sample(samples_left, optimization_vectors_left, optimization_vectors_right, left, right, refinement);
 		//samples_right.emplace_back();
 		//prepare_training_sample(samples_right.back(), optimization_vectors_right, optimization_vectors_left, right, left, refinement);
 
@@ -254,6 +261,7 @@ void ml_region_optimizer::training()
 
 	//clean invalid gt samples
 	assert(samples_left.size() == samples_gt.size());
+	std::cout << "before: " << samples_left.size() << std::endl;
 
 	std::size_t last_valid_idx = samples_left.size() -1;
 	for(std::size_t i = 0; i <= last_valid_idx; ++i)
@@ -267,8 +275,9 @@ void ml_region_optimizer::training()
 	}
 	samples_left.erase(samples_left.begin() + last_valid_idx + 1, samples_left.end());
 	samples_gt.erase(samples_gt.begin() + last_valid_idx + 1, samples_gt.end());
-	assert(samples_left.size() == samples_gt.size());
 
+	assert(samples_left.size() == samples_gt.size());
+	std::cout << "after: " << samples_left.size() << std::endl;
 	//TODO: ground truth
 	//cv::Mat_<float> samples
 }
