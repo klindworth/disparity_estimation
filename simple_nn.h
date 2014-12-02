@@ -45,9 +45,10 @@ public:
 	enum phase {Testing, Training};
 
 	layer_base(int in_dim, int out_dim, int weights) : cthread_data(omp_get_max_threads(), layer_thread_data<T>(in_dim, out_dim, weights)){
-		this->weights.resize(weights);
 		this->in_dim = in_dim;
 		this->out_dim = out_dim;
+		this->weights.resize(weights);
+		this->weights_transposed.resize(weights);
 		this->bias.resize(out_dim);
 		this->dW.resize(weights,0);
 		this->dB.resize(out_dim,0);
@@ -58,9 +59,6 @@ public:
 		this->Ex_b.resize(out_dim,0);
 
 		init_weights();
-
-		this->in_dim = in_dim;
-		this->out_dim = out_dim;
 		this->current_phase = phase::Testing;
 	}
 
@@ -143,12 +141,14 @@ public:
 		}
 
 		update_weights_internal(count);
+		transpose_weights();
 	}
 
 	void init_weights()
 	{
 		const T weight_base = 0.5 / std::sqrt(in_dim);
 		uniform_init(weights.begin(), weights.end(), weight_base);
+		transpose_weights();
 		uniform_init(bias.begin(), bias.end(), weight_base);
 	}
 
@@ -171,6 +171,7 @@ protected:
 		{
 			assert((Eg.size() == Ex.size()) && (Ex.size() == W.size()));
 			int iterations = Eg.size();
+			#pragma omp parallel for
 			for(int i = 0; i < iterations; ++i)
 			{
 				T cdW = dW[i] * factor;
@@ -187,11 +188,28 @@ protected:
 		adadelta(Eg_b, Ex_b, bias, dB, 1.0/count);
 	}
 
+	void transpose_weights()
+	{
+		if(this->weights.size() != (this->in_dim * this->out_dim) )
+			return;
+		T* dst = this->weights_transposed.data();
+		for(int i = 0; i < this->in_dim; ++i)
+		{
+			const T* weight_col = &(this->weights[i]);
+			for(int j = 0; j < out_dim; ++j)
+			{
+				*dst++ = *weight_col;
+				weight_col += this->in_dim;
+			}
+		}
+	}
+
 	phase current_phase;
 	int in_dim;
 	int out_dim;
 	std::vector<T> bias;
 	std::vector<T> weights;
+	std::vector<T> weights_transposed;
 	std::vector<T> Eg_w, Ex_w, Eg_b, Ex_b;
 	std::vector<T> dW, dB;
 
@@ -231,7 +249,7 @@ public:
 		std::cout << "bottom: ";
 		std::copy(bottom_data, bottom_data + this->in_dim, std::ostream_iterator<T>(std::cout, ", "));
 		std::cout << std::endl;*/
-		for(int i = 0; i < this->in_dim; ++i)
+		/*for(int i = 0; i < this->in_dim; ++i)
 		{
 			const T* cweights = &(this->weights[i]);
 			T sum = 0;
@@ -240,6 +258,15 @@ public:
 				sum += *cweights * top_gradient[j];
 				cweights += this->in_dim;
 			}
+			cdata.gradient_data[i] = sum;
+		}*/
+
+		const T* cweight = this->weights_transposed.data();
+		for(int i = 0; i < this->in_dim; ++i)
+		{
+			T sum = 0;
+			for(int j = 0; j < this->out_dim; ++j)
+				sum += *cweight++ * top_gradient[j];
 			cdata.gradient_data[i] = sum;
 		}
 
@@ -550,7 +577,7 @@ public:
 			std::size_t offset = i*batch_size;
 			std::size_t bound = std::min(offset+batch_size, data.size());
 			//std::cout << "length: " << bound - offset << std::endl;
-			//#pragma omp parallel for
+			#pragma omp parallel for
 			for(std::size_t j = offset; j < bound; ++j)
 			{
 				//std::cout << "offset: " << offset << ", j: " << j << std::endl;

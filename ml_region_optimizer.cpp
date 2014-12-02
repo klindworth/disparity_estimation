@@ -247,7 +247,7 @@ void ml_region_optimizer::reset(const RegionContainer& /*left*/, const RegionCon
 
 void ml_region_optimizer::training()
 {
-	int crange = 128;
+	int crange = 256;
 
 	std::cout << "start actual training" << std::endl;
 
@@ -268,8 +268,33 @@ void ml_region_optimizer::training()
 
 	assert(samples_left.size() == samples_gt.size());
 
-	//TODO: ground truth
+	int dims = samples_left.front().size();
 	std::cout << "copy" << std::endl;
+	std::vector<std::vector<double>> data(samples_left.size());
+	for(std::size_t i = 0; i < samples_left.size(); ++i)
+	{
+		std::vector<double> inner_data(samples_left[i].size());
+		std::copy(samples_left[i].begin(), samples_left[i].end(), inner_data.begin());
+		data[i] = std::move(inner_data);
+	}
+
+	std::vector<short> gt(samples_gt.size());
+	std::copy(samples_gt.begin(), samples_gt.end(), gt.begin());
+
+	std::cout << "ann" << std::endl;
+	neural_network<double> net (dims, crange, {dims, dims});
+	for(int i = 0; i < 17; ++i)
+	{
+		std::cout << "epoch: " << i << std::endl;
+		net.training(data, gt, 32);
+		if(i%4 == 0)
+			net.test(data, gt);
+	}
+
+	std::cout << "fin" << std::endl;
+
+	//TODO: ground truth
+	/*std::cout << "copy" << std::endl;
 	cv::Mat_<float> samples(samples_left.size(), samples_left.front().size());
 	//cv::Mat_<float> gt(samples_gt.size(), 1);
 	for(std::size_t i = 0; i < samples_left.size(); ++i)
@@ -294,5 +319,5 @@ void ml_region_optimizer::training()
 	ann.create(layers);
 	ann.train(samples, gt, cv::Mat(), cv::Mat(), params);
 
-	std::cout << "fin" << std::endl;
+	std::cout << "fin" << std::endl;*/
 }

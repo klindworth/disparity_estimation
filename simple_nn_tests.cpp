@@ -119,13 +119,6 @@ TEST(SimpleNN, GradientFloat)
 	ASSERT_TRUE(test_gradient_check_internal<float>(1e-3, 1e-3));
 }
 
-void test_gradient_check()
-{
-	assert();
-	assert();
-	//assert(test_gradient_check_internal<float>(1e-3, 1e-4));
-}
-
 /*int main(int, char **)
 {
 	typedef double data_type;
