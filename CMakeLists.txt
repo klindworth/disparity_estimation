@@ -67,6 +67,8 @@ set(HEADERS
 
     region_metrics.h
     refinement.h
+
+    simple_nn.h
 )
 
 set(QTHEADERS
@@ -108,6 +110,12 @@ target_link_libraries(${PROJECT_NAME}
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++11 -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++11 -DNDEBUG -O3")
+
+enable_testing()
+find_package(GTest REQUIRED)
+include_directories(${GTEST_INCLUDE_DIRS})
+add_executable(${PROJECT_NAME}_tests simple_nn_tests.cpp simple_nn.h)
+target_link_libraries(${PROJECT_NAME}_tests ${OpenCV_LIBS} ${GTEST_BOTH_LIBRARIES})
 
 add_subdirectory(segmentation)
 

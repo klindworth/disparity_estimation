@@ -32,6 +32,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparity_utils.h"
 #include "genericfunctions.h"
 
+#include <opencv2/ml/ml.hpp>
+#include "simple_nn.h"
+
 void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
 {
 	cv::Mat disp = getDisparityBySegments(base);
@@ -263,25 +266,33 @@ void ml_region_optimizer::training()
 	for(auto& cvec : samples_left)
 		normalize_feature_vector(cvec.data(), cvec.size(), normalization_vector);
 
-	//clean invalid gt samples
 	assert(samples_left.size() == samples_gt.size());
-	std::cout << "before: " << samples_left.size() << std::endl;
 
-	/*std::size_t last_valid_idx = samples_left.size() -1;
-	for(std::size_t i = 0; i <= last_valid_idx; ++i)
-	{
-		if(samples_gt[i] == 0)
-		{
-			std::swap(samples_left[i], samples_left[last_valid_idx]);
-			samples_gt[i] = samples_gt[last_valid_idx];
-			--last_valid_idx;
-		}
-	}
-	samples_left.erase(samples_left.begin() + last_valid_idx + 1, samples_left.end());
-	samples_gt.erase(samples_gt.begin() + last_valid_idx + 1, samples_gt.end());
-
-	assert(samples_left.size() == samples_gt.size());
-	std::cout << "after: " << samples_left.size() << std::endl;*/
 	//TODO: ground truth
-	//cv::Mat_<float> samples
+	std::cout << "copy" << std::endl;
+	cv::Mat_<float> samples(samples_left.size(), samples_left.front().size());
+	//cv::Mat_<float> gt(samples_gt.size(), 1);
+	for(std::size_t i = 0; i < samples_left.size(); ++i)
+		std::copy(samples_left[i].begin(), samples_left[i].end(), samples.ptr<float>(i, 0));
+
+	cv::Mat_<float> gt(samples_left.size(), crange, 0.0f);
+	for(std::size_t i = 0; i < samples_left.size(); ++i)
+		gt(i,samples_gt[i]) = 1.0f;
+	//std::copy(samples_gt.begin(), samples_gt.end(), gt.begin());
+
+	std::cout << "ann" << std::endl;
+	CvANN_MLP_TrainParams params;
+	params.term_crit = cvTermCriteria( CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 100, 0.1 );
+
+	CvANN_MLP ann;
+	cv::Mat_<int> layers(4,1);
+	int dims = samples_left.front().size();
+	layers << dims, dims*3, dims*2, crange;
+	std::cout << layers << std::endl;
+	std::cout << samples.size() << std::endl;
+	std::cout << gt.size() << std::endl;
+	ann.create(layers);
+	ann.train(samples, gt, cv::Mat(), cv::Mat(), params);
+
+	std::cout << "fin" << std::endl;
 }
