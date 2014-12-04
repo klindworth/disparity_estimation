@@ -13,6 +13,27 @@
 #include <iterator>
 
 #include <omp.h>
+#include <cblas.h>
+
+inline void blas_gemm(double* Y, const double* A, bool transposeA, int rowsA, int colsA, const double* B, bool transposeB, int rowsB, int colsB, double alpha = 1.0, double beta = 0.0)
+{
+	cblas_dgemm(CblasRowMajor, transposeA ? CblasTrans : CblasNoTrans, transposeB ? CblasTrans : CblasNoTrans, transposeA ? colsA : rowsA, transposeB ? rowsB : colsB, transposeB ? colsB : rowsB, alpha, A, colsA, B, colsB, beta, Y, transposeB ? rowsB : colsB);
+}
+
+inline void blas_gemm(float* Y, const float* A, bool transposeA, int rowsA, int colsA, const float* B, bool transposeB, int rowsB, int colsB, float alpha = 1.0f, float beta = 0.0f)
+{
+	cblas_sgemm(CblasRowMajor, transposeA ? CblasTrans : CblasNoTrans, transposeB ? CblasTrans : CblasNoTrans, transposeA ? colsA : rowsA, transposeB ? rowsB : colsB, transposeB ? colsB : rowsB, alpha, A, colsA, B, colsB, beta, Y, transposeB ? rowsB : colsB);
+}
+
+inline void blas_gemv(double* Y, const double* A, bool transposeA, int rowsA, int colsA, const double* x, double alpha = 1.0, double beta = 0.0)
+{
+	cblas_dgemv(CblasRowMajor, transposeA ? CblasTrans : CblasNoTrans, rowsA, colsA, alpha, A, colsA, x, 1, beta, Y, 1);
+}
+
+inline void blas_gemv(float* Y, const float* A, bool transposeA, int rowsA, int colsA, const float* x, float alpha = 1.0, float beta = 0.0)
+{
+	cblas_sgemv(CblasRowMajor, transposeA ? CblasTrans : CblasNoTrans, rowsA, colsA, alpha, A, colsA, x, 1, beta, Y, 1);
+}
 
 template<typename Iterator>
 void uniform_init(Iterator begin, Iterator end, typename Iterator::value_type var)
@@ -27,11 +48,11 @@ void uniform_init(Iterator begin, Iterator end, typename Iterator::value_type va
 template<typename T>
 struct layer_thread_data
 {
-	layer_thread_data(int in_dim, int out_dim, int weights) {
+	layer_thread_data(int in_dim, int out_dim, int weights, int bias) {
 		this->output_data.resize(out_dim);
 		this->gradient_data.resize(in_dim);
 		this->dW.resize(weights,0);
-		this->dB.resize(out_dim,0);
+		this->dB.resize(bias,0);
 	}
 	std::vector<T> output_data;
 	std::vector<T> gradient_data;
@@ -44,19 +65,19 @@ class layer_base
 public:
 	enum phase {Testing, Training};
 
-	layer_base(int in_dim, int out_dim, int weights) : cthread_data(omp_get_max_threads(), layer_thread_data<T>(in_dim, out_dim, weights)){
+	layer_base(int in_dim, int out_dim, int weights, int bias_dim) : cthread_data(omp_get_max_threads(), layer_thread_data<T>(in_dim, out_dim, weights, bias_dim)){
 		this->in_dim = in_dim;
 		this->out_dim = out_dim;
 		this->weights.resize(weights);
 		this->weights_transposed.resize(weights);
-		this->bias.resize(out_dim);
+		this->bias.resize(bias_dim);
 		this->dW.resize(weights,0);
-		this->dB.resize(out_dim,0);
+		this->dB.resize(bias_dim,0);
 
 		this->Eg_w.resize(weights,0);
 		this->Ex_w.resize(weights,0);
-		this->Eg_b.resize(out_dim,0);
-		this->Ex_b.resize(out_dim,0);
+		this->Eg_b.resize(bias_dim,0);
+		this->Ex_b.resize(bias_dim,0);
 
 		init_weights();
 		this->current_phase = phase::Testing;
@@ -220,22 +241,27 @@ template<typename T>
 class fully_connected_layer : public layer_base<T>
 {
 public:
-	fully_connected_layer(int in_dim, int out_dim) : layer_base<T>(in_dim, out_dim, in_dim*out_dim)
+	fully_connected_layer(int in_dim, int out_dim) : layer_base<T>(in_dim, out_dim, in_dim*out_dim, out_dim)
 	{std::cout << "fully connected layer" << std::endl;}
 
 	void forward_propagation(const T* bottom_data) override
 	{
 		layer_thread_data<T>& cdata = this->thread_data();
 
-		//int weight_idx = 0;
-		const T* cweight = this->weights.data();
+		blas_gemv(cdata.output_data.data(), this->weights.data(), false, this->out_dim, this->in_dim, bottom_data);
+		for(int i = 0; i < this->out_dim; ++i)
+		{
+			cdata.output_data[i] += this->bias[i];
+		}
+
+		/*const T* cweight = this->weights.data();
 		for(int i = 0; i < this->out_dim; ++i)
 		{
 			T sum = 0;
 			for(int j = 0; j < this->in_dim; ++j)
 				sum += bottom_data[j]* *cweight++;//this->weights[weight_idx++];
 			cdata.output_data[i] = sum + this->bias[i];
-		}
+		}*/
 		//std::copy(this->output_data.begin(), this->output_data.end(), std::ostream_iterator<T>(std::cout, ", "));
 		//std::cout << std::endl;
 	}
@@ -261,14 +287,18 @@ public:
 			cdata.gradient_data[i] = sum;
 		}*/
 
-		const T* cweight = this->weights_transposed.data();
+		/*const T* cweight = this->weights_transposed.data();
 		for(int i = 0; i < this->in_dim; ++i)
 		{
 			T sum = 0;
 			for(int j = 0; j < this->out_dim; ++j)
 				sum += *cweight++ * top_gradient[j];
 			cdata.gradient_data[i] = sum;
-		}
+		}*/
+
+		//propagate down
+		//blas_gemv(cdata.gradient_data.data(), this->weights.data(), true, this->out_dim, this->in_dim, top_gradient);
+		blas_gemv(cdata.gradient_data.data(), this->weights_transposed.data(), false, this->in_dim, this->out_dim, top_gradient);
 
 		T* cdw = cdata.dW.data();
 		for(int j = 0; j < this->out_dim; ++j)
@@ -286,11 +316,13 @@ public:
 	}
 };
 
+
+
 template<typename T>
 class relu_layer : public layer_base<T>
 {
 public:
-	relu_layer(int dim) : layer_base<T>(dim, dim, 0) {std::cout << "relu-layer" << std::endl;}
+	relu_layer(int dim) : layer_base<T>(dim, dim, 0, 0) {std::cout << "relu-layer" << std::endl;}
 
 	void forward_propagation(const T *bottom_data) override
 	{
@@ -317,7 +349,7 @@ class dropout_layer : public layer_base<T>
 {
 public:
 	typedef layer_base<T> Base;
-	dropout_layer(int dim) : layer_base<T>(dim, dim, 0), dropout_rate(0.25), mask(this->thread_max(), std::vector<unsigned char>(dim, 1)), rng(this->thread_max())
+	dropout_layer(int dim) : layer_base<T>(dim, dim, 0, 0), dropout_rate(0.25), mask(this->thread_max(), std::vector<unsigned char>(dim, 1)), rng(this->thread_max())
 	{std::cout << "dropout" << std::endl;}
 
 	void forward_propagation(const T* bottom_data) override
@@ -373,7 +405,7 @@ template<typename T>
 class softmax_output_layer : public layer_base<T>
 {
 public:
-	softmax_output_layer(int in_dim) : layer_base<T>(in_dim, in_dim, 0), temp(this->thread_max(), std::vector<T>(in_dim))
+	softmax_output_layer(int in_dim) : layer_base<T>(in_dim, in_dim, 0, 0), temp(this->thread_max(), std::vector<T>(in_dim))
 	{std::cout << "softmax output layer" << std::endl;}
 
 	void forward_propagation(const T* bottom_data) override
@@ -421,7 +453,7 @@ template<typename T>
 class tanh_entropy_output_layer : public layer_base<T>
 {
 public:
-	tanh_entropy_output_layer(int in_dim) : layer_base<T>(in_dim, in_dim, 0), temp(this->thread_max(), std::vector<T>(in_dim))
+	tanh_entropy_output_layer(int in_dim) : layer_base<T>(in_dim, in_dim, 0, 0), temp(this->thread_max(), std::vector<T>(in_dim))
 	{std::cout << "softmax output layer" << std::endl;}
 
 	void forward_propagation(const T* bottom_data) override
@@ -624,6 +656,59 @@ public:
 	int in_dim, out_dim;
 
 
+};
+
+template<typename T>
+class vector_connected_layer : public layer_base<T>
+{
+public:
+	vector_connected_layer(int in_dim, int out_dim, int vectorsize, int passthrough) :
+		layer_base<T>(in_dim, (in_dim - passthrough)/vectorsize*out_dim + passthrough, vectorsize*out_dim, out_dim), channels_out(out_dim), vectorsize(vectorsize), passthrough(passthrough)
+	{std::cout << "vector connected layer" << std::endl;}
+
+	void forward_propagation(const T* bottom_data) override
+	{
+		layer_thread_data<T>& cdata = this->thread_data();
+
+		int channels_in = (this->in_dim - passthrough)/vectorsize;
+
+		blas_gemm(cdata.output_data.data(), this->weights.data(), false, channels_out, vectorsize, bottom_data, true, channels_in, vectorsize);
+		T* coutdata = cdata.output_data.data();// + channels_out*channels_in;
+		for(int j = 0; j < channels_out; ++j)
+		{
+			T cbias = this->bias[j];
+			for(int i = 0; i < channels_in; ++i)
+			{
+				*coutdata++ += cbias;
+			}
+		}
+
+		const T* in_data = &(bottom_data[channels_in*vectorsize]);
+		std::copy(in_data, in_data + passthrough, coutdata);
+		//std::copy(this->output_data.begin(), this->output_data.end(), std::ostream_iterator<T>(std::cout, ", "));
+		//std::cout << std::endl;
+	}
+
+	void backward_propagation(const T* bottom_data, const T* top_gradient) override
+	{
+		layer_thread_data<T>& cdata = this->thread_data();
+		//TODO: propagate down
+		int channels_in = (this->in_dim - passthrough)/vectorsize;
+
+		blas_gemm(cdata.dW.data(), top_gradient, false, channels_out, channels_in, bottom_data, false, channels_in, vectorsize, 1.0, 1.0);
+
+		const T* cgradient = top_gradient;
+		for(int i = 0; i < this->channels_out; ++i)
+		{
+			T sum = 0;
+			for(int j = 0; j < channels_in; ++j)
+				sum += *cgradient++;
+			cdata.dB[i] += sum;
+		}
+	}
+
+protected:
+	int channels_out, vectorsize, passthrough;
 };
 
 #endif // SIMPLE_NN_H

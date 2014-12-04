@@ -105,7 +105,7 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-    ${QT_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES} cvwidgets cvsegmentation_lib
+    ${QT_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES} cvwidgets cvsegmentation_lib openblas
 )
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++11 -O0")
@@ -115,7 +115,7 @@ enable_testing()
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
 add_executable(${PROJECT_NAME}_tests simple_nn_tests.cpp simple_nn.h)
-target_link_libraries(${PROJECT_NAME}_tests ${OpenCV_LIBS} ${GTEST_BOTH_LIBRARIES})
+target_link_libraries(${PROJECT_NAME}_tests ${OpenCV_LIBS} ${GTEST_BOTH_LIBRARIES} openblas)
 
 add_subdirectory(segmentation)
 
