@@ -281,12 +281,29 @@ void ml_region_optimizer::training()
 	std::vector<short> gt(samples_gt.size());
 	std::copy(samples_gt.begin(), samples_gt.end(), gt.begin());
 
+	/*std::mt19937 rng;
+	std::uniform_int_distribution<> dist(0, data.size() - 1);
+	for(std::size_t i = 0; i < data.size(); ++i)
+	{
+		std::size_t exchange_idx = dist(rng);
+		std::swap(data[i], data[exchange_idx]);
+		std::swap(samples_gt[i], samples_gt[exchange_idx]);
+	}*/
+
 	std::cout << "ann" << std::endl;
-	neural_network<double> net (dims, crange, {dims, dims});
-	for(int i = 0; i < 17; ++i)
+	//neural_network<double> net (dims, crange, {dims, dims});
+	neural_network<double> net(dims);
+	net.emplace_layer<vector_connected_layer>(vector_size_per_disp, vector_size_per_disp, vector_size);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(vector_size_per_disp/2, vector_size_per_disp*2, vector_size);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(crange);
+	net.emplace_layer<softmax_output_layer>();
+
+	for(int i = 0; i < 162; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
-		net.training(data, gt, 32);
+		net.training(data, gt, 64);
 		if(i%4 == 0)
 			net.test(data, gt);
 	}

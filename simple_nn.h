@@ -35,6 +35,16 @@ inline void blas_gemv(float* Y, const float* A, bool transposeA, int rowsA, int 
 	cblas_sgemv(CblasRowMajor, transposeA ? CblasTrans : CblasNoTrans, rowsA, colsA, alpha, A, colsA, x, 1, beta, Y, 1);
 }
 
+inline void blas_ger(double* Y, const double * A, int rowsA, const double* X, int rowsX, double alpha = 1.0)
+{
+	cblas_dger(CblasRowMajor, rowsA, rowsX, alpha, A, 1, X, 1, Y, rowsX);
+}
+
+inline void blas_ger(float* Y, const float * A, int rowsA, const float* X, int rowsX, float alpha = 1.0)
+{
+	cblas_sger(CblasRowMajor, rowsA, rowsX, alpha, A, 1, X, 1, Y, rowsX);
+}
+
 template<typename Iterator>
 void uniform_init(Iterator begin, Iterator end, typename Iterator::value_type var)
 {
@@ -300,13 +310,15 @@ public:
 		//blas_gemv(cdata.gradient_data.data(), this->weights.data(), true, this->out_dim, this->in_dim, top_gradient);
 		blas_gemv(cdata.gradient_data.data(), this->weights_transposed.data(), false, this->in_dim, this->out_dim, top_gradient);
 
-		T* cdw = cdata.dW.data();
+		/*T* cdw = cdata.dW.data();
 		for(int j = 0; j < this->out_dim; ++j)
 		{
 			T cgradient = top_gradient[j];
 			for(int i = 0; i < this->in_dim; ++i)
 				*cdw++ += cgradient * bottom_data[i];
-		}
+		}*/
+
+		blas_ger(cdata.dW.data(), top_gradient, this->out_dim, bottom_data, this->in_dim);
 
 		for(int i = 0; i < this->out_dim; ++i)
 			cdata.dB[i] += top_gradient[i];
