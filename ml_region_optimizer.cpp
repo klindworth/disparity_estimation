@@ -117,17 +117,22 @@ void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, cons
 		std::copy(disp_optimization_vector.begin(), disp_optimization_vector.end(), &(other_optimization_vector[(d-range.first)*vector_size_per_disp]));
 	}
 
+	const float *base_src_ptr = optimization_vector_base.data();
+	const float *other_src_ptr = other_optimization_vector.data();
 	for(int i = 0; i < crange; ++i)
 	{
-		int offset = i*vector_size_per_disp*2;
-		for(int j = 0; j < vector_size_per_disp*2; ++j)
-			*dst_ptr++ = optimization_vector_base[offset+j] - normalization_vector[j];
+		for(int j = 0; j < vector_size_per_disp; ++j)
+			*dst_ptr++ = *base_src_ptr++ - normalization_vector[j];
+		for(int j = 0; j< vector_size_per_disp; ++j)
+			*dst_ptr++ = *other_src_ptr++ - normalization_vector[j];
 	}
 	for(int i = 0; i < vector_size; ++i)
 	{
-		int idx = crange*vector_size_per_disp+i;
-		*dst_ptr++ = optimization_vector_base[idx] - normalization_vector[vector_size_per_disp*2+i];
+		*dst_ptr++ = *base_src_ptr++ - normalization_vector[vector_size_per_disp+i];
+		//*dst_ptr++ = *other_src_ptr++ - normalization_vector[vector_size_per_disp+i];
 	}
+
+	//TODO: function totally wrong
 }
 
 void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta)
@@ -151,20 +156,31 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& ma
 	}
 }
 
-void normalize_feature_vector(float *ptr, int n, const std::vector<float>& normalization_vector)
+template<typename T>
+void normalize_feature_vector(T *ptr, int n, const std::vector<T>& mean_normalization_vector, const std::vector<T>& stddev_normalization_vector)
 {
-	int cmax = (n - ml_region_optimizer::vector_size) / ml_region_optimizer::vector_size_per_disp / 2;
-	assert((n - ml_region_optimizer::vector_size) % (ml_region_optimizer::vector_size_per_disp * 2) == 0);
+	int cmax = (n - ml_region_optimizer::vector_size) / ml_region_optimizer::vector_size_per_disp;
+	assert((n - ml_region_optimizer::vector_size) % (ml_region_optimizer::vector_size_per_disp) == 0);
+	assert(mean_normalization_vector.size() == stddev_normalization_vector.size());
 	for(int j = 0; j < cmax; ++j)
 	{
-		for(int i = 0; i < ml_region_optimizer::vector_size_per_disp*2; ++i)
-			*ptr++ -= normalization_vector[i];
+		for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
+		{
+			*ptr -= mean_normalization_vector[i];
+			*ptr++ *= stddev_normalization_vector[i];
+		}
+	}
+	for(int j = 0; j < ml_region_optimizer::vector_size; ++j)
+	{
+		*ptr -= mean_normalization_vector[ml_region_optimizer::vector_size_per_disp+j];
+		*ptr++ *= stddev_normalization_vector[ml_region_optimizer::vector_size_per_disp+j];
 	}
 }
 
-void normalize_feature_vector(std::vector<float>& data, const std::vector<float>& normalization_vector)
+template<typename T>
+void normalize_feature_vector(std::vector<T>& data, const std::vector<T>& mean_normalization_vector, const std::vector<T>& stddev_normalization_vector)
 {
-	normalize_feature_vector(data.data(), data.size(), normalization_vector);
+	normalize_feature_vector(data.data(), data.size(), mean_normalization_vector, stddev_normalization_vector);
 }
 
 void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>>& dst, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
@@ -181,7 +197,7 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 	dst.reserve(dst.size() + base_optimization_vectors.size());
 
 	assert(gt.size() == regions_count);
-	std::vector<float> sums(normalizer_size, 0.0f); //per thread!!
+	//std::vector<float> sums(normalizer_size, 0.0f); //per thread!!
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
@@ -191,14 +207,60 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 			float *dst_ptr = dst.back().data();
 			gather_region_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector);
 
-			for(int k = 0; k < crange; ++k)
+			/*for(int k = 0; k < crange; ++k)
 			{
 				for(int i = 0; i < vector_size_per_disp*2; ++i)
 					sums[i] += *dst_ptr++;
 				++mean_count;
-			}
+			}*/
 
 			samples_gt.push_back(gt[j]);
+		}
+	}
+}
+
+void ml_region_optimizer::gather_mean(const std::vector<std::vector<float>>& data)
+{
+	std::fill(mean_sums.begin(), mean_sums.end(), 0);
+	mean_count = 0;
+
+	for(std::size_t j = 0; j < data.size(); ++j)
+	{
+		int crange = (data[j].size() - vector_size)/ vector_size_per_disp;
+		const float* ptr = data[j].data();
+		for(int k = 0; k < crange; ++k)
+		{
+			for(int i = 0; i < vector_size_per_disp; ++i)
+				mean_sums[i] += *ptr++;
+			++mean_count;
+		}
+		for(int k = 0; k < vector_size; ++k)
+			mean_sums[vector_size_per_disp+k] += *ptr++;
+	}
+}
+
+void ml_region_optimizer::gather_stddev(const std::vector<std::vector<float>>& data)
+{
+	std::fill(mean_sums.begin(), mean_sums.end(), 0);
+	mean_count = 0;
+
+	for(std::size_t j = 0; j < data.size(); ++j)
+	{
+		int crange = (data[j].size() - vector_size)/ vector_size_per_disp;
+		const float* ptr = data[j].data();
+		for(int k = 0; k < crange; ++k)
+		{
+			for(int i = 0; i < vector_size_per_disp; ++i)
+			{
+				mean_sums[i] += *ptr * *ptr;
+				++ptr;
+			}
+			++mean_count;
+		}
+		for(int k = 0; k < vector_size; ++k)
+		{
+			mean_sums[vector_size_per_disp+k] += *ptr * *ptr;
+			++ptr;
 		}
 	}
 }
@@ -251,20 +313,37 @@ void ml_region_optimizer::training()
 
 	std::cout << "start actual training" << std::endl;
 
-	//gather normalization
-	float sum_normalizer = 1.0f / mean_count;
-	for(int i = 0; i < vector_size_per_disp*2; ++i)
-		mean_sums[i] *= sum_normalizer;
-	for(int i = vector_size_per_disp*2; i < vector_size_per_disp*2+vector_size; ++i)
-		mean_sums[i] /= samples_left.size();
+	auto prepare_normalizer = [&](){
+		//gather normalization
+		for(int i = 0; i < vector_size_per_disp; ++i)
+			mean_sums[i] /= mean_count;
+		for(int i = vector_size_per_disp; i < vector_size_per_disp+vector_size; ++i)
+			mean_sums[i] /= samples_left.size();
+	};
 
-	std::vector<float> normalization_vector(normalizer_size);
-	std::copy(mean_sums.begin(), mean_sums.end(), normalization_vector.begin());
+	auto invert_normalizer = [&](){
+		for(auto& val : mean_sums)
+			val = 1.0 / std::sqrt(val);
+	};
 
+	gather_mean(samples_left);
+	prepare_normalizer();
+	std::vector<float> mean_normalization_vector(normalizer_size);
+	std::copy(mean_sums.begin(), mean_sums.end(), mean_normalization_vector.begin());
+	std::copy(mean_normalization_vector.begin(), mean_normalization_vector.end(), std::ostream_iterator<float>(std::cout, ", "));
+	std::cout << std::endl;
+
+	gather_stddev(samples_left);
+	prepare_normalizer();
+	invert_normalizer();
+	std::vector<float> stddev_normalization_vector(mean_normalization_vector.size());
+	std::copy(mean_sums.begin(), mean_sums.end(), stddev_normalization_vector.begin());
+	std::copy(stddev_normalization_vector.begin(), stddev_normalization_vector.end(), std::ostream_iterator<float>(std::cout, ", "));
+	std::cout << std::endl;
 
 	//apply normalization
 	for(auto& cvec : samples_left)
-		normalize_feature_vector(cvec.data(), cvec.size(), normalization_vector);
+		normalize_feature_vector(cvec.data(), cvec.size(), mean_normalization_vector, stddev_normalization_vector);
 
 	assert(samples_left.size() == samples_gt.size());
 
@@ -290,6 +369,8 @@ void ml_region_optimizer::training()
 		std::swap(samples_gt[i], samples_gt[exchange_idx]);
 	}*/
 
+	//TODO: stddev normalization, class statistics?
+
 	std::cout << "ann" << std::endl;
 	//neural_network<double> net (dims, crange, {dims, dims});
 	neural_network<double> net(dims);
@@ -303,7 +384,7 @@ void ml_region_optimizer::training()
 	for(int i = 0; i < 162; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
-		net.training(data, gt, 64);
+		net.training(data, gt, 32);
 		if(i%4 == 0)
 			net.test(data, gt);
 	}

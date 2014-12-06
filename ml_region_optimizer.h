@@ -41,7 +41,7 @@ public:
 
 	const static int vector_size_per_disp = 6;
 	const static int vector_size = 1;
-	const static int normalizer_size = vector_size+vector_size_per_disp*2;
+	const static int normalizer_size = vector_size+vector_size_per_disp;
 
 private:
 	void refresh_base_optimization_vector(const RegionContainer& base, const RegionContainer& match, int delta);
@@ -49,12 +49,14 @@ private:
 	void optimize_ml(RegionContainer& base, RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta);
 	void gather_region_optimization_vector(float *dst_ptr, const DisparityRegion& baseRegion, const std::vector<float>& optimization_vector_base, const std::vector<std::vector<float>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task, const std::vector<float>& normalization_vector);
 	void reset_internal();
+	void gather_mean(const std::vector<std::vector<float>>& data);
+	void gather_stddev(const std::vector<std::vector<float>>& data);
 
 	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
 
 	std::vector<std::vector<float>> samples_left, samples_right;
 	std::vector<unsigned char> samples_gt;
-	std::array<float, vector_size_per_disp*2+vector_size> mean_sums;
+	std::array<float, vector_size_per_disp+vector_size> mean_sums;
 	int mean_count;
 };
 
