@@ -380,8 +380,8 @@ void ml_region_optimizer::training()
 	std::cout << "ann" << std::endl;
 	//neural_network<double> net (dims, crange, {dims, dims});
 	neural_network<double> net(dims);
-	net.emplace_layer<vector_connected_layer>(vector_size_per_disp, vector_size_per_disp, vector_size);
-	net.emplace_layer<relu_layer>();
+	//net.emplace_layer<vector_connected_layer>(vector_size_per_disp, vector_size_per_disp, vector_size);
+	//net.emplace_layer<relu_layer>();
 	net.emplace_layer<vector_connected_layer>(vector_size_per_disp/2, vector_size_per_disp*2, vector_size);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
@@ -390,7 +390,7 @@ void ml_region_optimizer::training()
 	for(int i = 0; i < 161; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
-		net.training(data, gt, 32);
+		net.training(data, gt, 64);
 		if(i%4 == 0)
 			net.test(data, gt);
 	}
