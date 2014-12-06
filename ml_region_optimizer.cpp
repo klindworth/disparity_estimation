@@ -191,6 +191,8 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 	region_ground_truth(base.regions, base.task.groundTruth, std::back_inserter(gt));
 
 	const int crange = base.task.range_size();
+	std::cout << "range: " << crange << std::endl;
+	std::cout << vector_size_per_disp*2*crange+vector_size << std::endl;
 
 	const std::size_t regions_count = base.regions.size();
 	std::vector<float> normalization_vector(normalizer_size,0.0f);
@@ -236,6 +238,8 @@ void ml_region_optimizer::gather_mean(const std::vector<std::vector<float>>& dat
 		}
 		for(int k = 0; k < vector_size; ++k)
 			mean_sums[vector_size_per_disp+k] += *ptr++;
+
+		assert(std::distance(data[j].data(), ptr) == data[j].size());
 	}
 }
 
@@ -262,6 +266,8 @@ void ml_region_optimizer::gather_stddev(const std::vector<std::vector<float>>& d
 			mean_sums[vector_size_per_disp+k] += *ptr * *ptr;
 			++ptr;
 		}
+
+		assert(std::distance(data[j].data(), ptr) == data[j].size());
 	}
 }
 
@@ -335,10 +341,10 @@ void ml_region_optimizer::training()
 
 	gather_stddev(samples_left);
 	prepare_normalizer();
+	std::copy(mean_sums.begin(), mean_sums.end(), std::ostream_iterator<float>(std::cout, ", "));
 	invert_normalizer();
 	std::vector<float> stddev_normalization_vector(mean_normalization_vector.size());
 	std::copy(mean_sums.begin(), mean_sums.end(), stddev_normalization_vector.begin());
-	std::copy(stddev_normalization_vector.begin(), stddev_normalization_vector.end(), std::ostream_iterator<float>(std::cout, ", "));
 	std::cout << std::endl;
 
 	//apply normalization
@@ -381,7 +387,7 @@ void ml_region_optimizer::training()
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 
-	for(int i = 0; i < 162; ++i)
+	for(int i = 0; i < 5; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
 		net.training(data, gt, 32);

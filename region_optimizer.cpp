@@ -175,7 +175,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		*result_ptr++ = neighbor_pot_values[i];
 		*result_ptr++ = lr_pot_values[i];
 		*result_ptr++ = neighbor_color_pot_values[i];
-		*result_ptr++ = org_size - occ_temp[i].second;
+		*result_ptr++ = org_size - occ_temp[i].first;
 	}
 	*result_ptr = baseRegion.disparity;
 }
