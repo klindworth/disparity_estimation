@@ -534,6 +534,7 @@ public:
 		assert(data.size() == gt.size());
 
 		int correct = 0;
+		int approx_correct = 0;
 
 		for(std::size_t i = 0; i < data.size(); ++i)
 		{
@@ -542,9 +543,11 @@ public:
 
 			if(result == expected)
 				++correct;
+			if(std::abs(result - expected) < 5)
+				++approx_correct;
 		}
 
-		std::cout << "result: " << (float)correct/data.size() << std::endl;
+		std::cout << "result: " << (float)correct/data.size() << ", approx: " << (float)approx_correct/data.size() << std::endl;
 	}
 
 	std::vector<T> output(const T* data)

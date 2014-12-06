@@ -366,14 +366,14 @@ void ml_region_optimizer::training()
 	std::vector<short> gt(samples_gt.size());
 	std::copy(samples_gt.begin(), samples_gt.end(), gt.begin());
 
-	/*std::mt19937 rng;
+	std::mt19937 rng;
 	std::uniform_int_distribution<> dist(0, data.size() - 1);
 	for(std::size_t i = 0; i < data.size(); ++i)
 	{
 		std::size_t exchange_idx = dist(rng);
 		std::swap(data[i], data[exchange_idx]);
-		std::swap(samples_gt[i], samples_gt[exchange_idx]);
-	}*/
+		std::swap(gt[i], gt[exchange_idx]);
+	}
 
 	//TODO: stddev normalization, class statistics?
 
@@ -387,7 +387,7 @@ void ml_region_optimizer::training()
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 
-	for(int i = 0; i < 5; ++i)
+	for(int i = 0; i < 161; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
 		net.training(data, gt, 32);
