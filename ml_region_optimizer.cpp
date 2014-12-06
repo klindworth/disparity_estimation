@@ -191,15 +191,12 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 	region_ground_truth(base.regions, base.task.groundTruth, std::back_inserter(gt));
 
 	const int crange = base.task.range_size();
-	std::cout << "range: " << crange << std::endl;
-	std::cout << vector_size_per_disp*2*crange+vector_size << std::endl;
 
 	const std::size_t regions_count = base.regions.size();
 	std::vector<float> normalization_vector(normalizer_size,0.0f);
 	dst.reserve(dst.size() + base_optimization_vectors.size());
 
 	assert(gt.size() == regions_count);
-	//std::vector<float> sums(normalizer_size, 0.0f); //per thread!!
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
@@ -208,13 +205,6 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 			dst.emplace_back(vector_size_per_disp*2*crange+vector_size);
 			float *dst_ptr = dst.back().data();
 			gather_region_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector);
-
-			/*for(int k = 0; k < crange; ++k)
-			{
-				for(int i = 0; i < vector_size_per_disp*2; ++i)
-					sums[i] += *dst_ptr++;
-				++mean_count;
-			}*/
 
 			samples_gt.push_back(gt[j]);
 		}
@@ -375,7 +365,7 @@ void ml_region_optimizer::training()
 		std::swap(gt[i], gt[exchange_idx]);
 	}
 
-	//TODO: stddev normalization, class statistics?
+	//TODO: class statistics?
 
 	std::cout << "ann" << std::endl;
 	//neural_network<double> net (dims, crange, {dims, dims});
@@ -396,32 +386,4 @@ void ml_region_optimizer::training()
 	}
 
 	std::cout << "fin" << std::endl;
-
-	//TODO: ground truth
-	/*std::cout << "copy" << std::endl;
-	cv::Mat_<float> samples(samples_left.size(), samples_left.front().size());
-	//cv::Mat_<float> gt(samples_gt.size(), 1);
-	for(std::size_t i = 0; i < samples_left.size(); ++i)
-		std::copy(samples_left[i].begin(), samples_left[i].end(), samples.ptr<float>(i, 0));
-
-	cv::Mat_<float> gt(samples_left.size(), crange, 0.0f);
-	for(std::size_t i = 0; i < samples_left.size(); ++i)
-		gt(i,samples_gt[i]) = 1.0f;
-	//std::copy(samples_gt.begin(), samples_gt.end(), gt.begin());
-
-	std::cout << "ann" << std::endl;
-	CvANN_MLP_TrainParams params;
-	params.term_crit = cvTermCriteria( CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 100, 0.1 );
-
-	CvANN_MLP ann;
-	cv::Mat_<int> layers(4,1);
-	int dims = samples_left.front().size();
-	layers << dims, dims*3, dims*2, crange;
-	std::cout << layers << std::endl;
-	std::cout << samples.size() << std::endl;
-	std::cout << gt.size() << std::endl;
-	ann.create(layers);
-	ann.train(samples, gt, cv::Mat(), cv::Mat(), params);
-
-	std::cout << "fin" << std::endl;*/
 }

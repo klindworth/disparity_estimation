@@ -710,8 +710,15 @@ public:
 	void backward_propagation(const T* bottom_data, const T* top_gradient) override
 	{
 		layer_thread_data<T>& cdata = this->thread_data();
-		//TODO: propagate down
+		//TODO: propagate down:
+		//blas_gemv(cdata.gradient_data.data(), this->weights_transposed.data(), false, this->in_dim, this->out_dim, top_gradient);
+		//blas_gemv(cdata.gradient_data.data(), this->weights.data(), true, this->out_dim, this->in_dim, top_gradient);
+
+
+
 		int channels_in = (this->in_dim - passthrough)/vectorsize;
+
+		blas_gemm(cdata.gradient_data.data(), top_gradient, true, channels_out, channels_in, this->weights.data(), false, vectorsize, channels_out);
 
 		blas_gemm(cdata.dW.data(), top_gradient, false, channels_out, channels_in, bottom_data, false, channels_in, vectorsize, 1.0, 1.0);
 
