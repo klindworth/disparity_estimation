@@ -219,7 +219,7 @@ void normalize_feature_vector(std::vector<T>& data, const std::vector<T>& mean_n
 
 void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>>& dst, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
 {
-	samples_gt.reserve(samples_gt.size() + base.regions.size());
+	samples_gt_left.reserve(samples_gt_left.size() + base.regions.size());
 	std::vector<unsigned char> gt;
 	gt.reserve(base.regions.size());
 	region_ground_truth(base.regions, base.task.groundTruth, std::back_inserter(gt));
@@ -242,7 +242,7 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 			float *dst_ptr = dst.back().data();
 			gather_region_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector, stddev_normalization_vector);
 
-			samples_gt.push_back(gt[j]);
+			samples_gt_left.push_back(gt[j]);
 
 			int diff = std::abs(std::abs(base.regions[j].disparity) - gt[j]);
 			if(diff == 0)
@@ -285,14 +285,12 @@ void gather_statistic(const std::vector<std::vector<T>>& data, std::vector<T>& s
 		gather_statistic(cdata, sums, count, func);
 }
 
-void ml_region_optimizer::gather_mean(const std::vector<std::vector<float>>& data)
+void prepare_normalizer(std::vector<float>& sums, int count, std::size_t samples)
 {
-	gather_statistic(data, mean_sums, mean_count, [](float val) {return val;});
-}
-
-void ml_region_optimizer::gather_stddev(const std::vector<std::vector<float>>& data)
-{
-	gather_statistic(data, mean_sums, mean_count, [](float val) {return val*val;});
+	for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
+		sums[i] /= count;
+	for(int i = ml_region_optimizer::vector_size_per_disp; i < ml_region_optimizer::vector_size_per_disp+ml_region_optimizer::vector_size; ++i)
+		sums[i] /= samples;
 }
 
 void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, const optimizer_settings& /*config*/, int refinement)
@@ -300,15 +298,8 @@ void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, con
 	refresh_base_optimization_vector(left, right, refinement);
 	if(training_mode)
 	{
-		//samples_left.emplace_back();
-		//std::size_t start_idx = samples_left.size();
-		//samples_left.resize(samples_left.size() + left.regions.size() * (vector_size_per_disp*2+vector_size) * (left.task.dispMax - left.task.dispMin + 1));
 		prepare_training_sample(samples_left, optimization_vectors_left, optimization_vectors_right, left, right, refinement);
-		//samples_right.emplace_back();
-		//prepare_training_sample(samples_right.back(), optimization_vectors_right, optimization_vectors_left, right, left, refinement);
-
-		//samples_gt.reserve(samples_gt.size() + left.regions.size());
-		//region_ground_truth(left.regions, left.task.groundTruth, std::back_inserter(samples_gt));
+		//prepare_training_sample(samples_right, optimization_vectors_right, optimization_vectors_left, right, left, refinement);
 	}
 	else
 	{
@@ -322,14 +313,10 @@ void ml_region_optimizer::reset_internal()
 {
 	samples_left.clear();
 	samples_right.clear();
-
-	std::fill(mean_sums.begin(), mean_sums.end(), 0);
-	mean_count = 0;
 }
 
 ml_region_optimizer::ml_region_optimizer()
 {
-	mean_sums.resize(normalizer_size);
 	reset_internal();
 }
 
@@ -338,39 +325,39 @@ void ml_region_optimizer::reset(const RegionContainer& /*left*/, const RegionCon
 	reset_internal();
 }
 
+template<typename T>
+void gather_normalizers(std::vector<std::vector<T>>& data, std::vector<T>& mean_normalizer, std::vector<T>& stddev_normalizer)
+{
+	mean_normalizer.resize(ml_region_optimizer::normalizer_size);
+	stddev_normalizer.resize(ml_region_optimizer::normalizer_size);
+
+	int mean_count = 0;
+	gather_statistic(data, mean_normalizer, mean_count, [](float val) {return val;});
+	prepare_normalizer(mean_normalizer, mean_count, data.size());
+
+	int std_count = 0;
+	gather_statistic(data, stddev_normalizer, std_count, [](float val) {return val*val;});
+	prepare_normalizer(stddev_normalizer, std_count, data.size());
+
+	for(auto& val : stddev_normalizer)
+		val = 1.0 / std::sqrt(val);
+}
+
 void ml_region_optimizer::training()
 {
 	int crange = 256;
 
 	std::cout << "start actual training" << std::endl;
 
-	auto prepare_normalizer = [&](){
-		//gather normalization
-		for(int i = 0; i < vector_size_per_disp; ++i)
-			mean_sums[i] /= mean_count;
-		for(int i = vector_size_per_disp; i < vector_size_per_disp+vector_size; ++i)
-			mean_sums[i] /= samples_left.size();
-	};
-
-	auto invert_normalizer = [&](){
-		for(auto& val : mean_sums)
-			val = 1.0 / std::sqrt(val);
-	};
-
-	gather_mean(samples_left);
-	prepare_normalizer();
-	std::vector<float> mean_normalization_vector = mean_sums;
-
-	gather_stddev(samples_left);
-	prepare_normalizer();
-	invert_normalizer();
-	std::vector<float> stddev_normalization_vector = mean_sums;
+	std::vector<float> mean_normalization_vector;
+	std::vector<float> stddev_normalization_vector;
+	gather_normalizers(samples_left, mean_normalization_vector, stddev_normalization_vector);
 
 	//apply normalization
 	for(auto& cvec : samples_left)
-		normalize_feature_vector(cvec.data(), cvec.size(), mean_normalization_vector, stddev_normalization_vector);
+		normalize_feature_vector(cvec, mean_normalization_vector, stddev_normalization_vector);
 
-	assert(samples_left.size() == samples_gt.size());
+	assert(samples_left.size() == samples_gt_left.size());
 
 	int dims = samples_left.front().size();
 	std::cout << "copy" << std::endl;
@@ -382,8 +369,8 @@ void ml_region_optimizer::training()
 		data[i] = std::move(inner_data);
 	}
 
-	std::vector<short> gt(samples_gt.size());
-	std::copy(samples_gt.begin(), samples_gt.end(), gt.begin());
+	std::vector<short> gt(samples_gt_left.size());
+	std::copy(samples_gt_left.begin(), samples_gt_left.end(), gt.begin());
 
 	std::mt19937 rng;
 	std::uniform_int_distribution<> dist(0, data.size() - 1);

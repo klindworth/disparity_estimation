@@ -113,7 +113,11 @@ void StereoTask::loadGroundTruth(const std::string& nameGroundLeft, const std::s
 		std::cout << "no ground truth data for left image" << std::endl;
 
 	if(!groundRight.data)
+	{
+		if(groundLeft.data)
+			groundRight = warpDisparity<unsigned char>(groundLeft);
 		std::cout << "no ground truth data for right image" << std::endl;
+	}
 }
 
 StereoTask::StereoTask(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, int dispRange) : name(pname)
