@@ -89,15 +89,76 @@ void region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<unsig
 	}
 }
 
+template<typename T, typename lambda_type>
+void gather_statistic(const std::vector<T>& data, std::vector<T>& sums, int& count, lambda_type func)
+{
+	int crange = (data.size() - ml_region_optimizer::vector_size)/ ml_region_optimizer::vector_size_per_disp;
+	const float* ptr = data.data();
+	for(int k = 0; k < crange; ++k)
+	{
+		for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
+			sums[i] += func(*ptr++);
+		++count;
+	}
+	for(int k = 0; k < ml_region_optimizer::vector_size; ++k)
+		sums[ml_region_optimizer::vector_size_per_disp+k] += func(*ptr++);
+
+	assert(std::distance(data.data(), ptr) == data.size());
+}
+
+template<typename T, typename lambda_type>
+void gather_statistic(const std::vector<std::vector<T>>& data, std::vector<T>& sums, int& count, lambda_type func)
+{
+	assert(sums.size() == ml_region_optimizer::normalizer_size);
+	std::fill(sums.begin(), sums.end(), 0);
+	count = 0;
+
+	for(const std::vector<T>& cdata :data)
+		gather_statistic(cdata, sums, count, func);
+}
+
+void prepare_normalizer(std::vector<float>& sums, int count, std::size_t samples)
+{
+	for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
+		sums[i] /= count;
+	for(int i = ml_region_optimizer::vector_size_per_disp; i < ml_region_optimizer::vector_size_per_disp+ml_region_optimizer::vector_size; ++i)
+		sums[i] /= samples;
+}
+
+template<typename T>
+void normalize_feature_vector(T *ptr, int n, const std::vector<T>& mean_normalization_vector, const std::vector<T>& stddev_normalization_vector)
+{
+	int cmax = (n - ml_region_optimizer::vector_size) / ml_region_optimizer::vector_size_per_disp;
+	assert((n - ml_region_optimizer::vector_size) % (ml_region_optimizer::vector_size_per_disp) == 0);
+	assert(mean_normalization_vector.size() == stddev_normalization_vector.size());
+	for(int j = 0; j < cmax; ++j)
+	{
+		for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
+		{
+			*ptr -= mean_normalization_vector[i];
+			*ptr++ *= stddev_normalization_vector[i];
+		}
+	}
+	for(int j = 0; j < ml_region_optimizer::vector_size; ++j)
+	{
+		*ptr -= mean_normalization_vector[ml_region_optimizer::vector_size_per_disp+j];
+		*ptr++ *= stddev_normalization_vector[ml_region_optimizer::vector_size_per_disp+j];
+	}
+}
+
+template<typename T>
+void normalize_feature_vector(std::vector<T>& data, const std::vector<T>& mean_normalization_vector, const std::vector<T>& stddev_normalization_vector)
+{
+	normalize_feature_vector(data.data(), data.size(), mean_normalization_vector, stddev_normalization_vector);
+}
+
 void ml_region_optimizer::refresh_base_optimization_vector(const RegionContainer& left, const RegionContainer& right, int delta)
 {
 	refresh_base_optimization_vector_internal(optimization_vectors_left, left, right, delta);
 	refresh_base_optimization_vector_internal(optimization_vectors_right, right, left, delta);
 }
 
-
-
-void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, const DisparityRegion& baseRegion, const std::vector<float>& optimization_vector_base, const std::vector<std::vector<float>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task, const std::vector<float>& mean_normalization_vector, const std::vector<float>& stddev_normalization_vector)
+void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, const DisparityRegion& baseRegion, const std::vector<float>& optimization_vector_base, const std::vector<std::vector<float>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task)
 {
 	const int crange = task.range_size();
 	auto range = getSubrange(baseRegion.base_disparity, delta, task);
@@ -119,29 +180,18 @@ void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, cons
 
 	const float *base_src_ptr = optimization_vector_base.data();
 	const float *other_src_ptr = other_optimization_vector.data();
+
 	for(int i = 0; i < crange; ++i)
 	{
 		for(int j = 0; j < vector_size_per_disp; ++j)
-		{
-			float val = *base_src_ptr++ - mean_normalization_vector[j];
-			val *= stddev_normalization_vector[j];
-			*dst_ptr++ = val;
-		}
+			*dst_ptr++ = *base_src_ptr++;
 
-		for(int j = 0; j< vector_size_per_disp; ++j)
-		{
-			float val = *other_src_ptr++ - mean_normalization_vector[j];
-			val *= stddev_normalization_vector[j];
-			*dst_ptr++ = val;
-		}
+		for(int j = 0; j < vector_size_per_disp; ++j)
+			*dst_ptr++ = *other_src_ptr++;
 	}
+
 	for(int i = 0; i < vector_size; ++i)
-	{
-		float val = *base_src_ptr++ - mean_normalization_vector[vector_size_per_disp+i];
-		val *= stddev_normalization_vector[vector_size_per_disp+i];
-		*dst_ptr++ = val;
-		//*dst_ptr++ = *other_src_ptr++ - normalization_vector[vector_size_per_disp+i];
-	}
+		*dst_ptr++ = *base_src_ptr++;
 }
 
 void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta)
@@ -185,36 +235,10 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& ma
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
 		std::vector<float> region_optimization_vector(crange*vector_size_per_disp*2+vector_size); //recycle taskwise in prediction mode
-		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task, mean_normalization_vector, stddev_normalization_vector);
+		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
+		normalize_feature_vector(region_optimization_vector, mean_normalization_vector, stddev_normalization_vector);
 		base.regions[j].disparity = net.predict(region_optimization_vector.data()) * sign;
 	}
-}
-
-template<typename T>
-void normalize_feature_vector(T *ptr, int n, const std::vector<T>& mean_normalization_vector, const std::vector<T>& stddev_normalization_vector)
-{
-	int cmax = (n - ml_region_optimizer::vector_size) / ml_region_optimizer::vector_size_per_disp;
-	assert((n - ml_region_optimizer::vector_size) % (ml_region_optimizer::vector_size_per_disp) == 0);
-	assert(mean_normalization_vector.size() == stddev_normalization_vector.size());
-	for(int j = 0; j < cmax; ++j)
-	{
-		for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
-		{
-			*ptr -= mean_normalization_vector[i];
-			*ptr++ *= stddev_normalization_vector[i];
-		}
-	}
-	for(int j = 0; j < ml_region_optimizer::vector_size; ++j)
-	{
-		*ptr -= mean_normalization_vector[ml_region_optimizer::vector_size_per_disp+j];
-		*ptr++ *= stddev_normalization_vector[ml_region_optimizer::vector_size_per_disp+j];
-	}
-}
-
-template<typename T>
-void normalize_feature_vector(std::vector<T>& data, const std::vector<T>& mean_normalization_vector, const std::vector<T>& stddev_normalization_vector)
-{
-	normalize_feature_vector(data.data(), data.size(), mean_normalization_vector, stddev_normalization_vector);
 }
 
 void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>>& dst, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
@@ -227,8 +251,6 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 	const int crange = base.task.range_size();
 
 	const std::size_t regions_count = base.regions.size();
-	std::vector<float> normalization_vector(normalizer_size,0.0f);
-	std::vector<float> stddev_normalization_vector(normalizer_size, 1.0f);
 	dst.reserve(dst.size() + base_optimization_vectors.size());
 
 	assert(gt.size() == regions_count);
@@ -240,7 +262,7 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 		{
 			dst.emplace_back(vector_size_per_disp*2*crange+vector_size);
 			float *dst_ptr = dst.back().data();
-			gather_region_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector, stddev_normalization_vector);
+			gather_region_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task);
 
 			samples_gt_left.push_back(gt[j]);
 
@@ -257,41 +279,7 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 	std::cout << "correct: " << (float)base_correct/total << ", approx5: " << (float)approx5/total << ", approx10: " << (float)approx10/total << std::endl;
 }
 
-template<typename T, typename lambda_type>
-void gather_statistic(const std::vector<T>& data, std::vector<T>& sums, int& count, lambda_type func)
-{
-	int crange = (data.size() - ml_region_optimizer::vector_size)/ ml_region_optimizer::vector_size_per_disp;
-	const float* ptr = data.data();
-	for(int k = 0; k < crange; ++k)
-	{
-		for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
-			sums[i] += func(*ptr++);
-		++count;
-	}
-	for(int k = 0; k < ml_region_optimizer::vector_size; ++k)
-		sums[ml_region_optimizer::vector_size_per_disp+k] += func(*ptr++);
 
-	assert(std::distance(data.data(), ptr) == data.size());
-}
-
-template<typename T, typename lambda_type>
-void gather_statistic(const std::vector<std::vector<T>>& data, std::vector<T>& sums, int& count, lambda_type func)
-{
-	assert(sums.size() == ml_region_optimizer::normalizer_size);
-	std::fill(sums.begin(), sums.end(), 0);
-	count = 0;
-
-	for(const std::vector<T>& cdata :data)
-		gather_statistic(cdata, sums, count, func);
-}
-
-void prepare_normalizer(std::vector<float>& sums, int count, std::size_t samples)
-{
-	for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
-		sums[i] /= count;
-	for(int i = ml_region_optimizer::vector_size_per_disp; i < ml_region_optimizer::vector_size_per_disp+ml_region_optimizer::vector_size; ++i)
-		sums[i] /= samples;
-}
 
 void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, const optimizer_settings& /*config*/, int refinement)
 {
