@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparity_utils.h"
 #include "genericfunctions.h"
 
-#include <opencv2/ml/ml.hpp>
+#include <fstream>
 #include "simple_nn.h"
 
 void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
@@ -97,7 +97,7 @@ void ml_region_optimizer::refresh_base_optimization_vector(const RegionContainer
 
 
 
-void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, const DisparityRegion& baseRegion, const std::vector<float>& optimization_vector_base, const std::vector<std::vector<float>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task, const std::vector<float>& normalization_vector)
+void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, const DisparityRegion& baseRegion, const std::vector<float>& optimization_vector_base, const std::vector<std::vector<float>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task, const std::vector<float>& mean_normalization_vector, const std::vector<float>& stddev_normalization_vector)
 {
 	const int crange = task.range_size();
 	auto range = getSubrange(baseRegion.base_disparity, delta, task);
@@ -122,17 +122,26 @@ void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, cons
 	for(int i = 0; i < crange; ++i)
 	{
 		for(int j = 0; j < vector_size_per_disp; ++j)
-			*dst_ptr++ = *base_src_ptr++ - normalization_vector[j];
+		{
+			float val = *base_src_ptr++ - mean_normalization_vector[j];
+			val *= stddev_normalization_vector[j];
+			*dst_ptr++ = val;
+		}
+
 		for(int j = 0; j< vector_size_per_disp; ++j)
-			*dst_ptr++ = *other_src_ptr++ - normalization_vector[j];
+		{
+			float val = *other_src_ptr++ - mean_normalization_vector[j];
+			val *= stddev_normalization_vector[j];
+			*dst_ptr++ = val;
+		}
 	}
 	for(int i = 0; i < vector_size; ++i)
 	{
-		*dst_ptr++ = *base_src_ptr++ - normalization_vector[vector_size_per_disp+i];
+		float val = *base_src_ptr++ - mean_normalization_vector[vector_size_per_disp+i];
+		val *= stddev_normalization_vector[vector_size_per_disp+i];
+		*dst_ptr++ = val;
 		//*dst_ptr++ = *other_src_ptr++ - normalization_vector[vector_size_per_disp+i];
 	}
-
-	//TODO: function totally wrong
 }
 
 void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta)
@@ -141,18 +150,45 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& ma
 	refresh_base_optimization_vector(base, match, delta);
 	//refresh_optimization_vector(base, match, base_eval, delta);
 	//refresh_optimization_vector(match, base, base_eval, delta);
-	std::cout << "optimize" << std::endl;
 
 	const int crange = base.task.range_size();
+	int dims = crange * vector_size_per_disp*2+vector_size;
+
+	std::cout << "ann" << std::endl;
+	//neural_network<double> net (dims, crange, {dims, dims});
+	neural_network<float> net(dims);
+	//net.emplace_layer<vector_connected_layer>(vector_size_per_disp, vector_size_per_disp, vector_size);
+	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(2, vector_size_per_disp*2, vector_size);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(crange);
+	net.emplace_layer<softmax_output_layer>();
+
+	std::vector<float> mean_normalization_vector(normalizer_size,0.0f);
+	std::vector<float> stddev_normalization_vector(normalizer_size, 0.0f);
+	std::ifstream istream("weights.txt");
+
+	for(auto& cval : mean_normalization_vector)
+		istream >> cval;
+	for(auto& cval : stddev_normalization_vector)
+		istream >> cval;
+
+	istream >> net;
+
+	std::cout << "optimize" << std::endl;
 
 	const std::size_t regions_count = base.regions.size();
-	std::vector<float> normalization_vector(normalizer_size,0.0f);
+
 	#pragma omp parallel for
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
 		std::vector<float> region_optimization_vector(crange*vector_size_per_disp*2+vector_size); //recycle taskwise in prediction mode
-		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task, normalization_vector);
+		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task, mean_normalization_vector, stddev_normalization_vector);
 		//TODO: call predict function and save result
+
+		//TODO: normalizer
+		base.regions[j].disparity = net.predict(region_optimization_vector.data());
+		std::cout << base.regions[j].disparity << std::endl;
 	}
 }
 
@@ -194,21 +230,33 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 
 	const std::size_t regions_count = base.regions.size();
 	std::vector<float> normalization_vector(normalizer_size,0.0f);
+	std::vector<float> stddev_normalization_vector(normalizer_size, 1.0f);
 	dst.reserve(dst.size() + base_optimization_vectors.size());
 
 	assert(gt.size() == regions_count);
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
+	int base_correct = 0, approx5 = 0, approx10 = 0, total = 0;
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
 		if(gt[j] != 0)
 		{
 			dst.emplace_back(vector_size_per_disp*2*crange+vector_size);
 			float *dst_ptr = dst.back().data();
-			gather_region_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector);
+			gather_region_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task, normalization_vector, stddev_normalization_vector);
 
 			samples_gt.push_back(gt[j]);
+
+			int diff = std::abs(std::abs(base.regions[j].disparity) - gt[j]);
+			if(diff == 0)
+				++base_correct;
+			if(diff < 5)
+				++approx5;
+			if(diff < 10)
+				++approx10;
+			++total;
 		}
 	}
+	std::cout << "correct: " << (float)base_correct/total << ", approx5: " << (float)approx5/total << ", approx10: " << (float)approx10/total << std::endl;
 }
 
 void ml_region_optimizer::gather_mean(const std::vector<std::vector<float>>& data)
@@ -372,7 +420,7 @@ void ml_region_optimizer::training()
 	neural_network<double> net(dims);
 	//net.emplace_layer<vector_connected_layer>(vector_size_per_disp, vector_size_per_disp, vector_size);
 	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(vector_size_per_disp/2, vector_size_per_disp*2, vector_size);
+	net.emplace_layer<vector_connected_layer>(2, vector_size_per_disp*2, vector_size);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
@@ -384,6 +432,14 @@ void ml_region_optimizer::training()
 		if(i%4 == 0)
 			net.test(data, gt);
 	}
+
+	std::ofstream ostream("weights.txt");
+	ostream.precision(17);
+	std::copy(mean_normalization_vector.begin(), mean_normalization_vector.end(), std::ostream_iterator<float>(ostream, " "));
+	std::copy(stddev_normalization_vector.begin(), stddev_normalization_vector.end(), std::ostream_iterator<float>(ostream, " "));
+
+	ostream << net;
+	ostream.close();
 
 	std::cout << "fin" << std::endl;
 }

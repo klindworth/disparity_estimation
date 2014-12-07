@@ -183,6 +183,25 @@ public:
 		uniform_init(bias.begin(), bias.end(), weight_base);
 	}
 
+	void save_weights(std::ostream& stream) const
+	{
+		std::cout << "weights: " << this->weights.size() << ", bias: " << this->bias.size() << std::endl;
+		std::copy(this->weights.begin(), this->weights.end(), std::ostream_iterator<T>(stream, " "));
+		std::copy(this->bias.begin(), this->bias.end(), std::ostream_iterator<T>(stream, " "));
+		/*for(T cweight : this->weights)
+			stream << cweight << " ";
+		for(T cbias : this->bias)
+			stream << cbias << " ";*/
+	}
+
+	void load_weights(std::istream& stream)
+	{
+		for(T& cweight : this->weights)
+			stream >> cweight;
+		for(T& cbias : this->bias)
+			stream >> cbias;
+	}
+
 	virtual void forward_propagation(const T* bottom_data) = 0;
 	virtual void backward_propagation(const T* bottom_data, const T* top_gradient) = 0;
 
@@ -670,11 +689,36 @@ public:
 		}
 	}
 
+	void save_weights(std::ostream& stream) const
+	{
+		stream.precision(17);
+		for(const auto& clayer : layers)
+			clayer->save_weights(stream);
+	}
+
+	void load_weights(std::istream& stream)
+	{
+		for(const auto& clayer : layers)
+			clayer->load_weights(stream);
+	}
+
 	std::vector<std::shared_ptr<layer_base<T>>> layers;
 	int in_dim, out_dim;
-
-
 };
+
+template<typename T>
+std::ostream& operator<<(std::ostream& stream, const neural_network<T>& net)
+{
+	net.save_weights(stream);
+	return stream;
+}
+
+template<typename T>
+std::istream& operator>>(std::istream& stream, neural_network<T>& net)
+{
+	net.load_weights(stream);
+	return stream;
+}
 
 template<typename T>
 class vector_connected_layer : public layer_base<T>
