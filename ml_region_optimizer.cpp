@@ -179,16 +179,14 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& ma
 
 	const std::size_t regions_count = base.regions.size();
 
+	short sign = (base.task.dispMin < 0) ? -1 : 1;
+
 	#pragma omp parallel for
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
 		std::vector<float> region_optimization_vector(crange*vector_size_per_disp*2+vector_size); //recycle taskwise in prediction mode
 		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task, mean_normalization_vector, stddev_normalization_vector);
-		//TODO: call predict function and save result
-
-		//TODO: normalizer
-		base.regions[j].disparity = net.predict(region_optimization_vector.data());
-		std::cout << base.regions[j].disparity << std::endl;
+		base.regions[j].disparity = net.predict(region_optimization_vector.data()) * sign;
 	}
 }
 
@@ -259,54 +257,42 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 	std::cout << "correct: " << (float)base_correct/total << ", approx5: " << (float)approx5/total << ", approx10: " << (float)approx10/total << std::endl;
 }
 
+template<typename T, typename lambda_type>
+void gather_statistic(const std::vector<T>& data, std::vector<T>& sums, int& count, lambda_type func)
+{
+	int crange = (data.size() - ml_region_optimizer::vector_size)/ ml_region_optimizer::vector_size_per_disp;
+	const float* ptr = data.data();
+	for(int k = 0; k < crange; ++k)
+	{
+		for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
+			sums[i] += func(*ptr++);
+		++count;
+	}
+	for(int k = 0; k < ml_region_optimizer::vector_size; ++k)
+		sums[ml_region_optimizer::vector_size_per_disp+k] += func(*ptr++);
+
+	assert(std::distance(data.data(), ptr) == data.size());
+}
+
+template<typename T, typename lambda_type>
+void gather_statistic(const std::vector<std::vector<T>>& data, std::vector<T>& sums, int& count, lambda_type func)
+{
+	assert(sums.size() == ml_region_optimizer::normalizer_size);
+	std::fill(sums.begin(), sums.end(), 0);
+	count = 0;
+
+	for(const std::vector<T>& cdata :data)
+		gather_statistic(cdata, sums, count, func);
+}
+
 void ml_region_optimizer::gather_mean(const std::vector<std::vector<float>>& data)
 {
-	std::fill(mean_sums.begin(), mean_sums.end(), 0);
-	mean_count = 0;
-
-	for(std::size_t j = 0; j < data.size(); ++j)
-	{
-		int crange = (data[j].size() - vector_size)/ vector_size_per_disp;
-		const float* ptr = data[j].data();
-		for(int k = 0; k < crange; ++k)
-		{
-			for(int i = 0; i < vector_size_per_disp; ++i)
-				mean_sums[i] += *ptr++;
-			++mean_count;
-		}
-		for(int k = 0; k < vector_size; ++k)
-			mean_sums[vector_size_per_disp+k] += *ptr++;
-
-		assert(std::distance(data[j].data(), ptr) == data[j].size());
-	}
+	gather_statistic(data, mean_sums, mean_count, [](float val) {return val;});
 }
 
 void ml_region_optimizer::gather_stddev(const std::vector<std::vector<float>>& data)
 {
-	std::fill(mean_sums.begin(), mean_sums.end(), 0);
-	mean_count = 0;
-
-	for(std::size_t j = 0; j < data.size(); ++j)
-	{
-		int crange = (data[j].size() - vector_size)/ vector_size_per_disp;
-		const float* ptr = data[j].data();
-		for(int k = 0; k < crange; ++k)
-		{
-			for(int i = 0; i < vector_size_per_disp; ++i)
-			{
-				mean_sums[i] += *ptr * *ptr;
-				++ptr;
-			}
-			++mean_count;
-		}
-		for(int k = 0; k < vector_size; ++k)
-		{
-			mean_sums[vector_size_per_disp+k] += *ptr * *ptr;
-			++ptr;
-		}
-
-		assert(std::distance(data[j].data(), ptr) == data[j].size());
-	}
+	gather_statistic(data, mean_sums, mean_count, [](float val) {return val*val;});
 }
 
 void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, const optimizer_settings& /*config*/, int refinement)
@@ -343,6 +329,7 @@ void ml_region_optimizer::reset_internal()
 
 ml_region_optimizer::ml_region_optimizer()
 {
+	mean_sums.resize(normalizer_size);
 	reset_internal();
 }
 
@@ -372,18 +359,12 @@ void ml_region_optimizer::training()
 
 	gather_mean(samples_left);
 	prepare_normalizer();
-	std::vector<float> mean_normalization_vector(normalizer_size);
-	std::copy(mean_sums.begin(), mean_sums.end(), mean_normalization_vector.begin());
-	std::copy(mean_normalization_vector.begin(), mean_normalization_vector.end(), std::ostream_iterator<float>(std::cout, ", "));
-	std::cout << std::endl;
+	std::vector<float> mean_normalization_vector = mean_sums;
 
 	gather_stddev(samples_left);
 	prepare_normalizer();
-	std::copy(mean_sums.begin(), mean_sums.end(), std::ostream_iterator<float>(std::cout, ", "));
 	invert_normalizer();
-	std::vector<float> stddev_normalization_vector(mean_normalization_vector.size());
-	std::copy(mean_sums.begin(), mean_sums.end(), stddev_normalization_vector.begin());
-	std::cout << std::endl;
+	std::vector<float> stddev_normalization_vector = mean_sums;
 
 	//apply normalization
 	for(auto& cvec : samples_left)
@@ -425,7 +406,7 @@ void ml_region_optimizer::training()
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 
-	for(int i = 0; i < 161; ++i)
+	for(int i = 0; i < 101; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
 		net.training(data, gt, 64);

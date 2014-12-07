@@ -56,7 +56,7 @@ private:
 
 	std::vector<std::vector<float>> samples_left, samples_right;
 	std::vector<unsigned char> samples_gt;
-	std::array<float, vector_size_per_disp+vector_size> mean_sums;
+	std::vector<float> mean_sums;
 	int mean_count;
 };
 
