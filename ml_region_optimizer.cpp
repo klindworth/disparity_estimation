@@ -163,7 +163,7 @@ void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, cons
 	const int crange = task.range_size();
 	auto range = getSubrange(baseRegion.base_disparity, delta, task);
 
-	std::vector<float> other_optimization_vector(crange*vector_size_per_disp);
+	//std::vector<float> other_optimization_vector(crange*vector_size_per_disp);
 	std::vector<float> disp_optimization_vector(vector_size_per_disp);
 	for(short d = range.first; d < range.second; ++d)
 	{
@@ -175,23 +175,25 @@ void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, cons
 				disp_optimization_vector[i] += percent * *it++;
 		});
 
-		std::copy(disp_optimization_vector.begin(), disp_optimization_vector.end(), &(other_optimization_vector[(d-range.first)*vector_size_per_disp]));
-	}
+		//std::copy(disp_optimization_vector.begin(), disp_optimization_vector.end(), &(other_optimization_vector[(d-range.first)*vector_size_per_disp]));
 
-	const float *base_src_ptr = optimization_vector_base.data();
-	const float *other_src_ptr = other_optimization_vector.data();
+		const float *base_ptr = optimization_vector_base.data() + (d-range.first)*vector_size_per_disp;
+		const float *other_ptr = disp_optimization_vector.data();
 
-	for(int i = 0; i < crange; ++i)
-	{
-		for(int j = 0; j < vector_size_per_disp; ++j)
-			*dst_ptr++ = *base_src_ptr++;
+		float *ndst_ptr = dst_ptr + (d-range.first)*vector_size_per_disp*2;
 
 		for(int j = 0; j < vector_size_per_disp; ++j)
-			*dst_ptr++ = *other_src_ptr++;
+			*ndst_ptr++ = *base_ptr++;
+
+		for(int j = 0; j < vector_size_per_disp; ++j)
+			*ndst_ptr++ = *other_ptr++;
 	}
 
+	const float *base_src_ptr = optimization_vector_base.data()+crange*vector_size_per_disp;
+
+	float *ndst_ptr = dst_ptr + crange*vector_size_per_disp*2;
 	for(int i = 0; i < vector_size; ++i)
-		*dst_ptr++ = *base_src_ptr++;
+		*ndst_ptr++ = *base_src_ptr++;
 }
 
 void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta)
