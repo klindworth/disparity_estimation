@@ -197,7 +197,7 @@ void gather_region_optimization_vector(dst_type *dst_ptr, const DisparityRegion&
 		*ndst_ptr++ = *base_src_ptr++;
 }
 
-void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta)
+void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename)
 {
 	std::cout << "base" << std::endl;
 	refresh_base_optimization_vector(base, match, delta);
@@ -219,7 +219,7 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& ma
 
 	std::vector<double> mean_normalization_vector(normalizer_size,0.0f);
 	std::vector<double> stddev_normalization_vector(normalizer_size, 0.0f);
-	std::ifstream istream("weights.txt");
+	std::ifstream istream(filename);
 
 	for(auto& cval : mean_normalization_vector)
 		istream >> cval;
@@ -294,9 +294,9 @@ void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, con
 	}
 	else
 	{
-		optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement);
-		refresh_base_optimization_vector(left, right, refinement);
-		optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement);
+		optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, "weights-left.txt");
+		//refresh_base_optimization_vector(left, right, refinement);
+		optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, "weights-right.txt");
 	}
 }
 
