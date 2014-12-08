@@ -163,9 +163,8 @@ void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, cons
 	const int crange = task.range_size();
 	auto range = getSubrange(baseRegion.base_disparity, delta, task);
 
-	//std::vector<float> other_optimization_vector(crange*vector_size_per_disp);
 	std::vector<float> disp_optimization_vector(vector_size_per_disp);
-	for(short d = range.first; d < range.second; ++d)
+	for(short d = range.first; d <= range.second; ++d)
 	{
 		std::fill(disp_optimization_vector.begin(), disp_optimization_vector.end(), 0.0f);
 		const int corresponding_disp_idx = -d - match.task.dispMin;
@@ -175,12 +174,11 @@ void ml_region_optimizer::gather_region_optimization_vector(float *dst_ptr, cons
 				disp_optimization_vector[i] += percent * *it++;
 		});
 
-		//std::copy(disp_optimization_vector.begin(), disp_optimization_vector.end(), &(other_optimization_vector[(d-range.first)*vector_size_per_disp]));
-
 		const float *base_ptr = optimization_vector_base.data() + (d-range.first)*vector_size_per_disp;
 		const float *other_ptr = disp_optimization_vector.data();
 
 		float *ndst_ptr = dst_ptr + (d-range.first)*vector_size_per_disp*2;
+		//float *ndst_ptr = dst_ptr + vector_size_per_disp*2*(int)std::abs(d);
 
 		for(int j = 0; j < vector_size_per_disp; ++j)
 			*ndst_ptr++ = *base_ptr++;
@@ -243,9 +241,9 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& ma
 	}
 }
 
-void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>>& dst, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
+void ml_region_optimizer::prepare_training_sample(std::vector<unsigned char>& dst_gt, std::vector<std::vector<float>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
 {
-	samples_gt_left.reserve(samples_gt_left.size() + base.regions.size());
+	dst_gt.reserve(dst_gt.size() + base.regions.size());
 	std::vector<unsigned char> gt;
 	gt.reserve(base.regions.size());
 	region_ground_truth(base.regions, base.task.groundTruth, std::back_inserter(gt));
@@ -253,7 +251,7 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 	const int crange = base.task.range_size();
 
 	const std::size_t regions_count = base.regions.size();
-	dst.reserve(dst.size() + base_optimization_vectors.size());
+	dst_data.reserve(dst_data.size() + base_optimization_vectors.size());
 
 	assert(gt.size() == regions_count);
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
@@ -262,11 +260,11 @@ void ml_region_optimizer::prepare_training_sample(std::vector<std::vector<float>
 	{
 		if(gt[j] != 0)
 		{
-			dst.emplace_back(vector_size_per_disp*2*crange+vector_size);
-			float *dst_ptr = dst.back().data();
+			dst_data.emplace_back(vector_size_per_disp*2*crange+vector_size);
+			float *dst_ptr = dst_data.back().data();
 			gather_region_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task);
 
-			samples_gt_left.push_back(gt[j]);
+			dst_gt.push_back(gt[j]);
 
 			int diff = std::abs(std::abs(base.regions[j].disparity) - gt[j]);
 			if(diff == 0)
@@ -288,8 +286,8 @@ void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, con
 	refresh_base_optimization_vector(left, right, refinement);
 	if(training_mode)
 	{
-		prepare_training_sample(samples_left, optimization_vectors_left, optimization_vectors_right, left, right, refinement);
-		//prepare_training_sample(samples_right, optimization_vectors_right, optimization_vectors_left, right, left, refinement);
+		prepare_training_sample(samples_gt_left, samples_left, optimization_vectors_left, optimization_vectors_right, left, right, refinement);
+		//prepare_training_sample(samples_gt_right, samples_right, optimization_vectors_right, optimization_vectors_left, right, left, refinement);
 	}
 	else
 	{

@@ -56,7 +56,7 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	});
 	result[0] = std::make_pair(count, sum);
 
-	for(int dx = dx_min+1; dx < dx_max; ++dx)
+	for(int dx = dx_min+1; dx <= dx_max; ++dx)
 	{
 		for(int i = 0; i < region.size(); ++i)
 		{
