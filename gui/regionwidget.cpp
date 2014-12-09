@@ -130,16 +130,16 @@ void RegionWidget::mutualDisparity(DisparityRegion& baseRegion, RegionContainer&
 		float avg_disp = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return (float)cregion.disparity;});
 		//float stddev = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
 		float disp_pot = getOtherRegionsAverage(other_regions, *it, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(currentDisp+cregion.disparity), 10);});
-		float e_other = getOtherRegionsAverage(other_regions, *it, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-currentDisp-m_matchDispMin);});
+		float e_other = baseRegion.optimization_energy.data ? getOtherRegionsAverage(other_regions, *it, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-currentDisp-m_matchDispMin);}) : 0;
 
 		//ratings
 		//float stddev_dev = baseRegion.stats.stddev-stddev;
 		//float disp_dev = std::abs(currentDisp+avg_disp);
 
 		//float e_base = m_config->base_eval(hyp, current);
-		float e_base = baseRegion.optimization_energy(i);
+		float e_base = baseRegion.optimization_energy.data ? baseRegion.optimization_energy(i) : 0;
 		//float rating = (disp_pot/5.0f -2.0f) * baseRegion.stats.stddev/stddev + e_base;
-		float rating = m_config->optimizer.prop_eval(baseRegion, base, match, currentDisp);
+		float rating = baseRegion.optimization_energy.data ? m_config->optimizer.prop_eval(baseRegion, base, match, currentDisp) : 0;
 		//output
 		QStringList item;
 		item << QString::number(i+dispMin);

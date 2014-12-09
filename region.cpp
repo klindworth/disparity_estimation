@@ -82,6 +82,20 @@ void labelLRCheck(const cv::Mat_<int>& labelsMatch, DisparityRegion& region, con
 	}
 }
 
+void checkLabelLRCheck(const RegionContainer& base, const RegionContainer& match)
+{
+	for(const DisparityRegion& cregion : base.regions)
+	{
+		for(const std::vector<MutualRegion>& cdisp : cregion.other_regions)
+		{
+			for(const MutualRegion& cmutual : cdisp)
+			{
+				assert(cmutual.index < match.regions.size());
+			}
+		}
+	}
+}
+
 void labelLRCheck(RegionContainer& base, const RegionContainer& match, int delta)
 {
 	const std::size_t regions_count = base.regions.size();

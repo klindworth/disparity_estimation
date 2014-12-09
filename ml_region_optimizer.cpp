@@ -69,7 +69,6 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 template<typename region_type, typename InsertIterator>
 void region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<unsigned char> gt, InsertIterator it)
 {
-	std::vector<unsigned char> averages(regions.size());
 	for(std::size_t i = 0; i < regions.size(); ++i)
 	{
 		int sum = 0;
@@ -197,12 +196,9 @@ void gather_region_optimization_vector(dst_type *dst_ptr, const DisparityRegion&
 		*ndst_ptr++ = *base_src_ptr++;
 }
 
-void ml_region_optimizer::optimize_ml(RegionContainer& base, RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename)
+void ml_region_optimizer::optimize_ml(RegionContainer& base, const RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename)
 {
 	std::cout << "base" << std::endl;
-	refresh_base_optimization_vector(base, match, delta);
-	//refresh_optimization_vector(base, match, base_eval, delta);
-	//refresh_optimization_vector(match, base, base_eval, delta);
 
 	const int crange = base.task.range_size();
 	int dims = crange * vector_size_per_disp*2+vector_size;
@@ -378,7 +374,7 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<un
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 
-	for(int i = 0; i < 101; ++i)
+	for(int i = 0; i < 9; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
 		net.training(samples, gt, 64);
