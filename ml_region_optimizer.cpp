@@ -313,7 +313,7 @@ void ml_region_optimizer::reset_internal()
 ml_region_optimizer::ml_region_optimizer()
 {
 	reset_internal();
-	training_iteration = 0;
+	training_iteration = 1;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
 }
@@ -385,7 +385,7 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<un
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 
-	for(int i = 0; i < 9; ++i)
+	for(int i = 0; i < 101; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
 		net.training(samples, gt, 64);

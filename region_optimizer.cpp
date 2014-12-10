@@ -109,7 +109,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	segment_boxfilter(occ_temp, occmap, baseRegion.lineIntervals, dispStart, dispEnd);
 
 	for(int i = 0; i < range; ++i)
-		occ_avg_values[i] = (occ_temp[i].first != 0) ? (float)occ_temp[i].second / occ_temp[i].first : 1;
+		occ_avg_values[i] = (occ_temp[i].first != 0) ? (float)occ_temp[i].second / occ_temp[i].first : -1;
 
 	//neighbor pot
 	/*gather_neighbor_values(neighbor_disparities, left_regions, baseRegion.neighbors, [](const DisparityRegion& cregion) {
@@ -155,18 +155,18 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	//lr_pot
 	assert(baseRegion.other_regions.size() >= range);
 	for(short cdisp = dispStart; cdisp <= dispEnd; ++cdisp)
-		lr_pot_values[cdisp - dispStart] = other_regions_average_by_index(baseRegion.other_regions[cdisp-dispMin],
-				[&](std::size_t idx){
+	{
+		lr_pot_values[cdisp - dispStart] = other_regions_average_by_index(baseRegion.other_regions[cdisp-dispMin], [&](std::size_t idx){
 			return (float)abs_pott(cdisp, (short)-match_disparities_cache[idx], pot_trunc);
 		});
-		//lr_pot_values[cdisp - dispStart] = getOtherRegionsAverage(right_regions, baseRegion.other_regions[cdisp-dispMin], [&](const DisparityRegion& cregion){return (float)abs_pott(cdisp, (short)-cregion.disparity, pot_trunc);});
+	}
 
 	for(int i = 0; i < range; ++i)
 		cost_values[i] = baseRegion.disparity_costs((dispStart+i)-baseRegion.disparity_offset);
 
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
 	result_vector.resize(range*vector_size+1);
-	int org_size = baseRegion.size();
+	float org_size = baseRegion.size();
 	float *result_ptr = result_vector.data();
 	for(int i = 0; i < range; ++i)
 	{
@@ -176,6 +176,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		*result_ptr++ = lr_pot_values[i];
 		*result_ptr++ = neighbor_color_pot_values[i];
 		*result_ptr++ = org_size - occ_temp[i].first;
+		//*result_ptr++ = (float)occ_temp[i].first / org_size;
 	}
 	*result_ptr = baseRegion.disparity;
 }

@@ -150,9 +150,9 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 
 				if(diff_region.total() > 0)
 					//regions[i].disparity_costs(d-regions[i].disparity_offset) = sum/diff_region.total()/diff_region.channels();
-					regions[i].disparity_costs(d-regions[i].disparity_offset) = sum/diff_region.total()/256/diff_region.channels();
+					regions[i].disparity_costs(d-regions[i].disparity_offset) = sum/diff_region.total()/diff_region.channels();
 				else
-					regions[i].disparity_costs(d-regions[i].disparity_offset) = 2.0f;
+					regions[i].disparity_costs(d-regions[i].disparity_offset) = 1.0f;
 			}
 		}
 	}
@@ -198,7 +198,7 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 	{
 		auto range = getSubrange(regions[i].base_disparity, delta, task);
 		regions[i].disparity_offset = range.first;
-		row_costs.emplace_back((range.second - range.first + 1) * regions[i].lineIntervals.size(), 2.0f);
+		row_costs.emplace_back((range.second - range.first + 1) * regions[i].lineIntervals.size(), 1.0f);
 		row_sizes.emplace_back((range.second - range.first + 1) * regions[i].lineIntervals.size(), 0);
 	}
 
@@ -283,7 +283,7 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 					}
 				}
 				if(sum_size > 0)
-					regions[i].disparity_costs(d-regions[i].disparity_offset) = sum_costs/256;//sum_size;
+					regions[i].disparity_costs(d-regions[i].disparity_offset) = sum_costs/sum_size;
 				else
 					regions[i].disparity_costs(d-regions[i].disparity_offset) = 2.0f;
 			}
