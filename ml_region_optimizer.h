@@ -52,6 +52,9 @@ private:
 
 	std::vector<std::vector<double>> samples_left, samples_right;
 	std::vector<unsigned char> samples_gt_left, samples_gt_right;
+
+	int training_iteration;
+	std::string filename_left_prefix, filename_right_prefix;
 };
 
 //void gather_region_optimization_vector(double *dst_ptr, const DisparityRegion& baseRegion, const std::vector<float>& optimization_vector_base, const std::vector<std::vector<float>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task);

@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 
 #include <fstream>
+#include <boost/lexical_cast.hpp>
 #include "simple_nn.h"
 
 void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
@@ -285,6 +286,13 @@ void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, con
 	refresh_base_optimization_vector(left, right, refinement);
 	if(training_mode)
 	{
+		for(int i = 0; i < training_iteration; ++i)
+		{
+			optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + ".txt");
+			optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + ".txt");
+			refresh_base_optimization_vector(left, right, refinement);
+		}
+
 		prepare_training_sample(samples_gt_left, samples_left, optimization_vectors_left, optimization_vectors_right, left, right, refinement);
 		prepare_training_sample(samples_gt_right, samples_right, optimization_vectors_right, optimization_vectors_left, right, left, refinement);
 	}
@@ -305,6 +313,9 @@ void ml_region_optimizer::reset_internal()
 ml_region_optimizer::ml_region_optimizer()
 {
 	reset_internal();
+	training_iteration = 0;
+	filename_left_prefix = "weights-left-";
+	filename_right_prefix = "weights-right-";
 }
 
 void ml_region_optimizer::reset(const RegionContainer& /*left*/, const RegionContainer& /*right*/)
@@ -395,6 +406,6 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<un
 
 void ml_region_optimizer::training()
 {
-	training_internal(samples_left, samples_gt_left, "weights-left.txt");
-	training_internal(samples_right, samples_gt_right, "weights-right.txt");
+	training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + ".txt");
+	training_internal(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + ".txt");
 }
