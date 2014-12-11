@@ -62,6 +62,10 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 		{
 			RegionInterval hyp_interval = region[i];
 			hyp_interval.move(dx, src.cols);
+			assert(hyp_interval.upper - hyp_interval.lower >= 0);
+			assert(hyp_interval.upper >= 0 && hyp_interval.upper <= src.cols);
+			assert(hyp_interval.lower >= 0 && hyp_interval.lower <= src.cols);
+
 			RegionInterval old_interval = old_region[i];
 
 			if(hyp_interval.lower != old_interval.lower)
@@ -74,10 +78,16 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 				sum += src(old_interval.y, old_interval.upper);
 				++count;
 			}
-
+			if(!(count > 0 ? (sum/count < 50) : true))
+			{
+				std::cout << (int)src(old_interval.y, old_interval.lower) << std::endl;
+				std::cout << (int)src(old_interval.y, old_interval.upper) << std::endl;
+			}
+			assert(count > 0 ? (sum/count < 50) : true);
 			old_region[i] = hyp_interval;
 		}
 		result[dx - dx_min] = std::make_pair(count, sum);
+		assert(count > 0 ? (sum/count < 50) : true);
 	}
 }
 

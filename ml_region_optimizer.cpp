@@ -39,6 +39,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
 {
 	cv::Mat disp = getDisparityBySegments(base);
+	//std::copy(disp.ptr<short>(91,0), disp.ptr<short>(91, base.image_size.width), std::ostream_iterator<int>(std::cout, ","));
+	//std::cout << "\n" << std::endl;
 	cv::Mat occmap = occlusionStat<short>(disp, 1.0);
 	int pot_trunc = 10;
 
@@ -179,9 +181,9 @@ void gather_region_optimization_vector(dst_type *dst_ptr, const DisparityRegion&
 		const src_type *base_ptr = optimization_vector_base.data() + (d-range.first)*ml_region_optimizer::vector_size_per_disp;
 		const dst_type *other_ptr = disp_optimization_vector.data();
 
-		//float *ndst_ptr = dst_ptr + (d-range.first)*vector_size_per_disp*2;
+		dst_type *ndst_ptr = dst_ptr + (d-range.first)*ml_region_optimizer::vector_size_per_disp*2;
 		//float *ndst_ptr = dst_ptr + vector_size_per_disp*2*(int)std::abs(d);
-		dst_type *ndst_ptr = dst_ptr + ml_region_optimizer::vector_size_per_disp*2*(crange - 1 - (int)std::abs(d));
+		//dst_type *ndst_ptr = dst_ptr + ml_region_optimizer::vector_size_per_disp*2*(crange - 1 - (int)std::abs(d));
 
 		for(int j = 0; j < ml_region_optimizer::vector_size_per_disp; ++j)
 			*ndst_ptr++ = *base_ptr++;
@@ -209,7 +211,7 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, const RegionContain
 	neural_network<double> net(dims);
 	//net.emplace_layer<vector_connected_layer>(vector_size_per_disp, vector_size_per_disp, vector_size);
 	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(2, vector_size_per_disp*2, vector_size);
+	net.emplace_layer<vector_connected_layer>(4, vector_size_per_disp*2, vector_size);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
@@ -239,6 +241,8 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, const RegionContain
 		normalize_feature_vector(region_optimization_vector, mean_normalization_vector, stddev_normalization_vector);
 		base.regions[j].disparity = net.predict(region_optimization_vector.data()) * sign;
 	}
+
+	refreshWarpedIdx(base);
 }
 
 void ml_region_optimizer::prepare_training_sample(std::vector<unsigned char>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
@@ -298,9 +302,12 @@ void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, con
 	}
 	else
 	{
-		optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, "weights-left.txt");
-		//refresh_base_optimization_vector(left, right, refinement);
-		optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, "weights-right.txt");
+		for(int i = 0; i <= training_iteration; ++i)
+		{
+			optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + ".txt");
+			optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + ".txt");
+			refresh_base_optimization_vector(left, right, refinement);
+		}
 	}
 }
 
@@ -313,7 +320,7 @@ void ml_region_optimizer::reset_internal()
 ml_region_optimizer::ml_region_optimizer()
 {
 	reset_internal();
-	training_iteration = 1;
+	training_iteration = 3;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
 }
@@ -378,14 +385,14 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<un
 	//neural_network<double> net (dims, crange, {dims, dims});
 	assert(dims == (ml_region_optimizer::vector_size_per_disp*2*crange)+ml_region_optimizer::vector_size);
 	neural_network<double> net(dims);
-	//net.emplace_layer<vector_connected_layer>(vector_size_per_disp, vector_size_per_disp, vector_size);
+	//net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp/2, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
 	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(2, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	net.emplace_layer<vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 
-	for(int i = 0; i < 101; ++i)
+	for(int i = 0; i < 121; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
 		net.training(samples, gt, 64);

@@ -42,9 +42,9 @@ template<typename disparity_type, typename T>
 void foreach_warped_pixel(const cv::Mat& disparity, float scaling, T func)
 {
 	#pragma omp parallel for default(none) shared(disparity, scaling, func)
-	for(int i = 0; i < disparity.rows; ++i)
+	for(int y = 0; y < disparity.rows; ++y)
 	{
-		const disparity_type* disp_ptr = disparity.ptr<disparity_type>(i);
+		const disparity_type* disp_ptr = disparity.ptr<disparity_type>(y,0);
 
 		for(int j = 0; j < disparity.cols; ++j)
 		{
@@ -52,7 +52,7 @@ void foreach_warped_pixel(const cv::Mat& disparity, float scaling, T func)
 			int x = j + cdisp * scaling;
 
 			if(x >= 0 && x < disparity.cols)
-				func(cv::Point(j,i), cv::Point(x,i), cdisp);
+				func(cv::Point(j,y), cv::Point(x,y), cdisp);
 		}
 	}
 }
@@ -70,6 +70,8 @@ cv::Mat occlusionStat(const cv::Mat& disparity, float scaling = 1.0f)
 
 	foreach_warped_pixel<disparity_type>(disparity, scaling, [&](cv::Point, cv::Point warped_pos, disparity_type){
 		stat_image.at<unsigned char>(warped_pos)++;
+		assert(stat_image.at<unsigned char>(warped_pos) < 50);
+
 	});
 
 	return stat_image;
