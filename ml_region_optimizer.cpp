@@ -70,7 +70,7 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 }
 
 template<typename region_type, typename InsertIterator>
-void region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<unsigned char> gt, InsertIterator it)
+void region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<short> gt, InsertIterator it)
 {
 	for(std::size_t i = 0; i < regions.size(); ++i)
 	{
@@ -78,7 +78,7 @@ void region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<unsig
 		int count = 0;
 
 		intervals::foreach_region_point(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end(), [&](cv::Point pt){
-			unsigned char value = gt(pt);
+			short value = gt(pt);
 			if(value != 0)
 			{
 				sum += value;
@@ -211,7 +211,7 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, const RegionContain
 	neural_network<double> net(dims);
 	//net.emplace_layer<vector_connected_layer>(vector_size_per_disp, vector_size_per_disp, vector_size);
 	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(4, vector_size_per_disp*2, vector_size);
+	net.emplace_layer<vector_connected_layer>(2, vector_size_per_disp*2, vector_size);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
@@ -245,10 +245,10 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, const RegionContain
 	refreshWarpedIdx(base);
 }
 
-void ml_region_optimizer::prepare_training_sample(std::vector<unsigned char>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
+void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
 {
 	dst_gt.reserve(dst_gt.size() + base.regions.size());
-	std::vector<unsigned char> gt;
+	std::vector<short> gt;
 	gt.reserve(base.regions.size());
 	region_ground_truth(base.regions, base.task.groundTruth, std::back_inserter(gt));
 
@@ -270,7 +270,8 @@ void ml_region_optimizer::prepare_training_sample(std::vector<unsigned char>& ds
 
 			dst_gt.push_back(gt[j]);
 
-			int diff = std::abs(std::abs(base.regions[j].disparity) - gt[j]);
+			//std::cout << base.regions[j].disparity << " vs " << gt[j] << std::endl;
+			int diff = std::abs(std::abs(base.regions[j].disparity) - std::abs(gt[j]));
 			if(diff == 0)
 				++base_correct;
 			if(diff < 5)
@@ -320,7 +321,7 @@ void ml_region_optimizer::reset_internal()
 ml_region_optimizer::ml_region_optimizer()
 {
 	reset_internal();
-	training_iteration = 3;
+	training_iteration = 0;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
 }
@@ -348,7 +349,7 @@ void gather_normalizers(std::vector<std::vector<T>>& data, std::vector<T>& mean_
 		val = 1.0 / std::sqrt(val);
 }
 
-void training_internal(std::vector<std::vector<double>>& samples, std::vector<unsigned char>& samples_gt, const std::string& filename)
+void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename)
 {
 	int crange = 256;
 
@@ -387,12 +388,12 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<un
 	neural_network<double> net(dims);
 	//net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp/2, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
 	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	net.emplace_layer<vector_connected_layer>(2, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 
-	for(int i = 0; i < 121; ++i)
+	for(int i = 0; i < 9; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
 		net.training(samples, gt, 64);

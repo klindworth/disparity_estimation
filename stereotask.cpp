@@ -103,19 +103,26 @@ void StereoTask::loadImages(const std::string& nameLeft, const std::string& name
 
 void StereoTask::loadGroundTruth(const std::string& nameGroundLeft, const std::string& nameGroundRight)
 {
-	groundLeft  = cv::imread(nameGroundLeft, CV_LOAD_IMAGE_GRAYSCALE);
-	groundRight = cv::imread(nameGroundRight, CV_LOAD_IMAGE_GRAYSCALE);
+	cv::Mat ground_temp_left = cv::imread(nameGroundLeft, CV_LOAD_IMAGE_GRAYSCALE);
+	cv::Mat ground_temp_right = cv::imread(nameGroundRight, CV_LOAD_IMAGE_GRAYSCALE);
 
 	filenameGroundLeft = nameGroundLeft;
 	filenameGroundRight =nameGroundRight;
 
-	if(!groundLeft.data)
+	if(ground_temp_left.data)
+	{
+		ground_temp_left.convertTo(groundLeft, CV_16SC1);
+		groundLeft *= -1;
+	}
+	else
 		std::cout << "no ground truth data for left image" << std::endl;
 
-	if(!groundRight.data)
+	if(ground_temp_right.data)
+		ground_temp_right.convertTo(groundRight, CV_16SC1);
+	else
 	{
 		if(groundLeft.data)
-			groundRight = warpDisparity<unsigned char>(groundLeft);
+			groundRight = warpDisparity<short>(groundLeft);
 		std::cout << "no ground truth data for right image" << std::endl;
 	}
 }

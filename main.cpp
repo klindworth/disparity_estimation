@@ -48,28 +48,65 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/highgui/highgui.hpp>
 
 
+template<typename region_type, typename InsertIterator>
+void region_ground_truth2(const std::vector<region_type>& regions, cv::Mat_<unsigned char> gt, InsertIterator it)
+{
+	for(std::size_t i = 0; i < regions.size(); ++i)
+	{
+		int sum = 0;
+		int count = 0;
+
+		intervals::foreach_region_point(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end(), [&](cv::Point pt){
+			unsigned char value = gt(pt);
+			if(value != 0)
+			{
+				sum += value;
+				++count;
+			}
+		});
+
+		*it = count > 0 ? std::round(sum/count) : 0;
+		++it;
+	}
+}
+
+cv::Mat_<unsigned char> region_ground_truth_image(const cv::Mat_<unsigned char>& disp, std::shared_ptr<segmentation_image<RegionDescriptor>> seg_image)
+{
+	std::vector<unsigned char> averages;
+	region_ground_truth2(seg_image->regions, disp, std::back_inserter(averages));
+	cv::Mat_<unsigned char> avg_image(disp.size());
+
+	for(std::size_t i = 0; i < seg_image->regions.size(); ++i)
+		intervals::setRegionValue(avg_image, seg_image->regions[i].lineIntervals, averages[i]);
+
+	return avg_image;
+}
 
 int main(int argc, char *argv[])
 {
 	/*cv::Mat image = cv::imread("test.png");
+	cv::Mat image_right = cv::imread("test_right.png");
+
 	segmentation_settings seg_settings;
 	seg_settings.algorithm = "superpixel";
 	seg_settings.superpixel_size = 225;
 	seg_settings.superpixel_compactness = 20.0f;
 	std::shared_ptr<segmentation_algorithm> segm = getSegmentationClass(seg_settings);
 	std::shared_ptr<segmentation_image<RegionDescriptor>> seg_image = segm->getSegmentationImage<segmentation_image<RegionDescriptor>>(image);
+	std::shared_ptr<segmentation_image<RegionDescriptor>> seg_image_right = segm->getSegmentationImage<segmentation_image<RegionDescriptor>>(image_right);
 
 	cv::Mat test = getWrongColorSegmentationImage(*seg_image);
 	cv::Mat_<unsigned char> disp = cv::imread("disp2.png", CV_LOAD_IMAGE_GRAYSCALE);
 
-	std::vector<unsigned char> averages = region_ground_truth(seg_image->regions, disp);
-	cv::Mat_<unsigned char> avg_image(disp.size());
+	cv::Mat_<unsigned char> dispImage = region_ground_truth_image(disp, seg_image);
 
-	for(std::size_t i = 0; i < seg_image->regions.size(); ++i)
-		intervals::setRegionValue(avg_image, seg_image->regions[i].lineIntervals, averages[i]);
+	cv::Mat dispWarped = warpDisparity<unsigned char>(disp, 1.0f);
+	cv::Mat_<unsigned char> dispImage_right = region_ground_truth_image(dispWarped, seg_image_right);
 
-	cv::imshow("avg", avg_image);
-
+	cv::imshow("right", dispImage_right);
+	cv::imshow("imright", image_right);
+	cv::imshow("avg", dispImage);
+	cv::imshow("image", image);
 	cv::imshow("test", test);
 	cv::waitKey();
 

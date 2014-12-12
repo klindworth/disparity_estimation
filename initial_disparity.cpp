@@ -654,14 +654,14 @@ void initial_disparity_algo::train(std::vector<StereoTask>& tasks)
 {
 	int subsampling = 1; //TODO avoid this
 	ml_region_optimizer optimizer;
-	//optimizer.set_training_mode(true);
+	optimizer.set_training_mode(true);
 	for(StereoTask& ctask : tasks)
 	{
 		std::cout << "task: " << ctask.name << std::endl;
 		matstore.startNewTask(ctask.name, ctask);
 		segment_based_disparity_it(ctask, m_config, m_refconfig, subsampling, optimizer);
 	}
-	//optimizer.training();
+	optimizer.training();
 }
 
 void initial_disparity_algo::writeConfig(cv::FileStorage &fs)

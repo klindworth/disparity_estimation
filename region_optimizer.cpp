@@ -78,16 +78,16 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 				sum += src(old_interval.y, old_interval.upper);
 				++count;
 			}
-			if(!(count > 0 ? (sum/count < 50) : true))
+			if(!(count > 0 ? (sum/count < 30) : true))
 			{
 				std::cout << (int)src(old_interval.y, old_interval.lower) << std::endl;
 				std::cout << (int)src(old_interval.y, old_interval.upper) << std::endl;
 			}
-			assert(count > 0 ? (sum/count < 50) : true);
+			assert(count > 0 ? (sum/count < 30) : true);
 			old_region[i] = hyp_interval;
 		}
 		result[dx - dx_min] = std::make_pair(count, sum);
-		assert(count > 0 ? (sum/count < 50) : true);
+		assert(count > 0 ? (sum/count < 30) : true);
 	}
 }
 

@@ -118,7 +118,7 @@ cv::Mat warpDisparity(const cv::Mat& disparity, float scaling = 1.0f)
 	cv::Mat warpedImage(disparity.size(), disparity.type(), cv::Scalar(0));
 
 	foreach_warped_pixel<disparity_type>(disparity, scaling, [&](cv::Point, cv::Point warped_pos, disparity_type disp){
-		warpedImage.at<disparity_type>(warped_pos) = absmax(warpedImage.at<disparity_type>(warped_pos), disp);
+		warpedImage.at<disparity_type>(warped_pos) = -absmax(warpedImage.at<disparity_type>(warped_pos), disp);
 	});
 
 	return warpedImage;

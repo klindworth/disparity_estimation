@@ -559,7 +559,7 @@ public:
 		for(std::size_t i = 0; i < data.size(); ++i)
 		{
 			int result = this->predict(data[i].data());
-			int expected = gt[i];
+			int expected = std::abs(gt[i]);
 
 			if(result == expected)
 				++correct;
@@ -650,7 +650,7 @@ public:
 			for(std::size_t j = offset; j < bound; ++j)
 			{
 				//std::cout << "offset: " << offset << ", j: " << j << std::endl;
-				training_sample(data[j].data(), gt[j]);
+				training_sample(data[j].data(), std::abs(gt[j]));
 			}
 			end_batch(batch_size);
 			//std::cout << "i: " << i << std::endl;

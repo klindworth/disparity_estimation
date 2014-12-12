@@ -45,13 +45,13 @@ public:
 
 private:
 	void refresh_base_optimization_vector(const RegionContainer& base, const RegionContainer& match, int delta);
-	void prepare_training_sample(std::vector<unsigned char>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta);
+	void prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta);
 	void optimize_ml(RegionContainer& base, const RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename);
 	void reset_internal();
 	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
 
 	std::vector<std::vector<double>> samples_left, samples_right;
-	std::vector<unsigned char> samples_gt_left, samples_gt_right;
+	std::vector<short> samples_gt_left, samples_gt_right;
 
 	int training_iteration;
 	std::string filename_left_prefix, filename_right_prefix;
