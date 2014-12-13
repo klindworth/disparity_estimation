@@ -35,14 +35,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void analyzeDisparityRange2(DisparityRegion& region)
 {
 	cv::Mat temp = region.disparity_costs.reshape(0,1);
-	region.stats.minima_ranges.clear();
-	intervals::convertMinimaRanges<float>(temp, std::back_inserter(region.stats.minima_ranges), region.stats.mean - region.stats.stddev);
+	std::vector<RegionInterval> minima_ranges;
+	intervals::convertMinimaRanges<float>(temp, std::back_inserter(minima_ranges), region.stats.mean - region.stats.stddev);
 
 	int minima_width = 0;
-	for(const RegionInterval& interval : region.stats.minima_ranges)
+	for(const RegionInterval& interval : minima_ranges)
 		minima_width += interval.length();
 
-	region.stats.confidence_range = region.stats.minima_ranges.size();
+	region.stats.confidence_range = minima_ranges.size();
 	region.stats.confidence_variance = (float)minima_width/region.disparity_costs.total();
 }
 
@@ -118,32 +118,31 @@ void analyzeDisparityRange(stat_t& cstat, const float* src_ptr, const float* der
 		confidence = 0.0f;
 
 	//find maxima
-	cstat.bad_minima.clear();
-	cstat.minima.clear();
+	std::vector<short> bad_minima, minima;
 	float good_threshold = mean-1.5*stddev;
 	float bad_threshold = mean;
 
 	if(derived_ptr[0] > 0 && src_ptr[0] < good_threshold)
-		cstat.minima.push_back(0);
+		minima.push_back(0);
 	else if(derived_ptr[0] > 0 && src_ptr[0] < bad_threshold)
-		cstat.bad_minima.push_back(0);
-	for(int k = 1; k < range-1; ++k)
+		bad_minima.push_back(0);
+	for(short k = 1; k < range-1; ++k)
 	{
 		if(derived_ptr[k-1] <= 0 && derived_ptr[k] >= 0)
 		{
 			//value check
 			if(src_ptr[k] < good_threshold)
-				cstat.minima.push_back(k);
+				minima.push_back(k);
 			else if(src_ptr[k] < bad_threshold)
-				cstat.bad_minima.push_back(k);
+				bad_minima.push_back(k);
 		}
 	}
 
-	typedef std::pair<int, float> rank_type;
+	typedef std::pair<short, float> rank_type;
 	std::vector<rank_type> ranking;
-	for(int idx : cstat.minima)
+	for(int idx : minima)
 		ranking.push_back(std::make_pair(idx, src_ptr[idx]));
-	for(int idx : cstat.bad_minima)
+	for(int idx : bad_minima)
 		ranking.push_back(std::make_pair(idx, src_ptr[idx]));
 
 	if(mean != 0.0f)
@@ -169,7 +168,7 @@ void analyzeDisparityRange(stat_t& cstat, const float* src_ptr, const float* der
 	cstat.stddev = stddev;
 	cstat.min = minval;
 	cstat.max = maxval;
-	cstat.confidence = confidence;
+	//cstat.confidence = confidence;
 	cstat.disparity_idx = min_disp;
 }
 

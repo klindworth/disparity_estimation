@@ -219,13 +219,9 @@ void RegionWidget::setData(std::shared_ptr<RegionContainer>& base, std::shared_p
 	std::vector<DisparityRegion>& regionsMatch = m_match->regions;
 
 	stat_t* pixelAnalysis = &(regionsBase[index].stats);
-	QString info = QString("min: %1, max: %2, mean: %3, stddev: %4, range: %5, confidence: %6,\n maxima: %7, badmaxima: %8, disparity: %9, confidence2: %10, sdilate: %12,\n confidence_range: %13, minima_variance: %14,base_disp: %15").arg(pixelAnalysis->min).arg(pixelAnalysis->max).arg(pixelAnalysis->mean).arg(pixelAnalysis->stddev).arg(pixelAnalysis->max-pixelAnalysis->min).arg(pixelAnalysis->confidence).arg(pixelAnalysis->minima.size()).arg(pixelAnalysis->bad_minima.size()).arg(pixelAnalysis->disparity_idx).arg(pixelAnalysis->confidence2).arg(regionsBase[index].dilation).arg(pixelAnalysis->confidence_range).arg(pixelAnalysis->confidence_variance).arg(regionsBase[index].base_disparity);
+	QString info = QString("min: %1, max: %2, mean: %3, stddev: %4, range: %5,\n disparity: %6, confidence2: %7, sdilate: %8,\n confidence_range: %9, minima_variance: %10,base_disp: %11").arg(pixelAnalysis->min).arg(pixelAnalysis->max).arg(pixelAnalysis->mean).arg(pixelAnalysis->stddev).arg(pixelAnalysis->max-pixelAnalysis->min).arg(pixelAnalysis->disparity_idx).arg(pixelAnalysis->confidence2).arg(regionsBase[index].dilation).arg(pixelAnalysis->confidence_range).arg(pixelAnalysis->confidence_variance).arg(regionsBase[index].base_disparity);
 	ui->stat->setText(info);
 
-	QString maximatest;
-	for(int idx : pixelAnalysis->minima)
-		maximatest += QString::number(idx+dispMin)+", ";
-	ui->stat2->setText(maximatest);
 	if(!delta)
 		ui->plot->setValues(regionsBase[index].disparity_costs.ptr<float>(0), &(regionsBase[index].stats), regionsBase[index].disparity_costs.size[0], regionsBase[index].disparity_offset);
 	else
@@ -291,12 +287,12 @@ void RegionWidget::showResultHistory(DisparityRegion &region)
 	header << "costs" << "disp" << "start" << "end" << "base";
 	ui->twResulthistory->setHeaderLabels(header);
 
-	for(const EstimationStep& step : region.results)
+	/*for(const EstimationStep& step : region.results)
 	{
 		QStringList item;
 		item << QString::number(step.costs) << QString::number(step.disparity) << QString::number(step.searchrange_start) << QString::number(step.searchrange_end) << QString::number(step.base_disparity);
 		ui->twResulthistory->addTopLevelItem(new QTreeWidgetItem(item));
-	}
+	}*/
 
 	optimizeWidth(ui->twResulthistory);
 }

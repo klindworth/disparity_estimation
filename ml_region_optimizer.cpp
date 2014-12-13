@@ -211,7 +211,9 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, const RegionContain
 	neural_network<double> net(dims);
 	//net.emplace_layer<vector_connected_layer>(vector_size_per_disp, vector_size_per_disp, vector_size);
 	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(2, vector_size_per_disp*2, vector_size);
+	net.emplace_layer<vector_connected_layer>(3, vector_size_per_disp*2, vector_size);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
@@ -321,7 +323,7 @@ void ml_region_optimizer::reset_internal()
 ml_region_optimizer::ml_region_optimizer()
 {
 	reset_internal();
-	training_iteration = 0;
+	training_iteration = 1;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
 }
@@ -368,16 +370,13 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	int dims = samples.front().size();
 	std::cout << "copy" << std::endl;
 
-	std::vector<short> gt(samples_gt.size());
-	std::copy(samples_gt.begin(), samples_gt.end(), gt.begin());
-
 	std::mt19937 rng;
 	std::uniform_int_distribution<> dist(0, samples.size() - 1);
 	for(std::size_t i = 0; i < samples.size(); ++i)
 	{
 		std::size_t exchange_idx = dist(rng);
 		std::swap(samples[i], samples[exchange_idx]);
-		std::swap(gt[i], gt[exchange_idx]);
+		std::swap(samples_gt[i], samples_gt[exchange_idx]);
 	}
 
 	//TODO: class statistics?
@@ -386,19 +385,21 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	//neural_network<double> net (dims, crange, {dims, dims});
 	assert(dims == (ml_region_optimizer::vector_size_per_disp*2*crange)+ml_region_optimizer::vector_size);
 	neural_network<double> net(dims);
-	//net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp/2, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	//net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
 	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(2, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	net.emplace_layer<vector_connected_layer>(3, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 
-	for(int i = 0; i < 9; ++i)
+	for(int i = 0; i < 21; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
-		net.training(samples, gt, 64);
+		net.training(samples, samples_gt, 64);
 		if(i%4 == 0)
-			net.test(samples, gt);
+			net.test(samples, samples_gt);
 	}
 
 	std::ofstream ostream(filename);

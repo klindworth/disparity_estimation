@@ -298,7 +298,7 @@ void CostmapViewer::rowSelected(int row, int col)
 
 	ui->plot->setValues(values, pixelAnalysis, m_costmap.size[2], 0); //FIXME
 
-	QString info = QString("min: %1, max: %2, mean: %3, stddev: %4, range: %5, confidence: %6, maxima: %7, badmaxima: %8, disparity: %9").arg(pixelAnalysis->min).arg(pixelAnalysis->max).arg(pixelAnalysis->mean).arg(pixelAnalysis->stddev).arg(pixelAnalysis->max-pixelAnalysis->min).arg(pixelAnalysis->confidence).arg(pixelAnalysis->minima.size()).arg(pixelAnalysis->bad_minima.size()).arg(pixelAnalysis->disparity_idx);
+	QString info = QString("min: %1, max: %2, mean: %3, stddev: %4, range: %5, disparity: %6").arg(pixelAnalysis->min).arg(pixelAnalysis->max).arg(pixelAnalysis->mean).arg(pixelAnalysis->stddev).arg(pixelAnalysis->max-pixelAnalysis->min).arg(pixelAnalysis->disparity_idx);
 
 	ui->rowinfo->setText(info);
 

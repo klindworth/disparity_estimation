@@ -139,7 +139,7 @@ int main(int argc, char *argv[])
 
 	//RGB tasks
 	//StereoTask testset("tasks/im2rgb");
-	FolderTestSet testset("tasks/kitti-training_small");
+	FolderTestSet testset("tasks/kitti-training_small-valid");
 	//StereoTask testset("tasks/kit3"); //5, 3 neuer problemfall?
 
 	//simulated (hard) tasks
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
 	config.optimizer.base_eval_refine = config.optimizer.base_eval2;
 	//config.enable_regionsplit = true;
 	//config.optimization_rounds = 3;
-	//config.verbose = true;
+	config.verbose = true;
 
 	RefinementConfig refconfig;
 	fs >> refconfig;

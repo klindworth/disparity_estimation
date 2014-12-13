@@ -168,7 +168,7 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 		step.searchrange_start = range.first;
 		step.searchrange_end = range.second;
 		step.base_disparity = regions[i].base_disparity;
-		regions[i].results.push_back(step);
+		//regions[i].results.push_back(step);
 	}
 }
 
@@ -301,7 +301,7 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 		step.searchrange_start = range.first;
 		step.searchrange_end = range.second;
 		step.base_disparity = regions[i].base_disparity;
-		regions[i].results.push_back(step);
+		//regions[i].results.push_back(step);
 	}
 }
 
@@ -340,7 +340,7 @@ void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleT
 	result = algorithm->getSegmentationImage<RegionContainer>(task.base);
 	result->task = task;
 
-	matstore.addMat(getWrongColorSegmentationImage(result->task.base.size(), result->regions), "segtest");
+	//matstore.addMat(getWrongColorSegmentationImage(result->task.base.size(), result->regions), "segtest");
 	std::cout << "regions count: " << result->segment_count << std::endl;
 }
 
@@ -504,7 +504,7 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 	cv::Mat opt_disp_left  = getDisparityBySegments(left);
 	cv::Mat opt_disp_right = getDisparityBySegments(right);
 
-	if(config.verbose)
+	/*if(config.verbose)
 	{
 		matstore.addMat(regionWiseImage<unsigned char>(left, [](const DisparityRegion& region){return (unsigned char)region.stats.minima.size();}), "minima-left");
 		matstore.addMat(regionWiseImage<float>(left, [](const DisparityRegion& region){return region.stats.stddev;}), "stddev-left");
@@ -521,7 +521,7 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 		cv::Mat warped = warpDisparity<short>(opt_disp_left);
 		cv::Mat occ_mat = occlusionMap<short>(opt_disp_left, warped);
 		matstore.addMat(getValueScaledImage<unsigned char, unsigned char>(occ_mat), "occ");
-	}
+	}*/
 }
 
 cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, const RefinementConfig& refconfig, int subsampling = 1)
@@ -654,14 +654,14 @@ void initial_disparity_algo::train(std::vector<StereoTask>& tasks)
 {
 	int subsampling = 1; //TODO avoid this
 	ml_region_optimizer optimizer;
-	optimizer.set_training_mode(true);
+	//optimizer.set_training_mode(true);
 	for(StereoTask& ctask : tasks)
 	{
 		std::cout << "task: " << ctask.name << std::endl;
 		matstore.startNewTask(ctask.name, ctask);
 		segment_based_disparity_it(ctask, m_config, m_refconfig, subsampling, optimizer);
 	}
-	optimizer.training();
+	//optimizer.training();
 }
 
 void initial_disparity_algo::writeConfig(cv::FileStorage &fs)

@@ -44,7 +44,8 @@ public:
 	MutualRegion(std::size_t idx) : index(idx), percent(0.0f) {}
 	MutualRegion(std::size_t idx, float per) : index(idx), percent(per) {}
 
-	std::size_t index;
+	//std::size_t index;
+	unsigned int index;
 	float percent;
 };
 
@@ -74,7 +75,7 @@ public:
 	unsigned char dilation;
 	char old_dilation;
 
-	std::vector<EstimationStep> results;
+	//std::vector<EstimationStep> results;
 	MutualRegion getMutualRegion(std::size_t idx, std::size_t disparity_idx);
 };
 

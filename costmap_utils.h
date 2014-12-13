@@ -41,14 +41,14 @@ typedef struct statistics {
 	float stddev;
 	float min;
 	float max;
-	float confidence;
+	//float confidence;
 	float confidence2;
 	float confidence_range;
 	float confidence_variance;
-	int disparity_idx;
-	std::vector<int> minima;
-	std::vector<int> bad_minima;
-	std::vector<RegionInterval> minima_ranges;
+	short disparity_idx;
+	//std::vector<short> minima;
+	//std::vector<short> bad_minima;
+	//std::vector<RegionInterval> minima_ranges;
 } stat_t;
 
 cv::Mat deriveCostmap(const cv::Mat &cost_map);

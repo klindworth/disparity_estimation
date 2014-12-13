@@ -185,8 +185,8 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		*result_ptr++ = neighbor_pot_values[i];
 		*result_ptr++ = lr_pot_values[i];
 		*result_ptr++ = neighbor_color_pot_values[i];
-		*result_ptr++ = org_size - occ_temp[i].first;
-		//*result_ptr++ = (float)occ_temp[i].first / org_size;
+		//*result_ptr++ = org_size - occ_temp[i].first;
+		*result_ptr++ = (float)occ_temp[i].first / org_size;
 	}
 	*result_ptr = baseRegion.disparity;
 }
@@ -204,7 +204,8 @@ disparity_hypothesis::disparity_hypothesis(const std::vector<float>& optimizatio
 
 float calculate_end_result(const float *raw_results, const disparity_hypothesis_weight_vector& wv)
 {
-	return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.neighbor_pot + raw_results[3] * wv.lr_pot + raw_results[4] * wv.neighbor_color_pot;
+	//return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.neighbor_pot + raw_results[3] * wv.lr_pot + raw_results[4] * wv.neighbor_color_pot;
+	return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.lr_pot + raw_results[3] * wv.neighbor_color_pot;
 }
 
 float calculate_end_result(int disp_idx, const float *raw_results, const disparity_hypothesis_weight_vector &wv)
