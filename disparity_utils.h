@@ -41,7 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 template<typename disparity_type, typename T>
 void foreach_warped_pixel(const cv::Mat& disparity, float scaling, T func)
 {
-	#pragma omp parallel for default(none) shared(disparity, scaling, func)
+	#pragma omp parallel for
 	for(int y = 0; y < disparity.rows; ++y)
 	{
 		const disparity_type* disp_ptr = disparity.ptr<disparity_type>(y,0);

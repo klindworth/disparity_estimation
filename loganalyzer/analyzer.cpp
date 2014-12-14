@@ -159,7 +159,7 @@ cv::Mat warpImageAdvanced(const cv::Mat& image, const cv::Mat& disparity, float 
 	cv::Mat warpedImage(image.size(), image.type(), cv::Scalar(0));
 	cv::Mat warpedDisparity(disparity.size(), disparity.type(), cv::Scalar(0));
 
-	#pragma omp parallel for default(none) shared(image, disparity, scaling, warpedImage, warpedDisparity)
+	#pragma omp parallel for
 	for(int i = 0; i < disparity.rows; ++i)
 	{
 		const image_type* dataRight = image.ptr<image_type>(i);

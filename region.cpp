@@ -73,7 +73,7 @@ void labelLRCheck(const cv::Mat_<int>& labelsMatch, DisparityRegion& region, con
 		});
 
 		region.other_regions[i].reserve(hist.size());
-		double normalizer = 1.0/hist.total();
+		double normalizer = hist.total() > 0 ? 1.0/hist.total() : 0.0;
 		for(auto it = hist.begin(); it != hist.end(); ++it)
 		{
 			double mutual_percent = (double)it->second * normalizer;

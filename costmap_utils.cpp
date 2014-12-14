@@ -208,7 +208,7 @@ cv::Mat windowSum(cv::Mat& cost_map_old, int windowsize)
 	const int x_min = windowsize/2;
 	const int x_max = cost_map_old.size[1] - windowsize/2;
 
-	#pragma omp parallel for default(none) shared(cost_map, cost_map_old, windowsize)
+	#pragma omp parallel for shared(cost_map, cost_map_old, windowsize)
 	for(int y = y_min; y < y_max; ++y)
 	{
 		for(int x = x_min; x < x_max; ++x)
