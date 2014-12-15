@@ -157,7 +157,7 @@ TEST(SimpleNN, GradientDoubleVectorLayer)
 
 void vector_connected_layer_test()
 {
-	vector_connected_layer<double> test(7,2,2,1);
+	vector_connected_layer<double> test(true, 7,2,2,1);
 
 	std::vector<double> test_input {1,2,3,4,5,6,7};
 	std::vector<double> expected {3,7,11, 6, 14, 22, 7};

@@ -75,9 +75,10 @@ class layer_base
 public:
 	enum phase {Testing, Training};
 
-	layer_base(int in_dim, int out_dim, int weights, int bias_dim) : cthread_data(omp_get_max_threads(), layer_thread_data<T>(in_dim, out_dim, weights, bias_dim)){
+	layer_base(bool propagate_down, int in_dim, int out_dim, int weights, int bias_dim) : cthread_data(omp_get_max_threads(), layer_thread_data<T>(in_dim, out_dim, weights, bias_dim)) {
 		this->in_dim = in_dim;
 		this->out_dim = out_dim;
+		this->propagate_down = propagate_down;
 		this->weights.resize(weights);
 		this->weights_transposed.resize(weights);
 		this->bias.resize(bias_dim);
@@ -264,13 +265,15 @@ protected:
 	std::vector<T> dW, dB;
 
 	std::vector<layer_thread_data<T>> cthread_data;
+
+	bool propagate_down;
 };
 
 template<typename T>
 class fully_connected_layer : public layer_base<T>
 {
 public:
-	fully_connected_layer(int in_dim, int out_dim) : layer_base<T>(in_dim, out_dim, in_dim*out_dim, out_dim)
+	fully_connected_layer(bool propagate_down, int in_dim, int out_dim) : layer_base<T>(propagate_down, in_dim, out_dim, in_dim*out_dim, out_dim)
 	{std::cout << "fully connected layer" << std::endl;}
 
 	void forward_propagation(const T* bottom_data) override
@@ -326,8 +329,11 @@ public:
 		}*/
 
 		//propagate down
-		//blas_gemv(cdata.gradient_data.data(), this->weights.data(), true, this->out_dim, this->in_dim, top_gradient);
-		blas_gemv(cdata.gradient_data.data(), this->weights_transposed.data(), false, this->in_dim, this->out_dim, top_gradient);
+		if(this->propagate_down)
+		{
+			//blas_gemv(cdata.gradient_data.data(), this->weights.data(), true, this->out_dim, this->in_dim, top_gradient);
+			blas_gemv(cdata.gradient_data.data(), this->weights_transposed.data(), false, this->in_dim, this->out_dim, top_gradient);
+		}
 
 		/*T* cdw = cdata.dW.data();
 		for(int j = 0; j < this->out_dim; ++j)
@@ -353,7 +359,7 @@ template<typename T>
 class relu_layer : public layer_base<T>
 {
 public:
-	relu_layer(int dim) : layer_base<T>(dim, dim, 0, 0) {std::cout << "relu-layer" << std::endl;}
+	relu_layer(bool propagate_down, int dim) : layer_base<T>(propagate_down, dim, dim, 0, 0) {std::cout << "relu-layer" << std::endl;}
 
 	void forward_propagation(const T *bottom_data) override
 	{
@@ -368,10 +374,13 @@ public:
 
 	void backward_propagation(const T* bottom_data, const T* top_gradient) override
 	{
-		layer_thread_data<T>& cdata = this->thread_data();
+		if(this->propagate_down)
+		{
+			layer_thread_data<T>& cdata = this->thread_data();
 
-		for(int i = 0; i < this->in_dim; ++i)
-			cdata.gradient_data[i] = bottom_data[i] > 0 ? top_gradient[i] : 0;
+			for(int i = 0; i < this->in_dim; ++i)
+				cdata.gradient_data[i] = bottom_data[i] > 0 ? top_gradient[i] : 0;
+		}
 	}
 };
 
@@ -380,7 +389,7 @@ class dropout_layer : public layer_base<T>
 {
 public:
 	typedef layer_base<T> Base;
-	dropout_layer(int dim) : layer_base<T>(dim, dim, 0, 0), dropout_rate(0.25), mask(this->thread_max(), std::vector<unsigned char>(dim, 1)), rng(this->thread_max())
+	dropout_layer(bool propagate_down, int dim) : layer_base<T>(propagate_down, dim, dim, 0, 0), dropout_rate(0.25), mask(this->thread_max(), std::vector<unsigned char>(dim, 1)), rng(this->thread_max())
 	{std::cout << "dropout" << std::endl;}
 
 	void forward_propagation(const T* bottom_data) override
@@ -419,11 +428,14 @@ public:
 
 	void backward_propagation(const T*, const T* top_gradient) override
 	{
-		layer_thread_data<T>& cdata = this->thread_data();
-		const std::vector<unsigned char>& cmask = mask[this->thread_num()];
+		if(this->propagate_down)
+		{
+			layer_thread_data<T>& cdata = this->thread_data();
+			const std::vector<unsigned char>& cmask = mask[this->thread_num()];
 
-		for(int i = 0; i < this->in_dim; ++i)
-			cdata.gradient_data[i] = top_gradient[i] * cmask[i];
+			for(int i = 0; i < this->in_dim; ++i)
+				cdata.gradient_data[i] = top_gradient[i] * cmask[i];
+		}
 	}
 
 protected:
@@ -436,7 +448,7 @@ template<typename T>
 class softmax_output_layer : public layer_base<T>
 {
 public:
-	softmax_output_layer(int in_dim) : layer_base<T>(in_dim, in_dim, 0, 0), temp(this->thread_max(), std::vector<T>(in_dim))
+	softmax_output_layer(bool propagate_down, int in_dim) : layer_base<T>(propagate_down, in_dim, in_dim, 0, 0), temp(this->thread_max(), std::vector<T>(in_dim))
 	{std::cout << "softmax output layer" << std::endl;}
 
 	void forward_propagation(const T* bottom_data) override
@@ -481,44 +493,6 @@ public:
 };
 
 template<typename T>
-class tanh_entropy_output_layer : public layer_base<T>
-{
-public:
-	tanh_entropy_output_layer(int in_dim) : layer_base<T>(in_dim, in_dim, 0, 0), temp(this->thread_max(), std::vector<T>(in_dim))
-	{std::cout << "softmax output layer" << std::endl;}
-
-	void forward_propagation(const T* bottom_data) override
-	{
-		layer_thread_data<T>& cdata = this->thread_data();
-
-		for(int i = 0; i < this->out_dim; ++i)
-			cdata.output_data[i] = std::tanh(bottom_data[i]);
-	}
-
-	void backward_propagation(const T* bottom_data, const T* gt) override
-	{
-		layer_thread_data<T>& cdata = this->thread_data();
-
-		T error_sum = 0;
-		//std::cout << "backprop softmax" << std::endl;
-		for(int i = 0; i < this->out_dim; ++i)
-		{
-			//std::cout << "[" << i << "]: " << bottom_data[i] - gt[i] << std::endl;
-			std::cout << bottom_data[i] << " vs " << gt[i] << std::endl;
-			cdata.gradient_data[i] = bottom_data[i] - gt[i];
-			error_sum += std::abs(cdata.gradient_data[i]);
-		}
-
-		std::cout << "error_sum: " << error_sum << std::endl;
-
-		//std::copy(this->gradient_data.begin(), this->gradient_data.end(), std::ostream_iterator<T>(std::cout, ", "));
-		//std::cout << std::endl;
-	}
-
-	std::vector<std::vector<T>> temp;
-};
-
-template<typename T>
 class neural_network
 {
 public:
@@ -544,7 +518,8 @@ public:
 	template<template<typename Ti> class layer_type, typename... args_type>
 	void emplace_layer(args_type... args)
 	{
-		layers.push_back(std::make_shared<layer_type<T>>(out_dim, args...));
+		bool propagate = layers.size() > 0 ? true : false;
+		layers.push_back(std::make_shared<layer_type<T>>(propagate, out_dim, args...));
 		out_dim = layers.back()->output_dimension();
 	}
 
@@ -730,8 +705,8 @@ template<typename T>
 class vector_connected_layer : public layer_base<T>
 {
 public:
-	vector_connected_layer(int in_dim, int out_dim, int vectorsize, int passthrough) :
-		layer_base<T>(in_dim, (in_dim - passthrough)/vectorsize*out_dim + passthrough, vectorsize*out_dim, out_dim), channels_out(out_dim), vectorsize(vectorsize), passthrough(passthrough)
+	vector_connected_layer(bool propagate_down, int in_dim, int out_dim, int vectorsize, int passthrough) :
+		layer_base<T>(propagate_down, in_dim, (in_dim - passthrough)/vectorsize*out_dim + passthrough, vectorsize*out_dim, out_dim), channels_out(out_dim), vectorsize(vectorsize), passthrough(passthrough)
 	{std::cout << "vector connected layer" << std::endl;}
 
 	void forward_propagation(const T* bottom_data) override
@@ -760,16 +735,11 @@ public:
 	void backward_propagation(const T* bottom_data, const T* top_gradient) override
 	{
 		layer_thread_data<T>& cdata = this->thread_data();
-		//TODO: propagate down:
-		//blas_gemv(cdata.gradient_data.data(), this->weights_transposed.data(), false, this->in_dim, this->out_dim, top_gradient);
-		//blas_gemv(cdata.gradient_data.data(), this->weights.data(), true, this->out_dim, this->in_dim, top_gradient);
-
-
 
 		int channels_in = (this->in_dim - passthrough)/vectorsize;
 
-		blas_gemm(cdata.gradient_data.data(), top_gradient, true, channels_out, channels_in, this->weights.data(), false, vectorsize, channels_out);
-
+		if(this->propagate_down)
+			blas_gemm(cdata.gradient_data.data(), top_gradient, true, channels_out, channels_in, this->weights.data(), false, vectorsize, channels_out);
 		blas_gemm(cdata.dW.data(), top_gradient, false, channels_out, channels_in, bottom_data, false, channels_in, vectorsize, 1.0, 1.0);
 
 		const T* cgradient = top_gradient;

@@ -49,6 +49,12 @@ public:
 	}
 };
 
+/**
+ * This class implements a sparse counter. It's basically a map, but you can always call increment.
+ * If that value didn't occur earlier, a new value is inserted into the map, otherwise the already existing value will be incremented.
+ * Therefore the type of the data is always int, but you can choose the key type. This is useful for implementing a 1d/2d/3d type of the the sparse counter.
+ * There are predefinied types for 1d (sparse_histogramm) and 2d (sparse_2d_histogramm).
+ */
 template<typename index_type_t, typename compare_obj>
 class sparse_counter
 {
