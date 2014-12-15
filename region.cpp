@@ -26,15 +26,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region.h"
 #include "genericfunctions.h"
 #include "sparse_counter.h"
+#include "disparity_utils.h"
 
 #include <iterator>
-#include <cstdlib>
-
 #include <segmentation/intervals.h>
 #include <segmentation/intervals_algorithms.h>
-#include "misc.h"
-#include "disparity_utils.h"
 #include <segmentation/region_descriptor_algorithms.h>
+
 
 DisparityRegion::DisparityRegion()
 {
@@ -203,4 +201,13 @@ MutualRegion DisparityRegion::getMutualRegion(std::size_t idx, std::size_t dispa
 		return MutualRegion(idx);
 	else
 		return *it;
+}
+
+void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm)
+{
+	result = algorithm->getSegmentationImage<RegionContainer>(task.base);
+	result->task = task;
+
+	//matstore.addMat(getWrongColorSegmentationImage(result->task.base.size(), result->regions), "segtest");
+	std::cout << "regions count: " << result->segment_count << std::endl;
 }

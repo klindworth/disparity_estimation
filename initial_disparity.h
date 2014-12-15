@@ -27,7 +27,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define INITIAL_DISPARITY_H
 
 #include <vector>
-#include <functional>
 #include <memory>
 #include "configrun.h"
 #include "refinement.h"
@@ -39,20 +38,15 @@ namespace cv {
 class StereoTask;
 class StereoSingleTask;
 class DisparityRegion;
-class InitialDisparityConfig;
-class RefinementConfig;
 class RegionContainer;
 class segmentation_algorithm;
 class RegionInterval;
 class RegionDescriptor;
 class region_optimizer;
 
-void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm);
 void generateRegionInformation(RegionContainer& left, RegionContainer& right);
 
-//void getRegionDisparity(SegRegion& pixel_idx, const cv::Mat &base, const cv::Mat &match, int dispMin, int dispMax, unsigned int dilate_grow);
 std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config, const RefinementConfig& refconfig, int subsampling, region_optimizer& optimizer);
-//std::pair<cv::Mat, cv::Mat> segment_based_disparity_lss(StereoTask& task, const InitialDisparityConfig &config, std::shared_ptr<segmentation_algorithm>& algorithm);
 
 class InitialDisparityConfig
 {
@@ -63,8 +57,6 @@ public:
 	int dilate_step;
 	bool dilate_grow;
 	bool enable_refinement;
-	bool enable_costsmoothing;
-	int occ_rounds;
 	int region_refinement_delta;
 	int region_refinement_rounds;
 

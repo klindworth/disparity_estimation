@@ -245,6 +245,8 @@ inline float gather_neighbor_color_weights_from_cache(std::vector<float>& weight
 
 cv::Mat getDisparityBySegments(const RegionContainer &container);
 
+void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm);
+
 int reenumerate(cv::Mat& labels, int old_count);
 void replace_neighbor_idx(std::vector<RegionDescriptor>& regions, std::size_t old_idx, std::size_t new_idx);
 

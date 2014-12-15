@@ -65,8 +65,6 @@ Entropies calculateEntropies(StereoSingleTask task, bool soft, unsigned int wind
 	cv::Mat base  = quantizeImage(task.baseGray, quantizer);
 	cv::Mat match = quantizeImage(task.matchGray, quantizer);
 
-	//long long start = cv::getCPUTickCount();
-
 	if(!soft)
 	{
 		result.XY = slidingJointWindow<slidingJointEntropyInternal<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
@@ -79,12 +77,6 @@ Entropies calculateEntropies(StereoSingleTask task, bool soft, unsigned int wind
 		result.X  = slidingWindow<slidingSoftEntropyInternal<quantizer> >(base,  windowsize);
 		result.Y  = slidingWindow<slidingSoftEntropyInternal<quantizer> >(match, windowsize);
 	}
-	//matstore.addMat(baseOriginal, matchOriginal, H_XY, "joint entropy", 11, true);
-	//showMatTable(H_X, "h_x");
-	//showMatTable(H_Y, "h_Y");
-
-	//start = cv::getCPUTickCount() - start;
-	//std::cout << "entropy " << start << std::endl;
 
 	return result;
 }
@@ -196,48 +188,6 @@ cv::Mat InformationTheoreticDistance(StereoSingleTask task, IT_Metric metric, bo
 
 	assert(false);
 	return cv::Mat();
-}
-
-template<int windowsize, int quantizer>
-cv::Mat slidingVariationOfInformation(StereoSingleTask task)
-{
-	return InformationTheoreticDistance<variation_of_information_calc<float>, quantizer>(task, false, windowsize);
-}
-
-template<int windowsize, int quantizer>
-cv::Mat slidingNormalizedVariationOfInformation(StereoSingleTask task)
-{
-	return InformationTheoreticDistance<normalized_variation_of_information_calc<float>, quantizer>(task, false, windowsize);
-}
-
-template<int windowsize, int quantizer>
-cv::Mat slidingNormalizedInformationDistance(StereoSingleTask task)
-{
-	return InformationTheoreticDistance<normalized_information_distance_calc<float>, quantizer>(task, false, windowsize);
-}
-
-template<int windowsize, int quantizer>
-cv::Mat slidingMutalInformation(StereoSingleTask task)
-{
-	return InformationTheoreticDistance<mutual_information_calc<float>, quantizer>(task, false, windowsize);
-}
-
-template<int windowsize, int quantizer>
-cv::Mat slidingSoftMutalInformation(StereoSingleTask task)
-{
-	return InformationTheoreticDistance<mutual_information_calc<float>, quantizer>(task, true, windowsize);
-}
-
-template<int windowsize, int quantizer>
-cv::Mat slidingSoftNormalizedVariationOfInformation(StereoSingleTask task)
-{
-	return InformationTheoreticDistance<normalized_variation_of_information_calc<float>, quantizer>(task, true, windowsize);
-}
-
-template<int windowsize, int quantizer>
-cv::Mat slidingSoftNormalizedInformationDistance(StereoSingleTask task)
-{
-	return InformationTheoreticDistance<normalized_information_distance_calc<float>, quantizer>(task, true, windowsize);
 }
 
 #endif // IT_METRICS_H

@@ -301,11 +301,9 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const InitialDisparityConfi
 {
 	stream << "metric_type" << config.metric_type;
 	stream << "configname" << config.name;
-	stream << "cost_smoothing" << config.enable_costsmoothing;
 	stream << "dilate" << (int)config.dilate << "refinement" << config.enable_refinement;
 	stream << "verbose" << config.verbose;
 	stream << "dilate_grow" << config.dilate_grow << "dilate_step" << config.dilate_step;
-	stream << "occ_rounds" << config.occ_rounds;
 	stream << "region_refinement_delta" << config.region_refinement_delta;
 	stream << "region_refinement_rounds" << config.region_refinement_rounds;
 
@@ -322,13 +320,11 @@ void readInitialDisparityConfig(const cv::FileNode& stream, InitialDisparityConf
 	stream["dilate_step"] >> config.dilate_step;
 	stream["dilate_grow"] >> config.dilate_grow;
 	stream["dilate"] >> dilate;
-	stream["occ_rounds"] >> config.occ_rounds;
 	stream["region_refinement_delta"] >> config.region_refinement_delta;
 	stream["region_refinement_rounds"] >> config.region_refinement_rounds;
 
 	config.dilate = dilate;
 	stream["refinement"] >> config.enable_refinement;
-	stream["cost_smoothing"] >> config.enable_costsmoothing;
 
 	stream["verbose"] >> config.verbose;
 

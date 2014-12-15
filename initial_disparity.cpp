@@ -332,15 +332,6 @@ int cachedSegmentation(StereoSingleTask& task, cv::Mat_<int>& labels, std::share
 	return regions_count;
 }
 
-void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm)
-{
-	result = algorithm->getSegmentationImage<RegionContainer>(task.base);
-	result->task = task;
-
-	//matstore.addMat(getWrongColorSegmentationImage(result->task.base.size(), result->regions), "segtest");
-	std::cout << "regions count: " << result->segment_count << std::endl;
-}
-
 //untested
 cv::Mat convertDisparityFromPartialCostmap(const cv::Mat& disparity, const cv::Mat& rangeCenters, int subsampling = 1)
 {
@@ -381,16 +372,6 @@ void generateRegionInformation(RegionContainer& left, RegionContainer& right)
 	std::cout << "warped_idx" << std::endl;
 	refreshWarpedIdx(left);
 	refreshWarpedIdx(right);
-}
-
-void generateFundamentalRegionInformation(StereoTask& task, RegionContainer& left, RegionContainer& right, int delta)
-{
-	std::cout << "stats" << std::endl;
-
-	generateStats(left.regions, task.forward, delta);
-	generateStats(right.regions, task.backward, delta);
-
-	generateRegionInformation(left, right);
 }
 
 std::vector<ValueRegionInterval<short> > getIntervalDisparityBySegments(const RegionContainer& container, std::size_t exclude)
@@ -490,7 +471,9 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 		matstore.addMat(createDisparityImage(initial_disp_right), "right_left");
 	}
 
-	generateFundamentalRegionInformation(task, left, right, refinement);
+	generateRegionInformation(left, right);
+	generateStats(left.regions, task.left, refinement);
+	generateStats(right.regions, task.right, refinement);
 
 	optimizer.run(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
 	//run_optimization(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
