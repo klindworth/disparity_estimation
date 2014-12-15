@@ -105,7 +105,7 @@ void RegionWidget::mutualDisparity(DisparityRegion& baseRegion, RegionContainer&
 	cv::Mat disp = getDisparityBySegments(base);
 	cv::Mat occmap = occlusionStat<short>(disp, 1.0);
 	//cv::imshow("occ_test", getValueScaledImage<unsigned char, unsigned char>(occmap));
-	intervals::substractRegionValue<unsigned char>(occmap, baseRegion.warped_interval, 1);
+	intervals::substract_region_value<unsigned char>(occmap, baseRegion.warped_interval, 1);
 
 	tree->clear();
 	QStringList header;

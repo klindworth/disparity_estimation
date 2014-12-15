@@ -118,7 +118,7 @@ void difference(InputIterator1 base_it, InputIterator1 base_end, InputIterator2 
 }
 
 template<typename dst_type>
-void setRegionValue(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx, dst_type value)
+void set_region_value(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx, dst_type value)
 {
 	for(const RegionInterval& interval : pixel_idx)
 	{
@@ -128,12 +128,17 @@ void setRegionValue(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx, 
 }
 
 template<>
-inline void setRegionValue(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx, unsigned char value)
+inline void set_region_value(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx, unsigned char value)
 {
 	for(const RegionInterval& interval : pixel_idx)
 		memset(dst.ptr<unsigned char>(interval.y, interval.lower), value, interval.length());
 }
 
+/**
+ * @brief Calls func for every pixel in an interval. The function must accept the position as parameter
+ * @param interval Interval
+ * @param func Function that accepts the coordinates as cv::Point
+ */
 template<typename lambda_type>
 inline void foreach_interval_point(const RegionInterval& interval, lambda_type func)
 {
@@ -141,6 +146,12 @@ inline void foreach_interval_point(const RegionInterval& interval, lambda_type f
 		func(cv::Point(x, interval.y));
 }
 
+/**
+ * @brief Calls func for every pixel in a region. The function must accept the position as parameter
+ * @param it Start iterator of the range of RegionIntervals
+ * @param end End iterator of the range of RegionIntervals
+ * @param func Function that accepts the coordinates as cv::Point
+ */
 template<typename Iterator, typename lambda_type>
 inline void foreach_region_point(Iterator it, Iterator end, lambda_type func)
 {
@@ -148,24 +159,30 @@ inline void foreach_region_point(Iterator it, Iterator end, lambda_type func)
 		foreach_interval_point(*it, func);
 }
 
+/**
+ * Adds within a region in dst the value change. The region is defined by the RegionIntervals in interval_container
+ * @param dst Matrix that will be modified
+ * @param interval_container Region within the dst matrix that will be modified
+ * @param change Value that will be added
+ */
 template<typename dst_type>
-void addRegionValue(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx, dst_type change)
+void add_region_value(cv::Mat& dst, const std::vector<RegionInterval>& interval_container, dst_type change)
 {
-	foreach_region_point(pixel_idx.begin(), pixel_idx.end(), [=,&dst](cv::Point pt){
+	foreach_region_point(interval_container.begin(), interval_container.end(), [=,&dst](cv::Point pt){
 		dst.at<dst_type>(pt) += change;
 	});
 }
 
+/**
+ * Subtracts within a region in dst the value change. The region is defined by the RegionIntervals in interval_container
+ * @param dst Matrix that will be modified
+ * @param interval_container Region within the dst matrix that will be modified
+ * @param change Value that will be substracted
+ */
 template<typename dst_type>
-void substractRegionValue(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx, dst_type change)
+void substract_region_value(cv::Mat& dst, const std::vector<RegionInterval>& interval_container, dst_type change)
 {
-	/*for(const RegionInterval& cinterval : pixel_idx)
-	{
-		for(int x = cinterval.lower; x < cinterval.upper; ++x)
-			dst.at<dst_type>(cinterval.y, x) -= change;
-	}*/
-
-	foreach_region_point(pixel_idx.begin(), pixel_idx.end(), [=,&dst](cv::Point pt){
+	foreach_region_point(interval_container.begin(), interval_container.end(), [=,&dst](cv::Point pt){
 		dst.at<dst_type>(pt) -= change;
 	});
 }
@@ -174,13 +191,13 @@ void substractRegionValue(cv::Mat& dst, const std::vector<RegionInterval>& pixel
 /**
  * Calls a factory function every time a different interval occurs in the cv::Mat
  * @param values The matrix with the values in it.
- * @param factory The function is called, every time a different interval ends.
+ * @param factory The function is called, every time an interval ends.
  * Could be used to construct a new interval with the information passed to the function
- * (line, start and end of the intervall, value within the interval) std::function<void(std::size_t, std::size_t, std::size_t, value_type)>
+ * (line, start and end of the intervall, value within the interval)
  * @param cmp_func Determines if two values belong to the same interval. The function should return true, if the two values should belong together.
  */
 template<typename value_type, typename factory_type, typename cmp_type>
-void convertGeneric(const cv::Mat& values, factory_type factory, cmp_type cmp_func)
+void convert_generic(const cv::Mat& values, factory_type factory, cmp_type cmp_func)
 {
 	assert(values.dims == 2);
 
@@ -208,29 +225,41 @@ void convertGeneric(const cv::Mat& values, factory_type factory, cmp_type cmp_fu
 	}
 }
 
+/**
+ * @brief Every time the value changes in the matrix, a new interval will be created.
+ * [11122333] will trigger three calls of the factory function for [111],[22] and [333]
+ * @param values
+ * @param factory Function of type (int x, int lower, int upper, value_type value), that will be called, every time a new interval was discovered
+ */
 template<typename value_type, typename factory_type>
-void convertDifferential(const cv::Mat& values, factory_type factory)
+void convert_differential(const cv::Mat& values, factory_type factory)
 {
 	auto cmp_func = [](value_type last, value_type current) {
 		return (last == current);
 	};
 
-	convertGeneric<value_type>(values, factory, cmp_func);
+	convert_generic<value_type>(values, factory, cmp_func);
 }
 
 template<typename value_type, typename InserterIterator>
-void convertFromMatToValue(const cv::Mat_<value_type>& values, InserterIterator inserter)
+void convert_mat_to_value(const cv::Mat_<value_type>& values, InserterIterator inserter)
 {
 	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, value_type value) {
 		*inserter = ValueRegionInterval<value_type>(y,lower,upper, value);
 		++inserter;
 	};
 
-	convertDifferential<value_type>(values, factory);
+	convert_differential<value_type>(values, factory);
 }
 
+/**
+ * Creates a new interval, each time a range of search_value is discovered in the matrix values.
+ * E.g. if the search_value is 3, and values is [1233453332], two intervals will be created [33] and [333], the rest will be ignored,
+ * @param inserter Container in which the RegionIntervals will be inserted
+ * @param search_value Every range of search_value in values will create a new interval
+ */
 template<typename value_type, typename InserterIterator>
-void turnValueIntoIntervals(const cv::Mat_<value_type>& values, InserterIterator inserter, value_type search_value)
+void turn_value_into_intervals(const cv::Mat_<value_type>& values, InserterIterator inserter, value_type search_value)
 {
 	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, value_type value) {
 		if(value == search_value)
@@ -240,11 +269,11 @@ void turnValueIntoIntervals(const cv::Mat_<value_type>& values, InserterIterator
 		}
 	};
 
-	convertDifferential<value_type>(values, factory);
+	convert_differential<value_type>(values, factory);
 }
 
 template<typename value_type, typename InserterIterator>
-void convertMinimaRanges(const cv::Mat_<value_type>& values, InserterIterator inserter, value_type threshold)
+void convert_minima_ranges(const cv::Mat_<value_type>& values, InserterIterator inserter, value_type threshold)
 {
 	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, value_type value) {
 		if(value < threshold)
@@ -258,7 +287,7 @@ void convertMinimaRanges(const cv::Mat_<value_type>& values, InserterIterator in
 		return (last > threshold && current > threshold) || (last <= threshold && current <= threshold);
 	};
 
-	convertGeneric<value_type>(values, factory, cmp_func);
+	convert_generic<value_type>(values, factory, cmp_func);
 }
 
 }

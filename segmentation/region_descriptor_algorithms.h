@@ -73,7 +73,7 @@ cv::Mat_<T> set_regionwise(cv::Size size, const std::vector<reg_type>& regions, 
 	cv::Mat_<T> result(size, 0);
 
 	parallel_region(regions.begin(), regions.end(), [&](const reg_type& region) {
-		intervals::setRegionValue<T>(result, region.lineIntervals, func(region));
+		intervals::set_region_value<T>(result, region.lineIntervals, func(region));
 	});
 
 	return result;
@@ -107,7 +107,7 @@ cv::Mat_<int> generate_label_matrix(cv::Size size, const std::vector<reg_type>& 
 
 	for(std::size_t i = 0; i < regions.size(); ++i)
 	{
-		intervals::setRegionValue<int>(result, regions[i].lineIntervals, (int)i);
+		intervals::set_region_value<int>(result, regions[i].lineIntervals, (int)i);
 	}
 
 	return result;
@@ -128,7 +128,7 @@ void fillRegionDescriptors(Iterator begin, Iterator end, const cv::Mat_<label_ty
 		(*(begin + value)).lineIntervals.push_back(RegionInterval(y, lower, upper));
 	};
 
-	intervals::convertDifferential<label_type>(labels, factory);
+	intervals::convert_differential<label_type>(labels, factory);
 
 	parallel_region(begin, end, [&](RegionDescriptor& region){
 		//compute size

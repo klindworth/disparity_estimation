@@ -256,7 +256,7 @@ void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization
 		int thread_idx = omp_get_thread_num();
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
-		intervals::substractRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
+		intervals::substract_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
@@ -268,7 +268,7 @@ void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization
 				baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - range.first), optimization_vectors[i].data(), stat_eval);
 		}
 
-		intervals::addRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
+		intervals::add_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 	}
 }
 

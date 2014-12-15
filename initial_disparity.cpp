@@ -444,16 +444,16 @@ std::vector<RegionInterval> exposureVector(const cv::Mat& occlusionMap)
 	std::vector<RegionInterval> exposure;
 
 	const cv::Mat_<unsigned char> occ = occlusionMap;
-	intervals::turnValueIntoIntervals(occ, std::back_inserter(exposure), (unsigned char)0);
+	intervals::turn_value_into_intervals(occ, std::back_inserter(exposure), (unsigned char)0);
 
 	cv::Mat_<unsigned char> temp = cv::Mat(occlusionMap.size(), CV_8UC1, cv::Scalar(0));
-	intervals::setRegionValue<unsigned char>(temp, exposure, (unsigned char)255);
+	intervals::set_region_value<unsigned char>(temp, exposure, (unsigned char)255);
 	exposure.clear();
 
 	cv::erode(temp, temp, cv::Mat(3,3, CV_8UC1, cv::Scalar(1)));
 	matstore.addMat(temp, "exposure");
 
-	intervals::turnValueIntoIntervals(temp, std::back_inserter(exposure), (unsigned char)255);
+	intervals::turn_value_into_intervals(temp, std::back_inserter(exposure), (unsigned char)255);
 
 	return exposure;
 }

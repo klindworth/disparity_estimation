@@ -63,9 +63,9 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 		int thread_idx = omp_get_thread_num();
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
-		intervals::substractRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
+		intervals::substract_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, optimization_vectors[i]);
-		intervals::addRegionValue<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
+		intervals::add_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 	}
 }
 

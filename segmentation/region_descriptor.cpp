@@ -93,7 +93,7 @@ void setMask(const cv::Mat& mask, std::vector<RegionInterval>& pixel_idx, int py
 	};
 
 	cv::Mat_<unsigned char> mask2 = mask(cv::Range(y_min, y_max), cv::Range(x_min, x_max));
-	intervals::convertDifferential<unsigned char>(mask2, factory);
+	intervals::convert_differential<unsigned char>(mask2, factory);
 }
 
 std::vector<RegionInterval> getDilatedRegion(RegionDescriptor& cregion, unsigned int dilate_grow, cv::Mat base)

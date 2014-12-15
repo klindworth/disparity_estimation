@@ -219,7 +219,7 @@ TEST(Interval, ValueRegion)
 
 	cv::Mat_<unsigned char> mat1 = mat;
 
-	intervals::convertFromMatToValue(mat1, std::back_inserter(calc));
+	intervals::convert_mat_to_value(mat1, std::back_inserter(calc));
 
 	/*std::cout << "---- value intervals ----" << std::endl;
 	std::copy(calc.begin(), calc.end(), std::ostream_iterator<RegionInterval>(std::cout, ", "));
@@ -238,7 +238,7 @@ TEST(Interval, ThresholdConvert)
 		test.at<unsigned char>(i+12) = 5;
 	}
 	std::vector<RegionInterval> result;
-	intervals::convertMinimaRanges(test, std::back_inserter(result), (unsigned char)10);
+	intervals::convert_minima_ranges(test, std::back_inserter(result), (unsigned char)10);
 
 	std::vector<RegionInterval> expected {RegionInterval(0, 5, 10), RegionInterval(0,12,17)};
 

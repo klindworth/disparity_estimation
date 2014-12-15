@@ -75,7 +75,7 @@ cv::Mat_<unsigned char> region_ground_truth_image(const cv::Mat_<unsigned char>&
 	cv::Mat_<unsigned char> avg_image(disp.size());
 
 	for(std::size_t i = 0; i < seg_image->regions.size(); ++i)
-		intervals::setRegionValue(avg_image, seg_image->regions[i].lineIntervals, averages[i]);
+		intervals::set_region_value(avg_image, seg_image->regions[i].lineIntervals, averages[i]);
 
 	return avg_image;
 }

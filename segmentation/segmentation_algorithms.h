@@ -124,7 +124,7 @@ void fuse(fusion_work_data& data, std::vector<T>& regions, cv::Mat_<int>& labels
 	for(std::size_t i = 0; i < regions_count2; ++i)
 	{
 		std::sort(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end());
-		intervals::setRegionValue<int>(labels, regions[i].lineIntervals, i);
+		intervals::set_region_value<int>(labels, regions[i].lineIntervals, i);
 	}
 
 	//assert(checkLabelsIntervalsInvariant(regions, labels, regions.size()));
