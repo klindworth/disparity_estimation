@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <segmentation/intervals_algorithms.h>
 #include <segmentation/region_descriptor_algorithms.h>
 
+#include "disparity_region_algorithms.h"
 
 DisparityRegion::DisparityRegion()
 {

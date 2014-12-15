@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region_optimizer.h"
 #include "initial_disparity.h"
 #include "manual_region_optimizer.h"
+#include "disparity_region_algorithms.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>
@@ -301,13 +302,13 @@ void RegionWindow::on_pbOptimize_clicked()
 	auto prop_eval = [=](const DisparityRegion& baseRegion, const RegionContainer& base, const RegionContainer& match, int disparity) {
 
 		const std::vector<MutualRegion>& other_regions = baseRegion.other_regions[disparity-base.task.dispMin];
-		float disp_pot = getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
+		float disp_pot = corresponding_regions_average(match.regions, other_regions, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
 		//float stddev = getOtherRegionsAverage(match.regions, other_regions, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
 
-		float e_other = getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
+		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
 		float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
 
-		float confidence = std::max(getOtherRegionsAverage(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.stats.confidence2;}), std::numeric_limits<float>::min());
+		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.stats.confidence2;}), std::numeric_limits<float>::min());
 		//float mi_confidence = getOtherRegionsAverage(match.regions, other_regions, [&](const SegRegion& cregion){return cregion.confidence(-disparity-match.task.dispMin);});
 
 		//float stddev_sum = stddev + baseRegion.stats.stddev;

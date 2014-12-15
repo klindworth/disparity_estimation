@@ -26,16 +26,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region_optimizer.h"
 
 #include "region.h"
-#include "initial_disparity.h"
 #include "debugmatstore.h"
 #include <segmentation/intervals.h>
 #include <segmentation/intervals_algorithms.h>
 #include "disparity_utils.h"
-#include "misc.h"
+#include "disparity_region_algorithms.h"
 
 #include <iostream>
 #include <iterator>
-#include <functional>
 #include <random>
 #include <omp.h>
 
@@ -166,7 +164,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	assert(baseRegion.other_regions.size() >= range);
 	for(short cdisp = dispStart; cdisp <= dispEnd; ++cdisp)
 	{
-		lr_pot_values[cdisp - dispStart] = other_regions_average_by_index(baseRegion.other_regions[cdisp-dispMin], [&](std::size_t idx){
+		lr_pot_values[cdisp - dispStart] = corresponding_regions_average_by_index(baseRegion.other_regions[cdisp-dispMin], [&](std::size_t idx){
 			return (float)abs_pott(cdisp, (short)-match_disparities_cache[idx], pot_trunc);
 		});
 	}
@@ -204,8 +202,8 @@ disparity_hypothesis::disparity_hypothesis(const std::vector<float>& optimizatio
 
 float calculate_end_result(const float *raw_results, const disparity_hypothesis_weight_vector& wv)
 {
-	//return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.neighbor_pot + raw_results[3] * wv.lr_pot + raw_results[4] * wv.neighbor_color_pot;
-	return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.lr_pot + raw_results[3] * wv.neighbor_color_pot;
+	return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.neighbor_pot + raw_results[3] * wv.lr_pot + raw_results[4] * wv.neighbor_color_pot;
+	//return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.lr_pot + raw_results[3] * wv.neighbor_color_pot;
 }
 
 float calculate_end_result(int disp_idx, const float *raw_results, const disparity_hypothesis_weight_vector &wv)

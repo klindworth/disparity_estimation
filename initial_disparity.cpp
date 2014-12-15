@@ -54,6 +54,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "sncc_disparitywise_calculator.h"
 #include "manual_region_optimizer.h"
 #include "ml_region_optimizer.h"
+#include "disparity_region_algorithms.h"
 
 class slidingSADThread
 {

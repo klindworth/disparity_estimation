@@ -45,6 +45,7 @@ set(HEADERS
     it_metrics.h
     costmap_utils.h
     region.h
+    disparity_region_algorithms.h
     disparitywise_calculator.h
     sncc_disparitywise_calculator.h
 

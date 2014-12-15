@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "disparity_utils.h"
 #include "region.h"
+#include "disparity_region_algorithms.h"
 #include <segmentation/intervals.h>
 
 #include "region_optimizer.h"
@@ -127,10 +128,10 @@ void RegionWidget::mutualDisparity(DisparityRegion& baseRegion, RegionContainer&
 		short currentDisp = i + dispMin;
 		//disparity_hypothesis hyp(occmap, baseRegion, currentDisp, base.regions, other_regions, pot_trunc, dispMin);
 
-		float avg_disp = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return (float)cregion.disparity;});
+		float avg_disp = corresponding_regions_average(other_regions, *it, [](const DisparityRegion& cregion){return (float)cregion.disparity;});
 		//float stddev = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
-		float disp_pot = getOtherRegionsAverage(other_regions, *it, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(currentDisp+cregion.disparity), 10);});
-		float e_other = baseRegion.optimization_energy.data ? getOtherRegionsAverage(other_regions, *it, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-currentDisp-m_matchDispMin);}) : 0;
+		float disp_pot = corresponding_regions_average(other_regions, *it, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(currentDisp+cregion.disparity), 10);});
+		float e_other = baseRegion.optimization_energy.data ? corresponding_regions_average(other_regions, *it, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-currentDisp-m_matchDispMin);}) : 0;
 
 		//ratings
 		//float stddev_dev = baseRegion.stats.stddev-stddev;
