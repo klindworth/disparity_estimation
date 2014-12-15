@@ -27,13 +27,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ML_REGION_OPTIMIZER_H
 
 #include "region_optimizer.h"
+#include <memory>
 
 class StereoSingleTask;
+
+template<typename T>
+class neural_network;
 
 class ml_region_optimizer : public region_optimizer
 {
 public:
 	ml_region_optimizer();
+	~ml_region_optimizer();
 	void run(RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement= 0) override;
 	void reset(const RegionContainer& left, const RegionContainer& right) override;
 
@@ -55,6 +60,8 @@ private:
 
 	int training_iteration;
 	std::string filename_left_prefix, filename_right_prefix;
+
+	std::unique_ptr<neural_network<double>> nnet;
 };
 
 //void gather_region_optimization_vector(double *dst_ptr, const DisparityRegion& baseRegion, const std::vector<float>& optimization_vector_base, const std::vector<std::vector<float>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task);

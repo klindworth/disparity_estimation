@@ -105,7 +105,7 @@ void gather_statistic(const std::vector<T>& data, std::vector<T>& sums, int& cou
 	for(int k = 0; k < ml_region_optimizer::vector_size; ++k)
 		sums[ml_region_optimizer::vector_size_per_disp+k] += func(*ptr++);
 
-	assert(std::distance(data.data(), ptr) == data.size());
+	assert(std::distance(data.data(), ptr) == (int)data.size());
 }
 
 template<typename T, typename lambda_type>
@@ -204,19 +204,6 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, const RegionContain
 	std::cout << "base" << std::endl;
 
 	const int crange = base.task.range_size();
-	int dims = crange * vector_size_per_disp*2+vector_size;
-
-	std::cout << "ann" << std::endl;
-	//neural_network<double> net (dims, crange, {dims, dims});
-	neural_network<double> net(dims);
-	//net.emplace_layer<vector_connected_layer>(vector_size_per_disp, vector_size_per_disp, vector_size);
-	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(3, vector_size_per_disp*2, vector_size);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(crange);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(crange);
-	net.emplace_layer<softmax_output_layer>();
 
 	std::vector<double> mean_normalization_vector(normalizer_size,0.0f);
 	std::vector<double> stddev_normalization_vector(normalizer_size, 0.0f);
@@ -227,7 +214,7 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, const RegionContain
 	for(auto& cval : stddev_normalization_vector)
 		istream >> cval;
 
-	istream >> net;
+	istream >> *nnet;
 
 	std::cout << "optimize" << std::endl;
 
@@ -241,10 +228,11 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, const RegionContain
 		std::vector<double> region_optimization_vector(crange*vector_size_per_disp*2+vector_size); //recycle taskwise in prediction mode
 		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
 		normalize_feature_vector(region_optimization_vector, mean_normalization_vector, stddev_normalization_vector);
-		base.regions[j].disparity = net.predict(region_optimization_vector.data()) * sign;
+		base.regions[j].disparity = nnet->predict(region_optimization_vector.data()) * sign;
 	}
 
 	refreshWarpedIdx(base);
+	std::cout << "end optimize" << std::endl;
 }
 
 void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
@@ -318,14 +306,30 @@ void ml_region_optimizer::reset_internal()
 {
 	samples_left.clear();
 	samples_right.clear();
+
+	const int crange = 256;
+	int dims = crange * vector_size_per_disp*2+vector_size;
+	nnet = std::unique_ptr<neural_network<double>>(new neural_network<double>(dims));
+	nnet->emplace_layer<vector_connected_layer>(3, vector_size_per_disp*2, vector_size);
+	nnet->emplace_layer<relu_layer>();
+	nnet->emplace_layer<fully_connected_layer>(crange);
+	nnet->emplace_layer<relu_layer>();
+	nnet->emplace_layer<fully_connected_layer>(crange);
+	nnet->emplace_layer<softmax_output_layer>();
 }
 
 ml_region_optimizer::ml_region_optimizer()
 {
+	nnet = nullptr;
+
 	reset_internal();
 	training_iteration = 1;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
+}
+
+ml_region_optimizer::~ml_region_optimizer()
+{
 }
 
 void ml_region_optimizer::reset(const RegionContainer& /*left*/, const RegionContainer& /*right*/)

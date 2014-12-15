@@ -240,7 +240,7 @@ protected:
 
 	void transpose_weights()
 	{
-		if(this->weights.size() != (this->in_dim * this->out_dim) )
+		if((int)this->weights.size() != (this->in_dim * this->out_dim) )
 			return;
 		T* dst = this->weights_transposed.data();
 		for(int i = 0; i < this->in_dim; ++i)
@@ -700,6 +700,12 @@ public:
 	{
 		for(const auto& clayer : layers)
 			clayer->load_weights(stream);
+	}
+
+	void reset_weights()
+	{
+		for(const auto& clayer : layers)
+			clayer->init_weights();
 	}
 
 	std::vector<std::shared_ptr<layer_base<T>>> layers;
