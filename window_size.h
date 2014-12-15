@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define WINDOW_SIZE_H
 
 #include <opencv2/core/core.hpp>
-#include "region.h"
+#include "disparity_region.h"
 #include "slidingEntropy.h"
 
 template<int quantizer>

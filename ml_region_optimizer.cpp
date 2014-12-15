@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ml_region_optimizer.h"
 
 #include <omp.h>
-#include "region.h"
+#include "disparity_region.h"
 #include "disparity_region_algorithms.h"
 #include "segmentation/intervals.h"
 #include "segmentation/intervals_algorithms.h"

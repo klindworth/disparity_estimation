@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ctime>
 
 #include "initial_disparity.h"
-#include "region.h"
+#include "disparity_region.h"
 #include "genericfunctions.h"
 #include "debugmatstore.h"
 #include "disparity_utils.h"

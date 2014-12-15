@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "costmap_utils.h"
 #include "genericfunctions.h"
 #include "disparity_utils.h"
-#include "region.h"
+#include "disparity_region.h"
 #include "disparity_region_algorithms.h"
 #include <segmentation/intervals.h>
 

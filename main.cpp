@@ -36,7 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "initial_disparity.h"
 
 #include "region_optimizer.h"
-#include "region.h"
+#include "disparity_region.h"
 #include "disparity_region_algorithms.h"
 #include "configrun.h"
 

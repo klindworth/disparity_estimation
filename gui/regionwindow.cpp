@@ -27,7 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ui_regionwindow.h"
 
 #include "disparity_utils.h"
-#include "region.h"
+#include "disparity_region.h"
 #include "regionwidget.h"
 #include <QTableWidgetItem>
 #include <segmentation/intervals.h>

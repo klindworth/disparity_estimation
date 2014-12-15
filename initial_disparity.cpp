@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "debugmatstore.h"
 
-#include "region.h"
+#include "disparity_region.h"
 #include "slidingEntropy.h"
 #include "it_metrics.h"
 #include "costmap_creators.h"

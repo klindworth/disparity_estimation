@@ -14,7 +14,7 @@ set(SOURCES main.cpp
     slidinghimigradient.cpp
     debugmatstore.cpp
     costmap_utils.cpp
-    region.cpp
+    disparity_region.cpp
     initial_disparity.cpp
     stereotask.cpp
     window_size.cpp
@@ -44,7 +44,7 @@ set(HEADERS
     costmap_creators.h
     it_metrics.h
     costmap_utils.h
-    region.h
+    disparity_region.h
     disparity_region_algorithms.h
     disparitywise_calculator.h
     sncc_disparitywise_calculator.h

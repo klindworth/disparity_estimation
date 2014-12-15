@@ -1,7 +1,7 @@
 #ifndef DISPARITY_REGION_ALGORITHMS_H
 #define DISPARITY_REGION_ALGORITHMS_H
 
-#include "region.h"
+#include "disparity_region.h"
 
 template<typename T>
 inline void parallel_region(std::vector<DisparityRegion>& regions, T func)

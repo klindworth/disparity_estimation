@@ -23,7 +23,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "region.h"
+#include "disparity_region.h"
 #include "genericfunctions.h"
 #include "sparse_counter.h"
 #include "disparity_utils.h"
