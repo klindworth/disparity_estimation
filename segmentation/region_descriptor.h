@@ -57,7 +57,15 @@ public:
 
 };
 
-cv::Mat getRegionAsMat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d);
+/**
+ * @brief region_as_mat Returns a region as 1d matrix
+ * @param src Image with values, from which the values for the new matrix will be taken from
+ * @param pixel_idx Container with regions
+ * @param d Applies a move in x-direction before taking values
+ * @return Newly created cv::Mat with the size of the region and the values from src
+ */
+cv::Mat region_as_mat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d);
+
 int getSizeOfRegion(const std::vector<RegionInterval>& intervals);
 void calculate_average_color(RegionDescriptor& region, const cv::Mat& lab_image);
 std::vector<RegionInterval> getDilatedRegion(RegionDescriptor &cregion, unsigned int dilate_grow, cv::Mat base);

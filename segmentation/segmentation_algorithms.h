@@ -156,7 +156,7 @@ void runFusion(cv::Mat& labels, std::vector<T>& regions, std::function<bool(cons
 	fuse(data, regions, labels);
 	std::cout << "fusion finished, regions: " << regions.size() << std::endl;
 
-	refreshBoundingBoxes(regions.begin(), regions.end(), labels);
+	refresh_bounding_boxes(regions.begin(), regions.end(), labels);
 	generate_neighborhood(labels, regions);
 }
 

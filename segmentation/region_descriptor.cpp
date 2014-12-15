@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "intervals_algorithms.h"
 
 
-void getRegionAsMatInternal(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d, cv::Mat& dst, int elemSize)
+void region_as_mat_internal(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d, cv::Mat& dst, int elemSize)
 {
 	unsigned char *dst_ptr = dst.data;
 	for(const RegionInterval& cinterval : pixel_idx)
@@ -46,13 +46,13 @@ void getRegionAsMatInternal(const cv::Mat& src, const std::vector<RegionInterval
 	}
 }
 
-cv::Mat getRegionAsMat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d)
+cv::Mat region_as_mat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d)
 {
 	int length = getSizeOfRegion(pixel_idx);
 
 	int dim3 = src.dims == 2 ? 1 : src.size[2];
 	cv::Mat region(length, dim3, src.type());
-	getRegionAsMatInternal(src, pixel_idx, d, region, dim3*src.elemSize());
+	region_as_mat_internal(src, pixel_idx, d, region, dim3*src.elemSize());
 
 	return region;
 }
@@ -115,7 +115,7 @@ std::vector<RegionInterval> getDilatedRegion(RegionDescriptor& cregion, unsigned
 
 cv::Mat RegionDescriptor::getAsMat(const cv::Mat& src, int d) const
 {
-	return getRegionAsMat(src, lineIntervals, d);
+	return region_as_mat(src, lineIntervals, d);
 }
 
 
@@ -135,7 +135,7 @@ int RegionDescriptor::size() const
 
 void calculate_average_color(RegionDescriptor& region, const cv::Mat& lab_image)
 {
-	cv::Mat values = getRegionAsMat(lab_image, region.lineIntervals, 0);
+	cv::Mat values = region_as_mat(lab_image, region.lineIntervals, 0);
 	cv::Scalar means = cv::mean(values);
 
 	region.average_color[0] = means[0];

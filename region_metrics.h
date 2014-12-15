@@ -138,8 +138,8 @@ public:
 
 	float operator()(thread_type& thread, int d, const std::vector<RegionInterval>& region)
 	{
-		cv::Mat base_region  = getRegionAsMat(m_base,  region, 0);
-		cv::Mat match_region = getRegionAsMat(m_match, region, d);
+		cv::Mat base_region  = region_as_mat(m_base,  region, 0);
+		cv::Mat match_region = region_as_mat(m_match, region, d);
 
 		assert(base_region.total() == match_region.total());
 

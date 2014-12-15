@@ -169,7 +169,7 @@ void generateStats(DisparityRegion& region, const StereoSingleTask& task, int de
 
 cv::Mat getDisparityBySegments(const RegionContainer& container)
 {
-	return regionWiseSet<short>(container, [](const DisparityRegion& cregion){return cregion.disparity;});
+	return set_regionwise<short>(container, [](const DisparityRegion& cregion){return cregion.disparity;});
 	//return regionWiseSet<short>(container.task.base.size(), container.regions, [](const DisparityRegion& cregion){return cregion.disparity;});
 }
 

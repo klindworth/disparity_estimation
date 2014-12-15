@@ -93,11 +93,6 @@ inline result_type calculate_joint_entropy_unnormalized_sparse(counter_type& cou
 		joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+1, cright+1);
 		joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+1, cright+2);
 		joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright+1);
-		/*joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft, cright);
-		joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright);
-		joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+1, cright+1);
-		joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft, cright+2);
-		joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright+2);*/
 	}
 
 	result_type n = normalize_counter;
@@ -163,13 +158,7 @@ inline void calculate_joint_soft_histogramm(counter_type& counter, const data_ty
 		counter(cleft+1, cright)   += 1;
 		counter(cleft+1, cright+1) += 5;
 		counter(cleft+1, cright+2) += 1;
-		//counter(cleft+2, cright+2) += 1;
 		counter(cleft+2, cright+1) += 1;
-		/*counter(cleft,   cright)   += 1;
-		counter(cleft+2, cright)   += 1;
-		counter(cleft+1, cright+1) += 5;
-		counter(cleft,   cright+2) += 1;
-		counter(cleft+2, cright+2) += 1;*/
 	}
 }
 
@@ -453,51 +442,6 @@ public:
 		float match_entropy = calculate_entropy_unnormalized<float>(thread.counter_array, entropy_table, bins);
 
 		return m_evalfunc(joint_entropy, thread.base_entropy, match_entropy);
-	}
-};
-
-class slidingSADThread
-{
-public:
-	cv::Mat m_base;
-	int cwindowsizeX;
-	int cwindowsizeY;
-	int crow;
-};
-
-class slidingSAD
-{
-public:
-	typedef float prob_table_type;
-	typedef slidingSADThread thread_type;
-private:
-
-	cv::Mat m_match;
-
-public:
-	inline slidingSAD(const cv::Mat& match, unsigned int /*max_windowsize*/) : m_match(match)
-	{
-	}
-
-	//prepares a row for calculation
-	inline void prepareRow(thread_type& thread, const cv::Mat& /*match*/, int y)
-	{
-		thread.crow = y;
-	}
-
-	inline void prepareWindow(thread_type& thread, const cv::Mat& base, int cwindowsizeX, int cwindowsizeY)
-	{
-		thread.cwindowsizeX = cwindowsizeX;
-		thread.cwindowsizeY = cwindowsizeY;
-		//copy the window for L1 Cache friendlieness
-		thread.m_base = base.clone();
-	}
-
-	inline prob_table_type increm(thread_type& thread, int x)
-	{
-		cv::Mat match_window = subwindow(m_match, x, thread.crow, thread.cwindowsizeX, thread.cwindowsizeY).clone();
-
-		return cv::norm(thread.m_base, match_window, cv::NORM_L1)/match_window.total()/256;
 	}
 };
 

@@ -55,6 +55,52 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "manual_region_optimizer.h"
 #include "ml_region_optimizer.h"
 
+class slidingSADThread
+{
+public:
+	cv::Mat m_base;
+	int cwindowsizeX;
+	int cwindowsizeY;
+	int crow;
+};
+
+class slidingSAD
+{
+public:
+	typedef float prob_table_type;
+	typedef slidingSADThread thread_type;
+private:
+
+	cv::Mat m_match;
+
+public:
+	inline slidingSAD(const cv::Mat& match, unsigned int /*max_windowsize*/) : m_match(match)
+	{
+	}
+
+	//prepares a row for calculation
+	inline void prepareRow(thread_type& thread, const cv::Mat& /*match*/, int y)
+	{
+		thread.crow = y;
+	}
+
+	inline void prepareWindow(thread_type& thread, const cv::Mat& base, int cwindowsizeX, int cwindowsizeY)
+	{
+		thread.cwindowsizeX = cwindowsizeX;
+		thread.cwindowsizeY = cwindowsizeY;
+		//copy the window for L1 Cache friendlieness
+		thread.m_base = base.clone();
+	}
+
+	inline prob_table_type increm(thread_type& thread, int x)
+	{
+		cv::Mat match_window = subwindow(m_match, x, thread.crow, thread.cwindowsizeX, thread.cwindowsizeY).clone();
+
+		return cv::norm(thread.m_base, match_window, cv::NORM_L1)/match_window.total()/256;
+	}
+};
+
+
 typedef std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<DisparityRegion>&, int)> disparity_region_func;
 
 //for IT metrics (region wise)
@@ -134,7 +180,7 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 			{
 				//std::vector<RegionInterval> filtered = filter_region(regions[i].lineIntervals, std::min(0,d), occ, base.size[1]);
 				std::vector<RegionInterval> filtered = filtered_region(base.size[1], regions[i].lineIntervals, d);
-				cv::Mat diff_region = getRegionAsMat(diff, filtered, std::min(0, d));
+				cv::Mat diff_region = region_as_mat(diff, filtered, std::min(0, d));
 				//cv::Mat diff_region = getRegionAsMat(diff, regions[i].lineIntervals, 0);
 				float sum = cv::norm(diff_region, cv::NORM_L1);
 				//float sum = cv::norm(diff_region, cv::NORM_L2);
@@ -472,8 +518,8 @@ void single_pass_region_disparity(StereoTask& task, RegionContainer& left, Regio
 	}
 
 	generateRegionInformation(left, right);
-	generateStats(left.regions, task.left, refinement);
-	generateStats(right.regions, task.right, refinement);
+	generateStats(left.regions, task.forward, refinement);
+	generateStats(right.regions, task.backward, refinement);
 
 	optimizer.run(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
 	//run_optimization(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);

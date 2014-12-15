@@ -26,11 +26,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef REGION_DESCRIPTOR_ALGORITHMS_H
 #define REGION_DESCRIPTOR_ALGORITHMS_H
 
-//include "genericfunctions.h"
 #include "region_descriptor.h"
 #include "intervals_algorithms.h"
 #include "segmentation_image.h"
 
+//! Applies a function in parallel (via OpenMP) to a range of elements
 template<typename Iterator, typename T>
 inline void parallel_region(Iterator begin, Iterator end, T func)
 {
@@ -52,6 +52,7 @@ cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, s
 	return result;
 }*/
 
+//! Moves a range of RegionIntervals in x-direction (amount: offset). The intervals will be capped to stay in the range [0..width)
 template<typename Iterator>
 inline void move_x_region(Iterator it, Iterator end, int offset, int width)
 {
@@ -59,8 +60,15 @@ inline void move_x_region(Iterator it, Iterator end, int offset, int width)
 		it->move(offset, width);
 }
 
+//! Creates a cv::Mat with the size, that's defined via parameter. The content will be defined by a passed function, that returns for each region value.
+/**
+ * T defines type of the resulting matrix. Therefore the passed function must return T. The function will be called for each region in the container passed as parameter.
+ * @param size Size of the resulting matrix.
+ * @param regions The regions, on which the function will be applied.
+ * @param func Function that will be called foreach region. The function must have const reg_type& as parameter and must return T.
+ */
 template<typename T, typename reg_type, typename lambda_type>
-cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, lambda_type func)
+cv::Mat_<T> set_regionwise(cv::Size size, const std::vector<reg_type>& regions, lambda_type func)
 {
 	cv::Mat_<T> result(size, 0);
 
@@ -72,16 +80,17 @@ cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, l
 }
 
 template<typename T, typename reg_type, typename lambda_type>
-cv::Mat_<T> regionWiseSet(const segmentation_image<reg_type>& image, lambda_type func)
+cv::Mat_<T> set_regionwise(const segmentation_image<reg_type>& image, lambda_type func)
 {
-	return regionWiseSet<T>(image.image_size, image.regions, func);
+	return set_regionwise<T>(image.image_size, image.regions, func);
 }
 
+//! Returns an image, that will show each region with a random color.
 template<typename reg_type>
 cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Size size, const std::vector<reg_type>& regions)
 {
 	std::srand(0);
-	return regionWiseSet<cv::Vec3b>(size, regions, [&](const reg_type&){
+	return set_regionwise<cv::Vec3b>(size, regions, [&](const reg_type&){
 		cv::Vec3b ccolor;
 		ccolor[0] = std::rand() % 256;
 		ccolor[1] = std::rand() % 256;
@@ -90,6 +99,7 @@ cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Size size, const std::vec
 	});
 }
 
+//! Creates a matrix (int) with the segmentation labels as content.
 template<typename reg_type>
 cv::Mat_<int> generate_label_matrix(cv::Size size, const std::vector<reg_type>& regions)
 {
@@ -109,9 +119,7 @@ cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(const segmentation_image<reg_
 	return getWrongColorSegmentationImage(image.image_size, image.regions);
 }
 
-/**
- * Fills a vector of RegionDescriptors with the correct lineIntervals and sizes
- */
+//! Fills a vector of RegionDescriptors with the correct lineIntervals and sizes
 template<typename Iterator, typename label_type>
 void fillRegionDescriptors(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
 {
@@ -128,7 +136,7 @@ void fillRegionDescriptors(Iterator begin, Iterator end, const cv::Mat_<label_ty
 		assert(region.m_size != 0);
 	});
 
-	refreshBoundingBoxes(begin, end, labels);
+	refresh_bounding_boxes(begin, end, labels);
 }
 
 inline neighbor_vector::iterator find_neighbor(neighbor_vector& container, std::size_t val)
@@ -177,7 +185,7 @@ void generate_neighborhood(const cv::Mat_<label_type> &labels, std::vector<T> &r
 }
 
 template<typename Iterator, typename label_type>
-void refreshBoundingBoxes(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
+void refresh_bounding_boxes(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
 {
 	parallel_region(begin, end, [&](RegionDescriptor& region){
 		region.bounding_box.x = labels.cols;
@@ -317,7 +325,7 @@ T getNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor
 }*/
 
 template<typename T, typename reg_type, typename lambda_type>
-T getNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, lambda_type func)
+T neighbors_average(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, lambda_type func)
 {
 	T result = initVal;
 	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
@@ -357,16 +365,16 @@ void gather_neighbor_values_idx(std::vector<cache_type>& cache, const neighbor_v
 }
 
 template<typename T, typename reg_type, typename lambda_type>
-T getWeightedNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, lambda_type func)
+T weighted_neighbors_average(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, lambda_type func)
 {
 	T result = initVal;
-	float sum_weight = 0.0f;
+	float sum_weights = 0.0f;
 	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
 	{
 		result += cpair.second*func(container[cpair.first]);
-		sum_weight += cpair.second;
+		sum_weights += cpair.second;
 	}
-	return result/sum_weight;
+	return result/sum_weights;
 }
 
 #endif // REGION_DESCRIPTOR_ALGORITHMS_H
