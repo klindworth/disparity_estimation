@@ -158,14 +158,14 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 	{
 		auto it = std::min_element(regions[i].disparity_costs.begin(), regions[i].disparity_costs.end());
 		regions[i].disparity = std::distance(regions[i].disparity_costs.begin(), it) + regions[i].disparity_offset;
-		EstimationStep step;
+		/*EstimationStep step;
 		step.costs = *it;
 		step.disparity = regions[i].disparity;
 		auto range = getSubrange(regions[i].base_disparity, delta, task);
 		step.searchrange_start = range.first;
 		step.searchrange_end = range.second;
 		step.base_disparity = regions[i].base_disparity;
-		//regions[i].results.push_back(step);
+		regions[i].results.push_back(step);*/
 	}
 }
 
@@ -291,14 +291,14 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 	{
 		auto it = std::min_element(regions[i].disparity_costs.begin(), regions[i].disparity_costs.end());
 		regions[i].disparity = std::distance(regions[i].disparity_costs.begin(), it) + regions[i].disparity_offset;
-		EstimationStep step;
+		/*EstimationStep step;
 		step.costs = *it;
 		step.disparity = regions[i].disparity;
 		auto range = getSubrange(regions[i].base_disparity, delta, task);
 		step.searchrange_start = range.first;
 		step.searchrange_end = range.second;
 		step.base_disparity = regions[i].base_disparity;
-		//regions[i].results.push_back(step);
+		regions[i].results.push_back(step);*/
 	}
 }
 

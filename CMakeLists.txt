@@ -28,8 +28,6 @@ set(SOURCES main.cpp
     manual_region_optimizer.cpp
     ml_region_optimizer.cpp
 
-    gui/matstoreviewer.cpp
-    gui/costmapviewer.cpp
     gui/miniplot.cpp    
     gui/regionwidget.cpp
     gui/imagestore.cpp    
@@ -72,8 +70,6 @@ set(HEADERS
 )
 
 set(QTHEADERS
-    gui/matstoreviewer.h
-    gui/costmapviewer.h
     gui/miniplot.h
     gui/regionwindow.h
     gui/regionwidget.h
@@ -81,8 +77,6 @@ set(QTHEADERS
 )
 
 set(FORMS
-    gui/matstoreviewer.ui
-    gui/costmapviewer.ui
     gui/regionwidget.ui
     gui/imagestore.ui
     gui/regionwindow.ui

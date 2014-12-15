@@ -28,8 +28,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include <QApplication>
 
-#include "costmapviewer.h"
-#include "matstoreviewer.h"
 #include "regionwindow.h"
 #include "debugmatstore.h"
 

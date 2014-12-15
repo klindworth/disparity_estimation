@@ -280,7 +280,7 @@ void RegionWidget::on_treeNeighbors_itemDoubleClicked(QTreeWidgetItem *item, int
 	emit baseRegionSelected(item->text(0).toInt());
 }
 
-void RegionWidget::showResultHistory(DisparityRegion &region)
+void RegionWidget::showResultHistory(DisparityRegion& /*region*/)
 {
 	ui->twResulthistory->clear();
 	QStringList header;

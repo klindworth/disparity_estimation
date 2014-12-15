@@ -58,7 +58,7 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 
 	for(int dx = dx_min+1; dx <= dx_max; ++dx)
 	{
-		for(int i = 0; i < region.size(); ++i)
+		for(std::size_t i = 0; i < region.size(); ++i)
 		{
 			RegionInterval hyp_interval = region[i];
 			hyp_interval.move(dx, src.cols);

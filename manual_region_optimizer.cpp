@@ -66,17 +66,17 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 		if(damping_history[j] < 2)
 		{
 			baseRegion.disparity = ndisparity;
-			EstimationStep step;
+			/*EstimationStep step;
 			step.disparity = baseRegion.disparity;
-			//baseRegion.results.push_back(step);
+			baseRegion.results.push_back(step);*/
 		}
 		else {
 			if(random_dist(random_gen) == 1)
 			{
 				baseRegion.disparity = ndisparity;
-				EstimationStep step;
+				/*EstimationStep step;
 				step.disparity = baseRegion.disparity;
-				//baseRegion.results.push_back(step);
+				baseRegion.results.push_back(step);*/
 			}
 			else
 				damping_history[j] = 0;
