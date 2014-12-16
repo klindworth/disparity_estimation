@@ -518,13 +518,13 @@ public:
 	{
 		layer_thread_data<T>& cdata = this->thread_data();
 
-		T error_sum = 0;
+		//T error_sum = 0;
 		//std::cout << "backprop softmax" << std::endl;
 		for(int i = 0; i < this->out_dim; ++i)
 		{
 			//std::cout << cdata.output_data[i] << " vs " << gt[i] << std::endl;
 			cdata.gradient_data[i] = cdata.output_data[i] - gt[i];
-			error_sum += std::abs(cdata.gradient_data[i]);
+			//error_sum += std::abs(cdata.gradient_data[i]);
 		}
 
 		//std::cout << "error_sum: " << error_sum << std::endl;
