@@ -90,8 +90,9 @@ public:
 		this->Eg_b.resize(bias_dim,0);
 		this->Ex_b.resize(bias_dim,0);
 
-		init_weights();
+		//init_weights();
 		this->current_phase = phase::Testing;
+		regularize = false;
 	}
 
 	void set_phase(phase cphase)
@@ -173,15 +174,23 @@ public:
 		}
 
 		update_weights_internal(count);
+		regularize_weights();
 		transpose_weights();
 	}
 
 	void init_weights()
 	{
-		const T weight_base = 0.5 / std::sqrt(in_dim);
+		if(!weights.empty())
+		{
+			const T weight_base = 0.5 / std::sqrt(in_connectivity());
+			uniform_init(weights.begin(), weights.end(), weight_base);
+			transpose_weights();
+		}
+		uniform_init(bias.begin(), bias.end(), 0.5);
+		/*const T weight_base = 0.5 / std::sqrt(in_dim);
 		uniform_init(weights.begin(), weights.end(), weight_base);
 		transpose_weights();
-		uniform_init(bias.begin(), bias.end(), weight_base);
+		uniform_init(bias.begin(), bias.end(), weight_base);*/
 	}
 
 	void save_weights(std::ostream& stream) const
@@ -255,6 +264,40 @@ protected:
 		}
 	}
 
+	template<typename Iterator>
+	void mul_range(Iterator it, Iterator end, T factor)
+	{
+		for(; it != end; ++it)
+			*it *= factor;
+	}
+
+	template<typename Iterator>
+	void abs_renorm(Iterator start, Iterator end, T desired)
+	{
+		T sum = 0;
+		for(auto it = start; it != end; ++it)
+			sum += std::abs(*it);
+
+		sum /= std::distance(start, end);
+
+		if(sum > desired)
+			mul_range(start, end, desired/sum);
+	}
+
+	template<typename Iterator>
+	void max_renorm(Iterator start, Iterator end, T allowed)
+	{
+		T current = 0;
+		for(auto it = start; it != end; ++it)
+			current = std::max(std::abs(+it), current);
+
+		if(allowed > current)
+			mul_range(start, end, allowed/current);
+	}
+
+	virtual void regularize_weights() {}
+	virtual int in_connectivity() { return in_dim; }
+
 	phase current_phase;
 	int in_dim;
 	int out_dim;
@@ -267,6 +310,7 @@ protected:
 	std::vector<layer_thread_data<T>> cthread_data;
 
 	bool propagate_down;
+	bool regularize;
 };
 
 template<typename T>
@@ -521,6 +565,8 @@ public:
 		bool propagate = layers.size() > 0 ? true : false;
 		layers.push_back(std::make_shared<layer_type<T>>(propagate, out_dim, args...));
 		out_dim = layers.back()->output_dimension();
+
+		layers.back()->init_weights();
 	}
 
 	void test(const std::vector<std::vector<T>>& data, const std::vector<short>& gt)
@@ -635,7 +681,20 @@ public:
 			clayer->set_phase(layer_base<T>::phase::Testing);
 	}
 
-
+	void training(const std::vector<std::vector<T>>& data, const std::vector<short>& gt, std::size_t batch_size, std::size_t epochs, std::size_t training_error_calculation)
+	{
+		this->reset_weights();
+		for(std::size_t i = 0; i < epochs; ++i)
+		{
+			std::cout << "epoch: " << i << std::endl;
+			training(data, gt, batch_size);
+			if(training_error_calculation != 0)
+			{
+				if(i % training_error_calculation == 0)
+					test(data, gt);
+			}
+		}
+	}
 
 	void forward_propagation(const T* bottom_data)
 	{
@@ -739,7 +798,7 @@ public:
 		int channels_in = (this->in_dim - passthrough)/vectorsize;
 
 		if(this->propagate_down)
-			blas_gemm(cdata.gradient_data.data(), top_gradient, true, channels_out, channels_in, this->weights.data(), false, vectorsize, channels_out);
+			blas_gemm(cdata.gradient_data.data(), top_gradient, true, channels_out, channels_in, this->weights.data(), false, channels_out, vectorsize);
 		blas_gemm(cdata.dW.data(), top_gradient, false, channels_out, channels_in, bottom_data, false, channels_in, vectorsize, 1.0, 1.0);
 
 		const T* cgradient = top_gradient;
@@ -753,6 +812,17 @@ public:
 	}
 
 protected:
+	int in_connectivity() override
+	{
+		return vectorsize;
+	}
+
+	void regularize_weights() override
+	{
+		for(int i = 0; i < channels_out; ++i)
+			this->abs_renorm(this->weights.begin() + i*vectorsize, this->weights.begin() + (i+1)*vectorsize, 1.0/vectorsize);
+	}
+
 	int channels_out, vectorsize, passthrough;
 };
 

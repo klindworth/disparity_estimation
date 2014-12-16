@@ -236,6 +236,12 @@ void ml_region_optimizer::optimize_ml(RegionContainer& base, const RegionContain
 	std::cout << "end optimize" << std::endl;
 }
 
+std::ostream& operator<<(std::ostream& stream, result_eps_calculator& res)
+{
+	res.print_to_stream(stream);
+	return stream;
+}
+
 void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
 {
 	dst_gt.reserve(dst_gt.size() + base.regions.size());
@@ -250,7 +256,7 @@ void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, st
 
 	assert(gt.size() == regions_count);
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
-	int base_correct = 0, approx5 = 0, approx10 = 0, total = 0;
+	result_eps_calculator diff_calc;
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
 		if(gt[j] != 0)
@@ -262,17 +268,10 @@ void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, st
 			dst_gt.push_back(gt[j]);
 
 			//std::cout << base.regions[j].disparity << " vs " << gt[j] << std::endl;
-			int diff = std::abs(std::abs(base.regions[j].disparity) - std::abs(gt[j]));
-			if(diff == 0)
-				++base_correct;
-			if(diff < 5)
-				++approx5;
-			if(diff < 10)
-				++approx10;
-			++total;
+			diff_calc(base.regions[j].disparity, gt[j]);
 		}
 	}
-	std::cout << "correct: " << (float)base_correct/total << ", approx5: " << (float)approx5/total << ", approx10: " << (float)approx10/total << std::endl;
+	std::cout << diff_calc << std::endl;
 }
 
 
@@ -300,6 +299,22 @@ void ml_region_optimizer::run(RegionContainer& left, RegionContainer& right, con
 			optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + ".txt");
 			refresh_base_optimization_vector(left, right, refinement);
 		}
+
+		std::vector<short> gt;
+		region_ground_truth(left.regions, left.task.groundTruth, std::back_inserter(gt));
+
+		result_eps_calculator diff_calc;
+		for(std::size_t i = 0; i < left.regions.size(); ++i)
+		{
+			if(gt[i] != 0)
+			{
+				diff_calc(gt[i], left.regions[i].disparity);
+				total_diff_calc(gt[i], left.regions[i].disparity);
+			}
+		}
+
+		std::cout << diff_calc << std::endl;
+		std::cout << total_diff_calc << std::endl;
 	}
 }
 
@@ -324,7 +339,7 @@ ml_region_optimizer::ml_region_optimizer()
 	nnet = nullptr;
 
 	reset_internal();
-	training_iteration = 1;
+	training_iteration = 0;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
 }
@@ -390,8 +405,8 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	//neural_network<double> net (dims, crange, {dims, dims});
 	assert(dims == (ml_region_optimizer::vector_size_per_disp*2*crange)+ml_region_optimizer::vector_size);
 	neural_network<double> net(dims);
-	//net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	net.emplace_layer<relu_layer>();
 	net.emplace_layer<vector_connected_layer>(3, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
@@ -399,13 +414,7 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 
-	for(int i = 0; i < 21; ++i)
-	{
-		std::cout << "epoch: " << i << std::endl;
-		net.training(samples, samples_gt, 64);
-		if(i%4 == 0)
-			net.test(samples, samples_gt);
-	}
+	net.training(samples, samples_gt, 64, 13, 4);
 
 	std::ofstream ostream(filename);
 	ostream.precision(17);

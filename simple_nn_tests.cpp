@@ -155,7 +155,39 @@ TEST(SimpleNN, GradientDoubleVectorLayer)
 	ASSERT_TRUE(gradient_check(net, input, output, 1e-5, 1e-5));
 }
 
-void vector_connected_layer_test()
+TEST(SimpleNN, GradientDoubleVectorLayer2)
+{
+	typedef double data_type;
+
+	std::vector<data_type> input1 {-0.8, 0.8, -0.8, 0.8, 0.2};
+	std::vector<data_type> input2 {0.7, -0.7, 0.7, -0.7, 0.3};
+	std::vector<data_type> input3 {-0.2, 0.2, -0.2, 0.2, 0.2};
+	std::vector<data_type> input4 {0.2, -0.3, 0.2, -0.3, 0.1};
+	std::vector<data_type> input5 {-0.5, 0.6, -0.5, 0.6, 0.2};
+	std::vector<data_type> input6 {0.5, -0.6, 0.5, -0.6, 0.3};
+	short output1 = 0;
+	short output2 = 1;
+	short output3 = 0;
+	short output4 = 1;
+	short output5 = 0;
+	short output6 = 1;
+
+	std::vector<std::vector<data_type>> input {input1, input2, input3, input4, input5, input6};
+	std::vector<short> output {output1, output2, output3, output4, output5, output6};
+
+	neural_network<data_type> net(5);
+	net.emplace_layer<vector_connected_layer>(2,4,1);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(1,2,1);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(2);
+	net.emplace_layer<softmax_output_layer>();
+
+	ASSERT_TRUE(gradient_check(net, input, output, 1e-5, 1e-5));
+}
+
+//void vector_connected_layer_test()
+TEST(SimpleNN, VectorLayer1)
 {
 	vector_connected_layer<double> test(true, 7,2,2,1);
 
@@ -171,6 +203,9 @@ void vector_connected_layer_test()
 	std::copy(weights.begin(), weights.end(), test.get_weights().begin());
 	test.forward_propagation(test_input.data());
 
+
+	for(std::size_t i = 0; i < expected.size(); ++i)
+		ASSERT_EQ(expected[i], test.output()[i]);
 	std::copy(test.output(), test.output() + 7, std::ostream_iterator<double>(std::cout, ", "));
 	std::cout << std::endl;
 }
