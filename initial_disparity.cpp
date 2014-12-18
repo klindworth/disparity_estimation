@@ -602,8 +602,8 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 
 	//segment_based_disparity_internal(task, left, right, config, disparity_function);
 
-	auto segmentationLeft  = getSegmentationClass(config.segmentation);
-	auto segmentationRight = getSegmentationClass(config.segmentation);
+	auto segmentationLeft  = create_segmentation_class(config.segmentation);
+	auto segmentationRight = create_segmentation_class(config.segmentation);
 
 	fillRegionContainer(left, task.forward, segmentationLeft);
 	fillRegionContainer(right, task.backward, segmentationRight);
@@ -627,8 +627,8 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 			std::cout << "refine: " << config2.region_refinement_delta << std::endl;
 			//segmentationLeft->refine(*left);
 			//segmentationRight->refine(*right);
-			segmentationLeft->std_refinement(*left);
-			segmentationRight->std_refinement(*right);
+			segmentationLeft->refinement(*left);
+			segmentationRight->refinement(*right);
 
 			//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_unfused_left");
 			//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_unfused_right");

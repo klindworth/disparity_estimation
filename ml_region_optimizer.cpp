@@ -323,10 +323,12 @@ void ml_region_optimizer::reset_internal()
 	samples_left.clear();
 	samples_right.clear();
 
-	const int crange = 256;
+	const int crange = 192;
 	int dims = crange * vector_size_per_disp*2+vector_size;
 	nnet = std::unique_ptr<neural_network<double>>(new neural_network<double>(dims));
-	nnet->emplace_layer<vector_connected_layer>(3, vector_size_per_disp*2, vector_size);
+	nnet->emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	nnet->emplace_layer<relu_layer>();
+	nnet->emplace_layer<vector_connected_layer>(3, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
 	nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<fully_connected_layer>(crange);
 	nnet->emplace_layer<relu_layer>();
@@ -412,9 +414,9 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	//neural_network<double> net (dims, crange, {dims, dims});
 	assert(dims == (ml_region_optimizer::vector_size_per_disp*2*crange)+ml_region_optimizer::vector_size);
 	neural_network<double> net(dims);
-	net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(2, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	//net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<relu_layer>();

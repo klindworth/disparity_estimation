@@ -41,14 +41,15 @@ public:
 	float color_var;
 	int superpixel_size;
 	float superpixel_compactness;
-
-	bool enable_regionsplit;
-	bool enable_fusion;
-	bool enable_color_fusion;
 };
 
 
-
+/**
+ * @brief The segmentation_algorithm class provides a common interface for several segmentation algorithms.
+ *
+ * You can call a free function create_segmentation_instance for creating a instance of this class via string (e.g. "superpixel" for SLIC).
+ * If you've an instance of this class, you can call segmentation_image to get a structure instance with all region descriptors etc.
+ */
 class segmentation_algorithm {
 public:
 	/**
@@ -60,7 +61,7 @@ public:
 	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels) = 0;
 
 	template<typename seg_image_type>
-	std::shared_ptr<seg_image_type> getSegmentationImage(cv::Mat image)
+	std::shared_ptr<seg_image_type> segmentation_image(cv::Mat image)
 	{
 		std::shared_ptr<seg_image_type> result = std::make_shared<seg_image_type>();
 		result->segment_count = this->operator ()(image, result->labels);
@@ -68,14 +69,13 @@ public:
 		result->image_size = image.size();
 
 		fillRegionDescriptors(result->regions.begin(), result->regions.end(), result->labels);
-		//refreshBoundingBoxes(result->regions.begin(), result->regions.end(), result->labels);
 		generate_neighborhood(result->labels, result->regions);
 
 		return result;
 	}
 
 	template<typename region_type>
-	void std_refinement(region_type& container)
+	void refinement(region_type& container)
 	{
 		container.labels = segmentation_iteration(container.regions, container.task.base.size());
 
@@ -95,7 +95,7 @@ public:
 	virtual std::string cacheName() const = 0;
 };
 
-std::shared_ptr<segmentation_algorithm> getSegmentationClass(const segmentation_settings& settings);
+std::shared_ptr<segmentation_algorithm> create_segmentation_instance(const segmentation_settings& settings);
 
 class fusion_work_data
 {

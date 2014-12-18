@@ -111,6 +111,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	neighbor_color_pot_values.resize(range);
 	lr_pot_values.resize(range);
 	cost_values.resize(range);
+	rel_cost_values.resize(range);
 
 	//assert(dispRange == range);
 	//occ_avg
@@ -172,6 +173,20 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	for(int i = 0; i < range; ++i)
 		cost_values[i] = baseRegion.disparity_costs((dispStart+i)-baseRegion.disparity_offset);
 
+	auto create_min_version = [](std::vector<float>::iterator start, std::vector<float>::iterator end, std::vector<float>::iterator ins) {
+		float min_value = *(std::min_element(start, end));
+
+		std::transform(start, end, ins, [min_value](float val){
+			return val - min_value;
+		});
+	};
+
+	/*float min_cost = *(std::min_element(cost_values.begin(), cost_values.end()));
+	for(int i = 0; i < range; ++i)
+		rel_cost_values[i] = cost_values[i] - min_cost;*/
+
+	create_min_version(cost_values.begin(), cost_values.end(), rel_cost_values.begin());
+
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
 	result_vector.resize(range*vector_size+1);
 	float org_size = baseRegion.size();
@@ -185,6 +200,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		*result_ptr++ = neighbor_color_pot_values[i];
 		//*result_ptr++ = org_size - occ_temp[i].first;
 		*result_ptr++ = (float)occ_temp[i].first / org_size;
+		*result_ptr++ = rel_cost_values[i];
 	}
 	*result_ptr = baseRegion.disparity;
 }

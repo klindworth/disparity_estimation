@@ -139,28 +139,37 @@ void fillRegionDescriptors(Iterator begin, Iterator end, const cv::Mat_<label_ty
 	refresh_bounding_boxes(begin, end, labels);
 }
 
-inline neighbor_vector::iterator find_neighbor(neighbor_vector& container, std::size_t val)
+inline neighbor_vector::iterator find_neighbor(neighbor_vector& container, std::size_t idx)
 {
-	return std::find_if(container.begin(), container.end(), [=](const std::pair<std::size_t, std::size_t>& cpair){return cpair.first == val;});
+	return std::find_if(container.begin(), container.end(), [=](const std::pair<std::size_t, std::size_t>& cpair){return cpair.first == idx;});
 }
 
+/**
+ * Adds a neighbor relation to the regions. If that relation is already established, only the common boundary counter is increased
+ * @param regions Vector with all regions, which contains the both indices that are passed as parameters too
+ * @param idx1 Vector index for one of the two neighboring regions
+ * @param idx2 Vector index for one of the two neighboring regions
+ */
 template<typename T>
-inline void save_neighbors(std::vector<T>& regions, std::size_t val1, std::size_t val2)
+inline void save_neighbors(std::vector<T>& regions, std::size_t idx1, std::size_t idx2)
 {
-	if(val1 != val2)
+	assert(idx1 < regions.size());
+	assert(idx2 < regions.size());
+
+	if(idx1 != idx2)
 	{
-		neighbor_vector& reg1 = regions[val1].neighbors;
-		neighbor_vector& reg2 = regions[val2].neighbors;
-		neighbor_vector::iterator it = find_neighbor(reg1, val2);
+		neighbor_vector& reg1 = regions[idx1].neighbors;
+		neighbor_vector& reg2 = regions[idx2].neighbors;
+		neighbor_vector::iterator it = find_neighbor(reg1, idx2);
 		if(it == reg1.end())
 		{
-			reg1.push_back(std::make_pair(val2, 1));
-			reg2.push_back(std::make_pair(val1, 1));
+			reg1.push_back(std::make_pair(idx2, 1));
+			reg2.push_back(std::make_pair(idx1, 1));
 		}
 		else
 		{
 			it->second += 1;
-			neighbor_vector::iterator it2 = find_neighbor(reg2, val1);
+			neighbor_vector::iterator it2 = find_neighbor(reg2, idx1);
 			it2->second += 1;
 		}
 	}
@@ -300,29 +309,6 @@ void calculate_all_average_colors(const cv::Mat& image, Iterator begin, Iterator
 		calculate_average_color(region, lab_double_image);
 	});
 }
-
-/*template<typename T, typename reg_type>
-cv::Mat_<unsigned char> regionWiseImage(cv::Size size, std::vector<reg_type>& regions, std::function<T(const reg_type& region)> func)
-{
-	return getValueScaledImage<T, unsigned char>(regionWiseSet<T, reg_type>(size, regions, func));
-}*/
-
-/*template<typename T, typename reg_type, typename lambda_type>
-cv::Mat_<unsigned char> regionWiseImage(cv::Size size, std::vector<reg_type>& regions, lambda_type func)
-{
-	return getValueScaledImage<T, unsigned char>(regionWiseSet<T, reg_type>(size, regions, func));
-}*/
-
-/*template<typename T, typename reg_type>
-T getNeighborhoodsAverage(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, std::function<T(const reg_type&)> func)
-{
-	T result = initVal;
-	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
-	{
-		result += func(container[cpair.first]);
-	}
-	return result/(int)neighbors.size();
-}*/
 
 template<typename T, typename reg_type, typename lambda_type>
 T neighbors_average(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, lambda_type func)

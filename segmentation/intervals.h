@@ -28,6 +28,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <assert.h>
 
+/**
+ * @brief The RegionInterval class represents an interval in x-direction
+ * Because it just represents an interval in x direction, it has three fields: The y-coordinate, an the two coordinates in x-direction: lower and upper.
+ * Attention: [lower, upper), like in the STL, the end is not part of the interval
+ * @author Kai Klindworth
+ */
 class RegionInterval
 {
 public:
@@ -53,22 +59,24 @@ public:
 	int lower;
 	int upper;
 
+	//! Moves the interval in x-direction
 	inline void move(int offset) {
 		lower += offset;
 		upper += offset;
 	}
 
-	//ensure that you delete the intervals with no or negative length
-	/*inline void move(int offset, int width) {
-		lower += std::max(std::min(offset, width), 0);
-		upper += std::max(std::min(offset, width), 0);
-	}*/
-
+	/**
+	 * @brief move Moves the interval in x-direction. The values are capped to valid values.
+	 * Valid means, the interval is within the image. Therefore you have to pass additionaly the witdth of the image.
+	 * @param offset The amount of pixels, which the interval moves in x direction
+	 * @param width Width of the image
+	 */
 	inline void move(int offset, int width) {
 		lower = std::min(width, std::max(0, lower + offset));
 		upper = std::min(width, std::max(0, upper + offset));
 	}
 
+	//! Returns the length (in x direction) of the interval
 	inline int length() const
 	{
 		return upper - lower;
@@ -85,12 +93,18 @@ public:
 		return((this->lower <= rhs.lower && this->y == rhs.y) && this->upper > rhs.lower);
 	}
 
+	//! Returns, if this interval have an intersection with another interval
 	inline bool intersecting(const RegionInterval& rhs) const
 	{
 		return intersectingOrdered(rhs) || rhs.intersectingOrdered(*this);
 	}
 };
 
+/**
+ * @brief This is like @see RegionInterval but also stores an value associated with the interval.
+ * The type of the value is the type that is passed as template parameter
+ * @author Kai Klindworth
+ */
 template<typename T>
 class ValueRegionInterval : public RegionInterval
 {
@@ -107,6 +121,8 @@ public:
 		init(y, x_lower, x_upper);
 		this->value = value;
 	}
+
+	//! Constructs an classic version of this interval without the additional value.
 	RegionInterval toInterval()
 	{
 		return RegionInterval(y, lower, upper);

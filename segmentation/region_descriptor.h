@@ -41,11 +41,11 @@ public:
 	std::vector<RegionInterval> lineIntervals;
 	cv::Rect bounding_box;
 
-	/*! Returns a cv::Mat with a binary image of the region. The image can be made bigger than actually nedded by setting a margin > 0*/
-	cv::Mat getMask(int margin) const;
-	/*! Returns all pixels of the region as 1D cv::Mat. You can move the region horizontally (by setting d != 0), where the pixels will be extracted. */
-	cv::Mat getAsMat(const cv::Mat& src, int d) const;
-	/*! Returns the size of the region in pixel (the actual region, not the bounding box) */
+	//! Returns a cv::Mat with a binary image of the region. The image can be made bigger than actually nedded by setting a margin > 0
+	cv::Mat mask(int margin) const;
+	//! Returns all pixels of the region as 1D cv::Mat. You can move the region horizontally (by setting d != 0), where the pixels will be extracted.
+	cv::Mat as_mat(const cv::Mat& src, int d) const;
+	//! Returns the size of the region in pixel (the actual region, not the bounding box)
 	int size() const;
 
 	int m_size;
@@ -53,8 +53,6 @@ public:
 	neighbor_vector neighbors;
 
 	cv::Vec3d average_color;
-
-
 };
 
 /**

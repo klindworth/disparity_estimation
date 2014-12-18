@@ -206,7 +206,7 @@ MutualRegion DisparityRegion::getMutualRegion(std::size_t idx, std::size_t dispa
 
 void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm)
 {
-	result = algorithm->getSegmentationImage<RegionContainer>(task.base);
+	result = algorithm->segmentation_image<RegionContainer>(task.base);
 	result->task = task;
 
 	//matstore.addMat(getWrongColorSegmentationImage(result->task.base.size(), result->regions), "segtest");

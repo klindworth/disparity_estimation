@@ -140,7 +140,7 @@ cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Mat_<int>& labels, int la
 	return regions.size();
 }*/
 
-std::shared_ptr<segmentation_algorithm> getSegmentationClass(const segmentation_settings& settings) {
+std::shared_ptr<segmentation_algorithm> create_segmentation_class(const segmentation_settings& settings) {
 #ifdef USE_MEANSHIFT
 	if(settings.algorithm == "meanshift")
 		return std::make_shared<meanshift_segmentation>(settings);
@@ -161,9 +161,6 @@ std::shared_ptr<segmentation_algorithm> getSegmentationClass(const segmentation_
 
 const cv::FileNode& operator>>(const cv::FileNode& stream, segmentation_settings& config)
 {
-	stream["regionsplit"] >> config.enable_regionsplit;
-	stream["fusion"] >> config.enable_fusion;
-	stream["color_fusion"] >> config.enable_color_fusion;
 	stream["spatial_var"] >> config.spatial_var;
 	stream["color_var"] >> config.color_var;
 	stream["superpixel_size"] >> config.superpixel_size;
@@ -178,9 +175,6 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const segmentation_settings
 	stream << "segmentation" << config.algorithm;
 	stream << "spatial_var" << config.spatial_var << "color_var" << config.color_var;
 	stream << "superpixel_size" << config.superpixel_size << "superpixel_compactness" << config.superpixel_compactness;
-	stream << "regionsplit" << config.enable_regionsplit;
-	stream << "fusion" << config.enable_fusion;
-	stream << "color_fusion" << config.enable_color_fusion;
 	return stream;
 }
 
