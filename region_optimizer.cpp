@@ -38,12 +38,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <omp.h>
 
 template<typename sum_type, typename T>
-void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv::Mat_<T>& src, const std::vector<RegionInterval>& region, int dx_min, int dx_max)
+void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv::Mat_<T>& src, const std::vector<region_interval>& region, int dx_min, int dx_max)
 {
 	assert(dx_max >= dx_min);
 	assert((int)result.size() == dx_max - dx_min + 1);
 
-	std::vector<RegionInterval> old_region = region;
+	std::vector<region_interval> old_region = region;
 	move_x_region(old_region.begin(), old_region.end(), dx_min, src.cols);
 
 	sum_type sum = 0;
@@ -58,13 +58,13 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	{
 		for(std::size_t i = 0; i < region.size(); ++i)
 		{
-			RegionInterval hyp_interval = region[i];
+			region_interval hyp_interval = region[i];
 			hyp_interval.move(dx, src.cols);
 			assert(hyp_interval.upper - hyp_interval.lower >= 0);
 			assert(hyp_interval.upper >= 0 && hyp_interval.upper <= src.cols);
 			assert(hyp_interval.lower >= 0 && hyp_interval.lower <= src.cols);
 
-			RegionInterval old_interval = old_region[i];
+			region_interval old_interval = old_region[i];
 
 			if(hyp_interval.lower != old_interval.lower)
 			{

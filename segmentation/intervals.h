@@ -29,12 +29,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <assert.h>
 
 /**
- * @brief The RegionInterval class represents an interval in x-direction
+ * @brief The region_interval class represents an interval in x-direction
  * Because it just represents an interval in x direction, it has three fields: The y-coordinate, an the two coordinates in x-direction: lower and upper.
  * Attention: [lower, upper), like in the STL, the end is not part of the interval
  * @author Kai Klindworth
  */
-class RegionInterval
+class region_interval
 {
 public:
 	inline void init(int y, int x_lower, int x_upper)
@@ -49,8 +49,8 @@ public:
 		this->upper = x_upper;
 	}
 
-	RegionInterval() {}
-	RegionInterval(int y, int x_lower, int x_upper)
+	region_interval() {}
+	region_interval(int y, int x_lower, int x_upper)
 	{
 		init(y, x_lower, x_upper);
 	}
@@ -82,36 +82,36 @@ public:
 		return upper - lower;
 	}
 
-	inline bool operator<(const RegionInterval& rhs) const
+	inline bool operator<(const region_interval& rhs) const
 	{
 		return (this->y < rhs.y) || (this->lower < rhs.lower && this->y == rhs.y);
 	}
 
 	//rhs is bigger (operator< ordered)
-	inline bool intersectingOrdered(const RegionInterval& rhs) const
+	inline bool intersectingOrdered(const region_interval& rhs) const
 	{
 		return((this->lower <= rhs.lower && this->y == rhs.y) && this->upper > rhs.lower);
 	}
 
 	//! Returns, if this interval have an intersection with another interval
-	inline bool intersecting(const RegionInterval& rhs) const
+	inline bool intersecting(const region_interval& rhs) const
 	{
 		return intersectingOrdered(rhs) || rhs.intersectingOrdered(*this);
 	}
 };
 
 /**
- * @brief This is like RegionInterval but also stores an value associated with the interval.
+ * @brief This is like region_interval but also stores an value associated with the interval.
  * The type of the value is the type that is passed as template parameter
  * @author Kai Klindworth
  */
 template<typename T>
-class value_region_interval : public RegionInterval
+class value_region_interval : public region_interval
 {
 public:
 	T value;
 	value_region_interval() {}
-	value_region_interval(RegionInterval interval, T value) {
+	value_region_interval(region_interval interval, T value) {
 		init(interval.y, interval.lower, interval.upper);
 		this->value = value;
 	}
@@ -123,13 +123,13 @@ public:
 	}
 
 	//! Constructs an classic version of this interval without the additional value.
-	RegionInterval to_interval()
+	region_interval to_interval()
 	{
-		return RegionInterval(y, lower, upper);
+		return region_interval(y, lower, upper);
 	}
 };
 
-inline bool operator==(const RegionInterval& lhs, const RegionInterval& rhs)
+inline bool operator==(const region_interval& lhs, const region_interval& rhs)
 {
 	return (lhs.y == rhs.y) && (lhs.lower == rhs.lower) && (lhs.upper == rhs.upper);
 }

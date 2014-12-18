@@ -125,7 +125,7 @@ void fill_region_descriptors(Iterator begin, Iterator end, const cv::Mat_<label_
 {
 	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, label_type value) {
 		assert(value < std::distance(begin, end) && value >= 0);
-		(*(begin + value)).lineIntervals.push_back(RegionInterval(y, lower, upper));
+		(*(begin + value)).lineIntervals.push_back(region_interval(y, lower, upper));
 	};
 
 	intervals::convert_differential<label_type>(labels, factory);
@@ -241,7 +241,7 @@ bool checkLabelsIntervalsInvariant(Iterator begin, Iterator end, const cv::Mat_<
 		assert(segsize == cregion.m_size);
 		assert(segsize != 0);
 		pixelcount += segsize;
-		for(const RegionInterval& cinterval : cregion.lineIntervals)
+		for(const region_interval& cinterval : cregion.lineIntervals)
 		{
 			for(int x = cinterval.lower; x < cinterval.upper; ++x)
 			{

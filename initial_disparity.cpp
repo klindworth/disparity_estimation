@@ -180,7 +180,7 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 			if(d>= range.first && d <= range.second)
 			{
 				//std::vector<RegionInterval> filtered = filter_region(regions[i].lineIntervals, std::min(0,d), occ, base.size[1]);
-				std::vector<RegionInterval> filtered = filtered_region(base.size[1], regions[i].lineIntervals, d);
+				std::vector<region_interval> filtered = filtered_region(base.size[1], regions[i].lineIntervals, d);
 				cv::Mat diff_region = region_as_mat(diff, filtered, std::min(0, d));
 				//cv::Mat diff_region = getRegionAsMat(diff, regions[i].lineIntervals, 0);
 				float sum = cv::norm(diff_region, cv::NORM_L1);
@@ -265,7 +265,7 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 			{
 				for(std::size_t j = 0; j < count; ++j)
 				{
-					const RegionInterval& cinterval = regions[i].lineIntervals[j];
+					const region_interval& cinterval = regions[i].lineIntervals[j];
 					int lower = std::max(cinterval.lower+d, 0)-d + base_offset;
 					int upper = std::min(cinterval.upper+d, width)-d + base_offset;
 					int y = cinterval.y;
@@ -430,7 +430,7 @@ std::vector<value_region_interval<short> > getIntervalDisparityBySegments(const 
 		if(i != exclude)
 		{
 			result.reserve(result.size() + container.regions[i].lineIntervals.size());
-			for(const RegionInterval& cinterval : container.regions[i].lineIntervals)
+			for(const region_interval& cinterval : container.regions[i].lineIntervals)
 				result.push_back(value_region_interval<short>(cinterval, container.regions[i].disparity));
 		}
 	}
@@ -440,9 +440,9 @@ std::vector<value_region_interval<short> > getIntervalDisparityBySegments(const 
 	return result;
 }
 
-std::vector<RegionInterval> exposureVector(const cv::Mat& occlusionMap)
+std::vector<region_interval> exposureVector(const cv::Mat& occlusionMap)
 {
-	std::vector<RegionInterval> exposure;
+	std::vector<region_interval> exposure;
 
 	const cv::Mat_<unsigned char> occ = occlusionMap;
 	intervals::turn_value_into_intervals(occ, std::back_inserter(exposure), (unsigned char)0);

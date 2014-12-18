@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <segmentation/region_descriptor.h>
 #include <segmentation/segmentation.h>
 
-class RegionInterval;
+class region_interval;
 
 class corresponding_region
 {
@@ -63,7 +63,7 @@ class disparity_region : public region_descriptor
 {
 public:
 	disparity_region();
-	std::vector<RegionInterval> warped_interval;
+	std::vector<region_interval> warped_interval;
 	std::vector<std::vector< corresponding_region >> corresponding_regions;
 	cv::Mat_<float> disparity_costs;
 	cv::Mat_<float> optimization_energy;
@@ -97,7 +97,7 @@ void generate_stats(disparity_region& region, const StereoSingleTask& task, int 
 
 void labelLRCheck(region_container& base, const region_container& match, int delta);
 void refreshWarpedIdx(region_container& container);
-std::vector<RegionInterval> filtered_region(int width, const std::vector<RegionInterval> &pixel_idx, int d);
+std::vector<region_interval> filtered_region(int width, const std::vector<region_interval> &pixel_idx, int d);
 
 bool checkLabelsIntervalsInvariant(const std::vector<disparity_region>& regions, const cv::Mat_<int>& labels, int segcount);
 

@@ -40,7 +40,7 @@ class StereoSingleTask;
 class disparity_region;
 class region_container;
 class segmentation_algorithm;
-class RegionInterval;
+class region_interval;
 class region_descriptor;
 class region_optimizer;
 

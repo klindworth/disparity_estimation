@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/core/core.hpp>
 
-class RegionInterval;
+class region_interval;
 typedef std::vector<std::pair<std::size_t, std::size_t> > neighbor_vector;
 
 /**
@@ -38,7 +38,7 @@ typedef std::vector<std::pair<std::size_t, std::size_t> > neighbor_vector;
 class region_descriptor
 {
 public:
-	std::vector<RegionInterval> lineIntervals;
+	std::vector<region_interval> lineIntervals;
 	cv::Rect bounding_box;
 
 	//! Returns a cv::Mat with a binary image of the region. The image can be made bigger than actually nedded by setting a margin > 0
@@ -64,13 +64,13 @@ public:
  * @param d Applies a move in x-direction before taking values
  * @return Newly created cv::Mat with the size of the region and the values from src
  */
-cv::Mat region_as_mat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d);
+cv::Mat region_as_mat(const cv::Mat& src, const std::vector<region_interval> &pixel_idx, int d);
 
-int size_of_region(const std::vector<RegionInterval>& intervals);
+int size_of_region(const std::vector<region_interval>& intervals);
 void calculate_average_color(region_descriptor& region, const cv::Mat& lab_image);
-std::vector<RegionInterval> dilated_region(region_descriptor &cregion, unsigned int dilate_grow, cv::Mat base);
+std::vector<region_interval> dilated_region(region_descriptor &cregion, unsigned int dilate_grow, cv::Mat base);
 
-void create_region_from_mask(std::vector<RegionInterval>& region, const cv::Mat &mask, int py, int px, int height, int width);
+void create_region_from_mask(std::vector<region_interval>& region, const cv::Mat &mask, int py, int px, int height, int width);
 
 cv::Mat lab_to_bgr(const cv::Mat& src);
 cv::Mat bgr_to_lab(const cv::Mat& src);

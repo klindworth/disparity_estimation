@@ -113,11 +113,11 @@ void RegionWindow::setStore(DebugMatStore* store, InitialDisparityConfig *config
 	}
 }
 
-void markRegionColor(cv::Mat& color_image, const std::vector<RegionInterval>& pixel_idx, int d)
+void markRegionColor(cv::Mat& color_image, const std::vector<region_interval>& pixel_idx, int d)
 {
-	std::vector<RegionInterval> filtered = filtered_region(color_image.cols, pixel_idx, d);
+	std::vector<region_interval> filtered = filtered_region(color_image.cols, pixel_idx, d);
 
-	for(const RegionInterval& cinterval : filtered)
+	for(const region_interval& cinterval : filtered)
 	{
 		for(int x = cinterval.lower; x < cinterval.upper; ++x)
 		{

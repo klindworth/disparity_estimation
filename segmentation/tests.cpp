@@ -15,7 +15,7 @@ region_descriptor create_rectangle(cv::Rect rect)
 {
 	region_descriptor result;
 	for(int i = 0; i < rect.height; ++i)
-		result.lineIntervals.push_back(RegionInterval(i+rect.y, rect.x, rect.x + rect.width));
+		result.lineIntervals.push_back(region_interval(i+rect.y, rect.x, rect.x + rect.width));
 
 	result.bounding_box = rect;
 	result.m_size = rect.area();
@@ -68,7 +68,7 @@ TEST(SplitRegionTest, Basic2)
 
 	//irregular shaped case
 	region_descriptor test5 = test3;
-	test5.lineIntervals.push_back(RegionInterval(30,15,40));
+	test5.lineIntervals.push_back(region_interval(30,15,40));
 	test5.bounding_box.width = 25;
 	test5.bounding_box.height += 1;
 	std::vector<region_descriptor> res5;
@@ -91,12 +91,12 @@ bool mismatch_output(Iterator it1begin, Iterator it1end, Iterator it2begin)
 
 TEST(Interval, Simple1)
 {
-	std::vector<RegionInterval> base {RegionInterval(0, 2, 6), RegionInterval(0, 10, 19), RegionInterval(0,22,29), RegionInterval(0,30,36), RegionInterval(1,2,6), RegionInterval(2,4,9)};
-	std::vector<RegionInterval> match {RegionInterval(0, 3,5), RegionInterval(0,9,13), RegionInterval(0,15,21), RegionInterval(0,23,26), RegionInterval(0,36, 41), RegionInterval(2,5,7)};
-	std::vector<RegionInterval> difference;
+	std::vector<region_interval> base {region_interval(0, 2, 6), region_interval(0, 10, 19), region_interval(0,22,29), region_interval(0,30,36), region_interval(1,2,6), region_interval(2,4,9)};
+	std::vector<region_interval> match {region_interval(0, 3,5), region_interval(0,9,13), region_interval(0,15,21), region_interval(0,23,26), region_interval(0,36, 41), region_interval(2,5,7)};
+	std::vector<region_interval> difference;
 	//std::vector<RegionInterval> intersection;
 
-	std::vector<RegionInterval> difference_desired {RegionInterval(0,2,3), RegionInterval(0,5,6), RegionInterval(0, 13, 15), RegionInterval(0,22,23), RegionInterval(0,26,29), RegionInterval(0,30,36), RegionInterval(1,2,6), RegionInterval(2,4,5),RegionInterval(2, 7, 9)};
+	std::vector<region_interval> difference_desired {region_interval(0,2,3), region_interval(0,5,6), region_interval(0, 13, 15), region_interval(0,22,23), region_interval(0,26,29), region_interval(0,30,36), region_interval(1,2,6), region_interval(2,4,5),region_interval(2, 7, 9)};
 	//std::vector<RegionInterval> intersection_desired {RegionInterval(0,3,5), RegionInterval(0,10,13), RegionInterval(0,15,19), RegionInterval(0,23,26), RegionInterval(2,5,7)};
 
 	//intervals::intersection(base.begin(), base.end(), match.begin(), match.end(), 0, std::back_inserter(intersection), std::back_inserter(difference));
@@ -118,12 +118,12 @@ TEST(Interval, Simple1)
 
 TEST(Interval, Simple2)
 {
-	std::vector<RegionInterval> base {RegionInterval(0,1,2), RegionInterval(0, 2, 6), RegionInterval(0, 10, 19), RegionInterval(0,22,29), RegionInterval(0,30,36), RegionInterval(1,2,6), RegionInterval(2,4,9), RegionInterval(5,1,9), RegionInterval(6,2,6)};
-	std::vector<RegionInterval> match {RegionInterval(0,1,2), RegionInterval(0, 3,5), RegionInterval(0,9,13), RegionInterval(0,15,21), RegionInterval(0,23,26), RegionInterval(0,36, 41), RegionInterval(2,5,7), RegionInterval(3,5,9), RegionInterval(5,3,6), RegionInterval(6,2,6)};
-	std::vector<RegionInterval> difference;
+	std::vector<region_interval> base {region_interval(0,1,2), region_interval(0, 2, 6), region_interval(0, 10, 19), region_interval(0,22,29), region_interval(0,30,36), region_interval(1,2,6), region_interval(2,4,9), region_interval(5,1,9), region_interval(6,2,6)};
+	std::vector<region_interval> match {region_interval(0,1,2), region_interval(0, 3,5), region_interval(0,9,13), region_interval(0,15,21), region_interval(0,23,26), region_interval(0,36, 41), region_interval(2,5,7), region_interval(3,5,9), region_interval(5,3,6), region_interval(6,2,6)};
+	std::vector<region_interval> difference;
 	//std::vector<RegionInterval> intersection;
 
-	std::vector<RegionInterval> difference_desired {RegionInterval(0,2,3), RegionInterval(0,5,6), RegionInterval(0, 13, 15), RegionInterval(0,22,23), RegionInterval(0,26,29), RegionInterval(0,30,36), RegionInterval(1,2,6), RegionInterval(2,4,5),RegionInterval(2, 7, 9), RegionInterval(5,1,3), RegionInterval(5,6,9)};
+	std::vector<region_interval> difference_desired {region_interval(0,2,3), region_interval(0,5,6), region_interval(0, 13, 15), region_interval(0,22,23), region_interval(0,26,29), region_interval(0,30,36), region_interval(1,2,6), region_interval(2,4,5),region_interval(2, 7, 9), region_interval(5,1,3), region_interval(5,6,9)};
 	/*std::vector<RegionInterval> intersection_desired {RegionInterval(0,1,2), RegionInterval(0,3,5), RegionInterval(0,10,13), RegionInterval(0,15,19), RegionInterval(0,23,26), RegionInterval(2,5,7), RegionInterval(5,3,6), RegionInterval(6,2,6)};
 
 	intervals::intersection(base.begin(), base.end(), match.begin(), match.end(), 0, std::back_inserter(intersection), std::back_inserter(difference));
@@ -145,13 +145,13 @@ TEST(Interval, Simple2)
 
 TEST(Interval, Simple3)
 {
-	std::vector<RegionInterval> base  {RegionInterval(0, 319, 329), RegionInterval(1, 318, 329), RegionInterval(2, 318, 329), RegionInterval(4, 318,329), RegionInterval(5, 318,329), RegionInterval(11, 317,318), RegionInterval(12, 317,318)};
-	std::vector<RegionInterval> match {RegionInterval(0, 327, 328), RegionInterval(1, 326, 328), RegionInterval(2, 322, 328), RegionInterval(4, 321,322), RegionInterval(4, 323,328)};
-	std::vector<RegionInterval> difference;
+	std::vector<region_interval> base  {region_interval(0, 319, 329), region_interval(1, 318, 329), region_interval(2, 318, 329), region_interval(4, 318,329), region_interval(5, 318,329), region_interval(11, 317,318), region_interval(12, 317,318)};
+	std::vector<region_interval> match {region_interval(0, 327, 328), region_interval(1, 326, 328), region_interval(2, 322, 328), region_interval(4, 321,322), region_interval(4, 323,328)};
+	std::vector<region_interval> difference;
 	//std::vector<RegionInterval> intersection;
 
-	std::vector<RegionInterval> difference_desired {RegionInterval(0,319,327), RegionInterval(0,328,329), RegionInterval(1, 318, 326), RegionInterval(1,328,329), RegionInterval(2,318,322), RegionInterval(2,328,329), RegionInterval(4, 318,321), RegionInterval(4, 322,323), RegionInterval(4, 328,329), RegionInterval(5, 318,329), RegionInterval(11, 317,318), RegionInterval(12, 317,318)};
-	std::vector<RegionInterval> intersection_desired {RegionInterval(0, 327, 328), RegionInterval(1, 326, 328), RegionInterval(2, 322, 328), RegionInterval(4, 321,322), RegionInterval(4, 323,328)};
+	std::vector<region_interval> difference_desired {region_interval(0,319,327), region_interval(0,328,329), region_interval(1, 318, 326), region_interval(1,328,329), region_interval(2,318,322), region_interval(2,328,329), region_interval(4, 318,321), region_interval(4, 322,323), region_interval(4, 328,329), region_interval(5, 318,329), region_interval(11, 317,318), region_interval(12, 317,318)};
+	std::vector<region_interval> intersection_desired {region_interval(0, 327, 328), region_interval(1, 326, 328), region_interval(2, 322, 328), region_interval(4, 321,322), region_interval(4, 323,328)};
 
 	/*intervals::intersection(base.begin(), base.end(), match.begin(), match.end(), 0, std::back_inserter(intersection), std::back_inserter(difference));
 
@@ -180,12 +180,12 @@ TEST(Interval, Simple3)
 
 TEST(Interval, SimpleDisparity)
 {
-	std::vector<RegionInterval> base {RegionInterval(0, 2, 6), RegionInterval(0, 10, 19), RegionInterval(0,22,29), RegionInterval(0,30,36), RegionInterval(1,2,6), RegionInterval(2,4,9)};
-	std::vector<RegionInterval> match {RegionInterval(0, 3,5), RegionInterval(0,9,13), RegionInterval(0,15,21), RegionInterval(0,23,26), RegionInterval(0,36, 41), RegionInterval(2,5,7)};
-	std::vector<RegionInterval> difference;
+	std::vector<region_interval> base {region_interval(0, 2, 6), region_interval(0, 10, 19), region_interval(0,22,29), region_interval(0,30,36), region_interval(1,2,6), region_interval(2,4,9)};
+	std::vector<region_interval> match {region_interval(0, 3,5), region_interval(0,9,13), region_interval(0,15,21), region_interval(0,23,26), region_interval(0,36, 41), region_interval(2,5,7)};
+	std::vector<region_interval> difference;
 	//std::vector<RegionInterval> intersection;
 
-	std::vector<RegionInterval> difference_desired {RegionInterval(0,2,4), RegionInterval(0, 14, 16), RegionInterval(0,22,24), RegionInterval(0,27,29), RegionInterval(0,30,36), RegionInterval(1,2,6), RegionInterval(2,4,6),RegionInterval(2, 8, 9)};
+	std::vector<region_interval> difference_desired {region_interval(0,2,4), region_interval(0, 14, 16), region_interval(0,22,24), region_interval(0,27,29), region_interval(0,30,36), region_interval(1,2,6), region_interval(2,4,6),region_interval(2, 8, 9)};
 	/*std::vector<RegionInterval> intersection_desired {RegionInterval(0,4,6), RegionInterval(0,10,14), RegionInterval(0,16,19), RegionInterval(0,24,27), RegionInterval(2,6,8)};
 
 	intervals::intersection(base.begin(), base.end(), match.begin(), match.end(), -1, std::back_inserter(intersection), std::back_inserter(difference), true);
@@ -237,10 +237,10 @@ TEST(Interval, ThresholdConvert)
 		test.at<unsigned char>(i+5) = 5;
 		test.at<unsigned char>(i+12) = 5;
 	}
-	std::vector<RegionInterval> result;
+	std::vector<region_interval> result;
 	intervals::convert_minima_ranges(test, std::back_inserter(result), (unsigned char)10);
 
-	std::vector<RegionInterval> expected {RegionInterval(0, 5, 10), RegionInterval(0,12,17)};
+	std::vector<region_interval> expected {region_interval(0, 5, 10), region_interval(0,12,17)};
 
 	EXPECT_TRUE(mismatch_output(result.begin(), result.end(), expected.begin()));
 }
@@ -248,9 +248,9 @@ TEST(Interval, ThresholdConvert)
 //ported
 TEST(Interval, Intersecting)
 {
-	RegionInterval test1(0,1,4);
-	RegionInterval test2(0,2,5);
-	RegionInterval test3(0,4,9);
+	region_interval test1(0,1,4);
+	region_interval test2(0,2,5);
+	region_interval test3(0,4,9);
 	EXPECT_TRUE(test1.intersecting(test2));
 	EXPECT_FALSE(test1.intersecting(test3));
 	EXPECT_TRUE(test2.intersecting(test3));

@@ -41,12 +41,12 @@ disparity_region::disparity_region()
 	dilation = 0;
 }
 
-std::vector<RegionInterval> filtered_region(int width, const std::vector<RegionInterval> &old_region, int d)
+std::vector<region_interval> filtered_region(int width, const std::vector<region_interval> &old_region, int d)
 {
-	std::vector<RegionInterval> filtered;
+	std::vector<region_interval> filtered;
 	filtered.reserve(old_region.size());
 
-	for(const RegionInterval& cinterval : old_region)
+	for(const region_interval& cinterval : old_region)
 	{
 		int lower = std::max(cinterval.lower+d, 0)-d;
 		int upper = std::min(cinterval.upper+d, width)-d;
@@ -184,7 +184,7 @@ void refreshWarpedIdx(region_container& container)
 		cregion.warped_interval.clear();
 		cregion.warped_interval.reserve(cregion.lineIntervals.size());
 		cregion.warped_interval = filtered_region(container.task.base.cols, cregion.lineIntervals, cregion.disparity);
-		for(RegionInterval& cinterval : cregion.warped_interval)
+		for(region_interval& cinterval : cregion.warped_interval)
 		{
 			cinterval.lower += cregion.disparity;
 			cinterval.upper += cregion.disparity;

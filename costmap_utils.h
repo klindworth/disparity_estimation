@@ -32,7 +32,7 @@ namespace cv {
 class Mat;
 }
 
-class RegionInterval;
+class region_interval;
 class disparity_region;
 
 //saves the statistics for an pixel in a cost map

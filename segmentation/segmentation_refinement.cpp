@@ -12,7 +12,7 @@ void hsplit_region(const region_descriptor& descriptor, region_descriptor& first
 	second.bounding_box.y = split_threshold;
 	second.bounding_box.height = descriptor.bounding_box.y + descriptor.bounding_box.height - split_threshold;
 
-	for(const RegionInterval& cinterval : descriptor.lineIntervals)
+	for(const region_interval& cinterval : descriptor.lineIntervals)
 	{
 		if(cinterval.y < split_threshold)
 			first.lineIntervals.push_back(cinterval);
@@ -33,12 +33,12 @@ void vsplit_region(const region_descriptor& descriptor, region_descriptor& first
 	second.bounding_box.x = split_threshold;
 	second.bounding_box.width = descriptor.bounding_box.x + descriptor.bounding_box.width - split_threshold;
 
-	for(const RegionInterval& cinterval : descriptor.lineIntervals)
+	for(const region_interval& cinterval : descriptor.lineIntervals)
 	{
 		if(cinterval.upper > split_threshold && cinterval.lower <= split_threshold)
 		{
-			first.lineIntervals.push_back(RegionInterval(cinterval.y, cinterval.lower, split_threshold));
-			second.lineIntervals.push_back(RegionInterval(cinterval.y, split_threshold, cinterval.upper));
+			first.lineIntervals.push_back(region_interval(cinterval.y, cinterval.lower, split_threshold));
+			second.lineIntervals.push_back(region_interval(cinterval.y, split_threshold, cinterval.upper));
 		}
 		else if(cinterval.upper <= split_threshold)
 			first.lineIntervals.push_back(cinterval);
@@ -55,7 +55,7 @@ cv::Point region_avg_point(const region_descriptor& descriptor)
 	long long x_avg = 0;
 	long long y_avg = 0;
 
-	for(const RegionInterval& cinterval : descriptor.lineIntervals)
+	for(const region_interval& cinterval : descriptor.lineIntervals)
 	{
 		x_avg += cinterval.upper - (cinterval.upper - cinterval.lower)/2 - 1;
 		y_avg += cinterval.y;

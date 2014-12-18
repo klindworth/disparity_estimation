@@ -30,10 +30,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "intervals_algorithms.h"
 
 
-void region_as_mat_internal(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d, cv::Mat& dst, int elemSize)
+void region_as_mat_internal(const cv::Mat& src, const std::vector<region_interval> &pixel_idx, int d, cv::Mat& dst, int elemSize)
 {
 	unsigned char *dst_ptr = dst.data;
-	for(const RegionInterval& cinterval : pixel_idx)
+	for(const region_interval& cinterval : pixel_idx)
 	{
 		int x = cinterval.lower + d;
 		assert(x < src.size[1]);
@@ -46,7 +46,7 @@ void region_as_mat_internal(const cv::Mat& src, const std::vector<RegionInterval
 	}
 }
 
-cv::Mat region_as_mat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d)
+cv::Mat region_as_mat(const cv::Mat& src, const std::vector<region_interval> &pixel_idx, int d)
 {
 	int length = size_of_region(pixel_idx);
 
@@ -62,7 +62,7 @@ cv::Mat region_descriptor::mask(int margin) const
 	assert(bounding_box.width > 0 && bounding_box.height > 0);
 
 	cv::Mat mask = cv::Mat::zeros(bounding_box.height + 2*margin, bounding_box.width + 2*margin, CV_8UC1);
-	for(const RegionInterval& cinterval : lineIntervals)
+	for(const region_interval& cinterval : lineIntervals)
 	{
 		assert(cinterval.y + margin - bounding_box.y >= 0 && cinterval.y + margin - bounding_box.y < bounding_box.height + 2*margin);
 		assert(cinterval.lower + margin - bounding_box.x >= 0 && cinterval.lower + margin - bounding_box.x + cinterval.length() < bounding_box.width + 2*margin);
@@ -72,7 +72,7 @@ cv::Mat region_descriptor::mask(int margin) const
 	return mask;
 }
 
-void create_region_from_mask(std::vector<RegionInterval>& region, const cv::Mat& mask, int py, int px, int height, int width)
+void create_region_from_mask(std::vector<region_interval>& region, const cv::Mat& mask, int py, int px, int height, int width)
 {
 	region.clear();
 
@@ -88,7 +88,7 @@ void create_region_from_mask(std::vector<RegionInterval>& region, const cv::Mat&
 		if(value == 255)
 		{
 			assert(y-y_min < height-py && lower+px+x_min >= 0 && y+py+y_min >= 0 && upper+px+x_min > 0 && upper+x_min <= width-px);
-			region.push_back(RegionInterval(y+py+y_min, lower+px+x_min, upper+px+x_min));
+			region.push_back(region_interval(y+py+y_min, lower+px+x_min, upper+px+x_min));
 		}
 	};
 
@@ -96,11 +96,11 @@ void create_region_from_mask(std::vector<RegionInterval>& region, const cv::Mat&
 	intervals::convert_differential<unsigned char>(mask2, factory);
 }
 
-std::vector<RegionInterval> dilated_region(region_descriptor& cregion, unsigned int dilate_grow, cv::Mat base)
+std::vector<region_interval> dilated_region(region_descriptor& cregion, unsigned int dilate_grow, cv::Mat base)
 {
 	if(dilate_grow > 0)
 	{
-		std::vector<RegionInterval> dil_pixel_idx;
+		std::vector<region_interval> dil_pixel_idx;
 		cv::Mat strucElem = cv::Mat(1+2*dilate_grow,1+2*dilate_grow, CV_8UC1, cv::Scalar(1));
 		cv::Mat mask = cregion.mask(dilate_grow);
 		cv::dilate(mask, mask, strucElem);
@@ -119,10 +119,10 @@ cv::Mat region_descriptor::as_mat(const cv::Mat& src, int d) const
 }
 
 
-int size_of_region(const std::vector<RegionInterval>& intervals)
+int size_of_region(const std::vector<region_interval>& intervals)
 {
 	int length = 0;
-	for(const RegionInterval& cinterval : intervals)
+	for(const region_interval& cinterval : intervals)
 		length += cinterval.length();
 
 	return length;

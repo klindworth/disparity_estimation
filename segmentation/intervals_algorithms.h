@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace intervals
 {
 
-inline bool weakIntervalLess(const RegionInterval& lhs, const RegionInterval& rhs, int d)
+inline bool weakIntervalLess(const region_interval& lhs, const region_interval& rhs, int d)
 {
 	return (lhs.y < rhs.y) || (lhs.y == rhs.y && lhs.upper <= rhs.lower - d); //TODO: check upper >= lower
 }
@@ -46,7 +46,7 @@ void difference(InputIterator1 base_it, InputIterator1 base_end, InputIterator2 
 	assert(std::is_sorted(base_it, base_end));
 	assert(std::is_sorted(match_it, match_end));
 
-	RegionInterval last(0,0,0);
+	region_interval last(0,0,0);
 	bool lastSet = false;
 	//sync y
 	while(true)
@@ -57,7 +57,7 @@ void difference(InputIterator1 base_it, InputIterator1 base_end, InputIterator2 
 			{
 				if(lastSet && last.y == base_it->y) //process rest of line
 				{
-					*inserterDifferenceBase = RegionInterval(base_it->y, last.upper, base_it->upper);
+					*inserterDifferenceBase = region_interval(base_it->y, last.upper, base_it->upper);
 					++inserterDifferenceBase;
 					lastSet = false;
 				} else { //alone in a row
@@ -93,16 +93,16 @@ void difference(InputIterator1 base_it, InputIterator1 base_end, InputIterator2 
 			//if(base_it->x_lower < lower)// && base_it->x_upper != upper)
 			if(lastSet && last.upper < lower)
 			{
-				*inserterDifferenceBase = RegionInterval(base_it->y, std::max(last.upper, base_it->lower), std::min(lower, base_it->upper));
+				*inserterDifferenceBase = region_interval(base_it->y, std::max(last.upper, base_it->lower), std::min(lower, base_it->upper));
 				++inserterDifferenceBase;
 			}
 			else if(!lastSet && base_it->lower < lower)
 			{
-				*inserterDifferenceBase = RegionInterval(base_it->y, base_it->lower, std::min(lower, base_it->upper));
+				*inserterDifferenceBase = region_interval(base_it->y, base_it->lower, std::min(lower, base_it->upper));
 				++inserterDifferenceBase;
 			}
 
-			last = RegionInterval(base_it->y, lower, upper);
+			last = region_interval(base_it->y, lower, upper);
 			lastSet = true;
 		}
 
@@ -118,9 +118,9 @@ void difference(InputIterator1 base_it, InputIterator1 base_end, InputIterator2 
 }
 
 template<typename dst_type>
-void set_region_value(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx, dst_type value)
+void set_region_value(cv::Mat& dst, const std::vector<region_interval>& pixel_idx, dst_type value)
 {
-	for(const RegionInterval& interval : pixel_idx)
+	for(const region_interval& interval : pixel_idx)
 	{
 		dst_type *ptr = dst.ptr<dst_type>(interval.y, interval.lower);
 		std::fill(ptr, ptr + interval.length(), value);
@@ -128,9 +128,9 @@ void set_region_value(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx
 }
 
 template<>
-inline void set_region_value(cv::Mat& dst, const std::vector<RegionInterval>& pixel_idx, unsigned char value)
+inline void set_region_value(cv::Mat& dst, const std::vector<region_interval>& pixel_idx, unsigned char value)
 {
-	for(const RegionInterval& interval : pixel_idx)
+	for(const region_interval& interval : pixel_idx)
 		memset(dst.ptr<unsigned char>(interval.y, interval.lower), value, interval.length());
 }
 
@@ -140,7 +140,7 @@ inline void set_region_value(cv::Mat& dst, const std::vector<RegionInterval>& pi
  * @param func Function that accepts the coordinates as cv::Point
  */
 template<typename lambda_type>
-inline void foreach_interval_point(const RegionInterval& interval, lambda_type func)
+inline void foreach_interval_point(const region_interval& interval, lambda_type func)
 {
 	for(int x = interval.lower; x < interval.upper; ++x)
 		func(cv::Point(x, interval.y));
@@ -166,7 +166,7 @@ inline void foreach_region_point(Iterator it, Iterator end, lambda_type func)
  * @param change Value that will be added
  */
 template<typename dst_type>
-void add_region_value(cv::Mat& dst, const std::vector<RegionInterval>& interval_container, dst_type change)
+void add_region_value(cv::Mat& dst, const std::vector<region_interval>& interval_container, dst_type change)
 {
 	foreach_region_point(interval_container.begin(), interval_container.end(), [=,&dst](cv::Point pt){
 		dst.at<dst_type>(pt) += change;
@@ -180,7 +180,7 @@ void add_region_value(cv::Mat& dst, const std::vector<RegionInterval>& interval_
  * @param change Value that will be substracted
  */
 template<typename dst_type>
-void substract_region_value(cv::Mat& dst, const std::vector<RegionInterval>& interval_container, dst_type change)
+void substract_region_value(cv::Mat& dst, const std::vector<region_interval>& interval_container, dst_type change)
 {
 	foreach_region_point(interval_container.begin(), interval_container.end(), [=,&dst](cv::Point pt){
 		dst.at<dst_type>(pt) -= change;
@@ -264,7 +264,7 @@ void turn_value_into_intervals(const cv::Mat_<value_type>& values, InserterItera
 	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, value_type value) {
 		if(value == search_value)
 		{
-			*inserter = RegionInterval(y, lower, upper);
+			*inserter = region_interval(y, lower, upper);
 			++inserter;
 		}
 	};
@@ -278,7 +278,7 @@ void convert_minima_ranges(const cv::Mat_<value_type>& values, InserterIterator 
 	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, value_type value) {
 		if(value < threshold)
 		{
-			*inserter = RegionInterval(y,lower,upper);
+			*inserter = region_interval(y,lower,upper);
 			++inserter;
 		}
 	};
@@ -293,7 +293,7 @@ void convert_minima_ranges(const cv::Mat_<value_type>& values, InserterIterator 
 }
 
 template<typename charT, typename traits>
-inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const RegionInterval& interval)
+inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const region_interval& interval)
 {
 	stream << "(y: " << interval.y << ", x: " << interval.lower << "-" << interval.upper << ") ";
 	return stream;

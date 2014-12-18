@@ -10,7 +10,7 @@ inline void parallel_region(std::vector<disparity_region>& regions, T func)
 }
 
 template<typename lambda_type>
-void foreach_filtered_interval_point(const RegionInterval& interval, int width, int d, lambda_type func)
+void foreach_filtered_interval_point(const region_interval& interval, int width, int d, lambda_type func)
 {
 	int lower = std::max(interval.lower+d, 0)-d;
 	int upper = std::min(interval.upper+d, width)-d;
@@ -20,7 +20,7 @@ void foreach_filtered_interval_point(const RegionInterval& interval, int width, 
 }
 
 template<typename lambda_type>
-void foreach_warped_interval_point(const RegionInterval& interval, int width, int d, lambda_type func)
+void foreach_warped_interval_point(const region_interval& interval, int width, int d, lambda_type func)
 {
 	int lower = std::max(interval.lower+d, 0);
 	int upper = std::min(interval.upper+d, width);
@@ -30,16 +30,16 @@ void foreach_warped_interval_point(const RegionInterval& interval, int width, in
 }
 
 template<typename lambda_type>
-void foreach_filtered_region_point(const std::vector<RegionInterval> &pixel_idx, int width, int d, lambda_type func)
+void foreach_filtered_region_point(const std::vector<region_interval> &pixel_idx, int width, int d, lambda_type func)
 {
-	for(const RegionInterval& cinterval : pixel_idx)
+	for(const region_interval& cinterval : pixel_idx)
 		foreach_filtered_interval_point(cinterval, width, d, func);
 }
 
 template<typename lambda_type>
-void foreach_warped_region_point(const std::vector<RegionInterval> &pixel_idx, int width, int d, lambda_type func)
+void foreach_warped_region_point(const std::vector<region_interval> &pixel_idx, int width, int d, lambda_type func)
 {
-	for(const RegionInterval& cinterval : pixel_idx)
+	for(const region_interval& cinterval : pixel_idx)
 		foreach_warped_interval_point(cinterval, width, d, func);
 }
 
@@ -118,6 +118,7 @@ std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& bas
 	float sum_weight = 0.0f;
 	for(const auto& cpair : neighbors)
 	{
+		assert(cpair.first < container.size());
 		float diff = color_trunc - std::min(cv::norm(base_color - container[cpair.first].average_color), color_trunc);
 
 		result += diff*func(container[cpair.first]);
@@ -135,6 +136,7 @@ inline float gather_neighbor_color_weights(std::vector<float>& weights, const cv
 	float sum_weight = 0.0f;
 	for(std::size_t i = 0; i < nsize; ++i)
 	{
+		assert(neighbors[i].first < container.size());
 		float diff = color_trunc - std::min(cv::norm(base_color - container[neighbors[i].first].average_color), color_trunc);
 
 		weights[i] = diff;

@@ -35,11 +35,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 void analyzeDisparityRange2(disparity_region& region)
 {
 	cv::Mat temp = region.disparity_costs.reshape(0,1);
-	std::vector<RegionInterval> minima_ranges;
+	std::vector<region_interval> minima_ranges;
 	intervals::convert_minima_ranges<float>(temp, std::back_inserter(minima_ranges), region.stats.mean - region.stats.stddev);
 
 	int minima_width = 0;
-	for(const RegionInterval& interval : minima_ranges)
+	for(const region_interval& interval : minima_ranges)
 		minima_width += interval.length();
 
 	region.stats.confidence_range = minima_ranges.size();
