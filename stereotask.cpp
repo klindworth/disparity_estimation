@@ -122,7 +122,7 @@ void StereoTask::loadGroundTruth(const std::string& nameGroundLeft, const std::s
 	else
 	{
 		if(groundLeft.data)
-			groundRight = warpDisparity<short>(groundLeft);
+			groundRight = warp_disparity<short>(groundLeft);
 		std::cout << "no ground truth data for right image" << std::endl;
 	}
 }

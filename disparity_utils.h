@@ -78,7 +78,7 @@ cv::Mat occlusion_stat(const cv::Mat& disparity, float scaling = 1.0f)
 }
 
 template<typename disparity_type>
-cv::Mat occlusionMap(const cv::Mat& disparity, const cv::Mat& warped, float scaling = 1.0f)
+cv::Mat occlusion_map(const cv::Mat& disparity, const cv::Mat& warped, float scaling = 1.0f)
 {
 	cv::Mat occ_image(disparity.size(), CV_8UC1, cv::Scalar(0));
 
@@ -113,7 +113,7 @@ inline T absmax(const T& v1, const T& v2)
 }
 
 template<typename disparity_type>
-cv::Mat warpDisparity(const cv::Mat& disparity, float scaling = 1.0f)
+cv::Mat warp_disparity(const cv::Mat& disparity, float scaling = 1.0f)
 {
 	cv::Mat warpedImage(disparity.size(), disparity.type(), cv::Scalar(0));
 

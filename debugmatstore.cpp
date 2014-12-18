@@ -37,7 +37,7 @@ void DebugMatStore::startNewTask(const std::string& name, StereoTask &task)
 {
 	tasks.push_back(TaskStore(name, &task));
 }
-void DebugMatStore::setRegionContainer(std::shared_ptr<RegionContainer>& left, std::shared_ptr<RegionContainer>& right)
+void DebugMatStore::setRegionContainer(std::shared_ptr<region_container>& left, std::shared_ptr<region_container>& right)
 {
 	assert(!tasks.empty());
 

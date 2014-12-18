@@ -414,14 +414,14 @@ cv::Mat convertToFullDisparityCostMap(const cv::Mat& cost_map, const cv::Mat& ra
 	return result;
 }
 
-void generateRegionInformation(RegionContainer& left, RegionContainer& right)
+void generateRegionInformation(region_container& left, region_container& right)
 {
 	std::cout << "warped_idx" << std::endl;
 	refreshWarpedIdx(left);
 	refreshWarpedIdx(right);
 }
 
-std::vector<value_region_interval<short> > getIntervalDisparityBySegments(const RegionContainer& container, std::size_t exclude)
+std::vector<value_region_interval<short> > getIntervalDisparityBySegments(const region_container& container, std::size_t exclude)
 {
 	std::vector<value_region_interval<short> > result;
 
@@ -469,7 +469,7 @@ void dilateLR(StereoSingleTask& task, std::vector<disparity_region>& regions_bas
 	});
 }
 
-void single_pass_region_disparity(StereoTask& task, RegionContainer& left, RegionContainer& right, const InitialDisparityConfig& config, bool b_refinement, disparity_region_func disparity_calculator, region_optimizer& optimizer)
+void single_pass_region_disparity(StereoTask& task, region_container& left, region_container& right, const InitialDisparityConfig& config, bool b_refinement, disparity_region_func disparity_calculator, region_optimizer& optimizer)
 {
 	int refinement = 0;
 	if(b_refinement)
@@ -597,16 +597,16 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
 	}
 
-	std::shared_ptr<RegionContainer> left  = std::make_shared<RegionContainer>();
-	std::shared_ptr<RegionContainer> right = std::make_shared<RegionContainer>();
+	std::shared_ptr<region_container> left  = std::make_shared<region_container>();
+	std::shared_ptr<region_container> right = std::make_shared<region_container>();
 
 	//segment_based_disparity_internal(task, left, right, config, disparity_function);
 
 	auto segmentationLeft  = create_segmentation_instance(config.segmentation);
 	auto segmentationRight = create_segmentation_instance(config.segmentation);
 
-	fillRegionContainer(left, task.forward, segmentationLeft);
-	fillRegionContainer(right, task.backward, segmentationRight);
+	fill_region_container(left, task.forward, segmentationLeft);
+	fill_region_container(right, task.backward, segmentationRight);
 
 	for(disparity_region& cregion : left->regions)
 		cregion.base_disparity = 0;

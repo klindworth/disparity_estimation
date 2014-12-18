@@ -37,7 +37,7 @@ inline T abs_pott(const T& v1, const T& v2, const T& trunc)
 	return std::min((T)std::abs(v1 - v2), trunc);
 }
 
-class RegionContainer;
+class region_container;
 class disparity_region;
 class InitialDisparityConfig;
 class StereoTask;
@@ -90,7 +90,7 @@ public:
 	int rounds;
 	bool enable_damping;
 
-	std::function<float(const disparity_region&, const RegionContainer&, const RegionContainer&, int)> prop_eval, prop_eval2, prop_eval_refine;
+	std::function<float(const disparity_region&, const region_container&, const region_container&, int)> prop_eval, prop_eval2, prop_eval_refine;
 	disparity_hypothesis_weight_vector base_eval, base_eval2, base_eval_refine;
 };
 
@@ -98,9 +98,9 @@ class region_optimizer
 {
 public:
 	region_optimizer() {training_mode = false;}
-	virtual void run(RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement= 0) = 0;
+	virtual void run(region_container& left, region_container& right, const optimizer_settings& config, int refinement= 0) = 0;
 	//void optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
-	virtual void reset(const RegionContainer& left, const RegionContainer& right) = 0;
+	virtual void reset(const region_container& left, const region_container& right) = 0;
 
 	virtual void set_training_mode(bool training) {training_mode = training;}
 	virtual void training() = 0;
@@ -109,7 +109,7 @@ protected:
 	bool training_mode;
 };
 
-void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, RegionContainer& left, const RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, int delta);
+void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, region_container& left, const region_container& match, const disparity_hypothesis_weight_vector& base_eval, int delta);
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const optimizer_settings& config);
 const cv::FileNode& operator>>(const cv::FileNode& stream, optimizer_settings& config);

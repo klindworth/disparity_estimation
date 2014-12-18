@@ -37,16 +37,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class RegionInterval;
 
-class MutualRegion
+class corresponding_region
 {
 public:
-	MutualRegion() : index(0), percent(0.0f) {}
-	MutualRegion(std::size_t idx) : index(idx), percent(0.0f) {}
-	MutualRegion(std::size_t idx, float per) : index(idx), percent(per) {}
+	corresponding_region() : index(0), percent(0.0f) {}
+	corresponding_region(std::size_t idx) : index(idx), percent(0.0f) {}
+	corresponding_region(std::size_t idx, float per) : index(idx), percent(per) {}
 
 	//std::size_t index;
-	unsigned int index;
-	float percent;
+	unsigned int index; ///< Index of the corresponding region
+	float percent; ///< Amount of overlapping
 };
 
 class EstimationStep
@@ -64,7 +64,7 @@ class disparity_region : public region_descriptor
 public:
 	disparity_region();
 	std::vector<RegionInterval> warped_interval;
-	std::vector<std::vector< MutualRegion >> other_regions;
+	std::vector<std::vector< corresponding_region >> corresponding_regions;
 	cv::Mat_<float> disparity_costs;
 	cv::Mat_<float> optimization_energy;
 
@@ -76,18 +76,18 @@ public:
 	char old_dilation;
 
 	//std::vector<EstimationStep> results;
-	MutualRegion getMutualRegion(std::size_t idx, std::size_t disparity_idx);
+	corresponding_region get_corresponding_region(std::size_t idx, std::size_t disparity_idx);
 };
 
-struct RegionContainer : public segmentation_image<disparity_region>
+struct region_container : public segmentation_image<disparity_region>
 {
 	StereoSingleTask task;
 	//std::vector<short> disparity;
 };
 
-cv::Mat disparity_by_segments(const RegionContainer &container);
+cv::Mat disparity_by_segments(const region_container &container);
 
-void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm);
+void fill_region_container(std::shared_ptr<region_container>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm);
 
 int reenumerate(cv::Mat& labels, int old_count);
 void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t old_idx, std::size_t new_idx);
@@ -95,8 +95,8 @@ void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t o
 void generate_stats(std::vector<disparity_region>& regions, const StereoSingleTask& task, const int delta);
 void generate_stats(disparity_region& region, const StereoSingleTask& task, int delta);
 
-void labelLRCheck(RegionContainer& base, const RegionContainer& match, int delta);
-void refreshWarpedIdx(RegionContainer& container);
+void labelLRCheck(region_container& base, const region_container& match, int delta);
+void refreshWarpedIdx(region_container& container);
 std::vector<RegionInterval> filtered_region(int width, const std::vector<RegionInterval> &pixel_idx, int d);
 
 bool checkLabelsIntervalsInvariant(const std::vector<disparity_region>& regions, const cv::Mat_<int>& labels, int segcount);

@@ -75,8 +75,8 @@ class ml_region_optimizer : public region_optimizer
 public:
 	ml_region_optimizer();
 	~ml_region_optimizer();
-	void run(RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement= 0) override;
-	void reset(const RegionContainer& left, const RegionContainer& right) override;
+	void run(region_container& left, region_container& right, const optimizer_settings& config, int refinement= 0) override;
+	void reset(const region_container& left, const region_container& right) override;
 
 	void training() override;
 
@@ -85,9 +85,9 @@ public:
 	const static int normalizer_size = vector_size+vector_size_per_disp;
 
 private:
-	void refresh_base_optimization_vector(const RegionContainer& base, const RegionContainer& match, int delta);
-	void prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta);
-	void optimize_ml(RegionContainer& base, const RegionContainer& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename);
+	void refresh_base_optimization_vector(const region_container& base, const region_container& match, int delta);
+	void prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta);
+	void optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename);
 	void reset_internal();
 	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
 

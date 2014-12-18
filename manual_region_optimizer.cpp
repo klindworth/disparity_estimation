@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "disparity_utils.h"
 
-void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const disparity_region&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
+void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, region_container& base, region_container& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const disparity_region&, const region_container&, const region_container&, int)> prop_eval, int delta)
 {
 	//std::cout << "base" << std::endl;
 	refreshOptimizationBaseValues(optimization_vectors_base, base, match, base_eval, delta);
@@ -54,7 +54,7 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 
 		for(short d = range.first; d <= range.second; ++d)
 		{
-			if(!baseRegion.other_regions[d-dispMin].empty())
+			if(!baseRegion.corresponding_regions[d-dispMin].empty())
 				temp_results(d-dispMin) = prop_eval(baseRegion, base, match, d);
 		}
 
@@ -89,7 +89,7 @@ void manual_region_optimizer::training()
 	 std::cout << "training" << std::endl;
 }
 
-void manual_region_optimizer::reset(const RegionContainer &left, const RegionContainer &right)
+void manual_region_optimizer::reset(const region_container &left, const region_container &right)
 {
 	damping_history_left.resize(left.regions.size());
 	std::fill(damping_history_left.begin(), damping_history_left.end(), 0);
@@ -101,7 +101,7 @@ void manual_region_optimizer::reset(const RegionContainer &left, const RegionCon
 	optimization_vectors_right.resize(right.regions.size());
 }
 
-void manual_region_optimizer::run(RegionContainer &left, RegionContainer &right, const optimizer_settings &config, int refinement)
+void manual_region_optimizer::run(region_container &left, region_container &right, const optimizer_settings &config, int refinement)
 {
 	reset(left, right);
 

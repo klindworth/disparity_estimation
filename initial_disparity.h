@@ -38,13 +38,13 @@ namespace cv {
 class StereoTask;
 class StereoSingleTask;
 class disparity_region;
-class RegionContainer;
+class region_container;
 class segmentation_algorithm;
 class RegionInterval;
 class region_descriptor;
 class region_optimizer;
 
-void generateRegionInformation(RegionContainer& left, RegionContainer& right);
+void generateRegionInformation(region_container& left, region_container& right);
 
 std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config, const RefinementConfig& refconfig, int subsampling, region_optimizer& optimizer);
 

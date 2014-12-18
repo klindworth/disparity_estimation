@@ -65,7 +65,7 @@ void RegionWidget::warpTree(int index, disparity_region& baseRegion, std::vector
 	double disp_non_lr_average = 0.0f;
 	std::vector<std::pair<double,double>> non_lr_regions;
 	//for(auto it = baseRegion.other_labels.begin(); it != baseRegion.other_labels.end(); ++it)
-	for(MutualRegion& cregion : baseRegion.other_regions[currentDisparity-dispMin])
+	for(corresponding_region& cregion : baseRegion.corresponding_regions[currentDisparity-dispMin])
 	{
 		disparity_region& matchRegion = other_regions[cregion.index];
 		double mutual_percent = cregion.percent;//(double)it->second / baseRegion.other_labels.total();
@@ -83,7 +83,7 @@ void RegionWidget::warpTree(int index, disparity_region& baseRegion, std::vector
 		matchItem << QString::number(matchRegion.disparity);
 		matchItem << QString::number(matchRegion.m_size);
 		matchItem << QString::number(mutual_percent*100, 'f', 2) + "%";
-		matchItem << QString::number(matchRegion.getMutualRegion(index, -currentDisparity-m_matchDispMin).percent*100, 'f', 2) + "%";
+		matchItem << QString::number(matchRegion.get_corresponding_region(index, -currentDisparity-m_matchDispMin).percent*100, 'f', 2) + "%";
 		matchItem << QString::number(matchRegion.stats.stddev/baseRegion.stats.stddev);
 		if(matchRegion.optimization_energy.data)
 			matchItem << QString::number(matchRegion.optimization_energy(-currentDisparity-m_matchDispMin));
@@ -100,7 +100,7 @@ void RegionWidget::warpTree(int index, disparity_region& baseRegion, std::vector
 	ui->lblAverageDisparity->setText("Average: " + QString::number(disp_average) + ", L/R passed: " + QString::number(disp_lr_norm*100, 'f', 2) + "%, Non-LR-Average: " + QString::number(mean_non_lr) + " , stddev: " + QString::number(stddev) );
 }
 
-void RegionWidget::mutualDisparity(disparity_region& baseRegion, RegionContainer& base, RegionContainer& match, QTreeWidget *tree, int dispMin)
+void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_container& base, region_container& match, QTreeWidget *tree, int dispMin)
 {
 	std::vector<disparity_region>& other_regions = match.regions;
 	cv::Mat disp = disparity_by_segments(base);
@@ -118,11 +118,11 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, RegionContainer
 
 	disparity_hypothesis_vector dhv(base.regions, match.regions);
 	std::vector<float> optimization_vector;
-	int dispMax = dispMin + baseRegion.other_regions.size()-1;
+	int dispMax = dispMin + baseRegion.corresponding_regions.size()-1;
 	dhv(occmap, baseRegion, pot_trunc, dispMin, dispMin, dispMax, optimization_vector);
 
 	int i = 0;
-	for(auto it = baseRegion.other_regions.begin(); it != baseRegion.other_regions.end(); ++it)
+	for(auto it = baseRegion.corresponding_regions.begin(); it != baseRegion.corresponding_regions.end(); ++it)
 	{
 		disparity_hypothesis hyp(optimization_vector, i);
 		short currentDisp = i + dispMin;
@@ -205,7 +205,7 @@ void optimizeWidth(QTreeWidget *widget)
 		widget->resizeColumnToContents(i);
 }
 
-void RegionWidget::setData(std::shared_ptr<RegionContainer>& base, std::shared_ptr<RegionContainer>& match, int index, InitialDisparityConfig *config, bool delta)
+void RegionWidget::setData(std::shared_ptr<region_container>& base, std::shared_ptr<region_container>& match, int index, InitialDisparityConfig *config, bool delta)
 {
 	m_config = config;
 	m_base = base;

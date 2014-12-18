@@ -60,7 +60,7 @@ std::vector<RegionInterval> filtered_region(int width, const std::vector<RegionI
 void labelLRCheck(const cv::Mat_<int>& labelsMatch, disparity_region& region, const short dispMin, const short dispMax)
 {
 	const int dispRange = dispMax-dispMin + 1;
-	region.other_regions = std::vector<std::vector<MutualRegion>>(dispRange);
+	region.corresponding_regions = std::vector<std::vector<corresponding_region>>(dispRange);
 	//TODO segment boxfilter?
 	for(int i = 0; i < dispRange; ++i)
 	{
@@ -71,23 +71,23 @@ void labelLRCheck(const cv::Mat_<int>& labelsMatch, disparity_region& region, co
 			hist.increment(labelsMatch(pt));
 		});
 
-		region.other_regions[i].reserve(hist.size());
+		region.corresponding_regions[i].reserve(hist.size());
 		double normalizer = hist.total() > 0 ? 1.0/hist.total() : 0.0;
 		for(auto it = hist.begin(); it != hist.end(); ++it)
 		{
 			double mutual_percent = (double)it->second * normalizer;
-			region.other_regions[i].push_back(MutualRegion(it->first, mutual_percent));
+			region.corresponding_regions[i].push_back(corresponding_region(it->first, mutual_percent));
 		}
 	}
 }
 
-void checkLabelLRCheck(const RegionContainer& base, const RegionContainer& match)
+void checkLabelLRCheck(const region_container& base, const region_container& match)
 {
 	for(const disparity_region& cregion : base.regions)
 	{
-		for(const std::vector<MutualRegion>& cdisp : cregion.other_regions)
+		for(const std::vector<corresponding_region>& cdisp : cregion.corresponding_regions)
 		{
-			for(const MutualRegion& cmutual : cdisp)
+			for(const corresponding_region& cmutual : cdisp)
 			{
 				assert(cmutual.index < match.regions.size());
 			}
@@ -95,7 +95,7 @@ void checkLabelLRCheck(const RegionContainer& base, const RegionContainer& match
 	}
 }
 
-void labelLRCheck(RegionContainer& base, const RegionContainer& match, int delta)
+void labelLRCheck(region_container& base, const region_container& match, int delta)
 {
 	const std::size_t regions_count = base.regions.size();
 	#pragma omp parallel for default(none) shared(base, match, delta)
@@ -168,13 +168,13 @@ void generate_stats(disparity_region& region, const StereoSingleTask& task, int 
 	delete[] derived;
 }
 
-cv::Mat disparity_by_segments(const RegionContainer& container)
+cv::Mat disparity_by_segments(const region_container& container)
 {
 	return set_regionwise<short>(container, [](const disparity_region& cregion){return cregion.disparity;});
 	//return regionWiseSet<short>(container.task.base.size(), container.regions, [](const DisparityRegion& cregion){return cregion.disparity;});
 }
 
-void refreshWarpedIdx(RegionContainer& container)
+void refreshWarpedIdx(region_container& container)
 {
 	const std::size_t regions_count = container.regions.size();
 	#pragma omp parallel for default(none) shared(container)
@@ -194,19 +194,19 @@ void refreshWarpedIdx(RegionContainer& container)
 	}
 }
 
-MutualRegion disparity_region::getMutualRegion(std::size_t idx, std::size_t disparity_idx)
+corresponding_region disparity_region::get_corresponding_region(std::size_t idx, std::size_t disparity_idx)
 {
-	assert(disparity_idx < other_regions.size());
-	auto it = std::find_if(other_regions[disparity_idx].begin(), other_regions[disparity_idx].end(), [=](const MutualRegion& creg){return (creg.index == idx);});
-	if(it == other_regions[disparity_idx].end())
-		return MutualRegion(idx);
+	assert(disparity_idx < corresponding_regions.size());
+	auto it = std::find_if(corresponding_regions[disparity_idx].begin(), corresponding_regions[disparity_idx].end(), [=](const corresponding_region& creg){return (creg.index == idx);});
+	if(it == corresponding_regions[disparity_idx].end())
+		return corresponding_region(idx);
 	else
 		return *it;
 }
 
-void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm)
+void fill_region_container(std::shared_ptr<region_container>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm)
 {
-	result = algorithm->segmentation_image<RegionContainer>(task.base);
+	result = algorithm->segmentation_image<region_container>(task.base);
 	result->task = task;
 
 	//matstore.addMat(getWrongColorSegmentationImage(result->task.base.size(), result->regions), "segtest");

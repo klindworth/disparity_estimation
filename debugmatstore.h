@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class StereoSingleTask;
 class StereoTask;
-class RegionContainer;
+class region_container;
 
 struct viewerMat
 {
@@ -55,7 +55,7 @@ public:
 	std::vector<std::pair<cv::Mat, std::string> > simpleMatrices;
 	std::vector<struct viewerMat> costmaps;
 	StereoTask *task;
-	std::shared_ptr<RegionContainer> left, right;
+	std::shared_ptr<region_container> left, right;
 };
 
 class DebugMatStore
@@ -63,7 +63,7 @@ class DebugMatStore
 public:
 	DebugMatStore();
 	void startNewTask(const std::string &name, StereoTask& task);
-	void setRegionContainer(std::shared_ptr<RegionContainer>& left, std::shared_ptr<RegionContainer>& right);
+	void setRegionContainer(std::shared_ptr<region_container>& left, std::shared_ptr<region_container>& right);
 	void addMat(const cv::Mat &mat, const char* name);
 	void addMat(const cv::Mat &left, const cv::Mat &right, cv::Mat &cost, const char* name, int windowsize, bool forward, cv::Mat windows = cv::Mat(), cv::Mat offset = cv::Mat());
 	void addMat(const StereoSingleTask& task, cv::Mat &cost, const char* name, int windowsize, cv::Mat windows = cv::Mat(), cv::Mat offset = cv::Mat());

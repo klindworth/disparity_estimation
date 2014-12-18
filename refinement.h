@@ -58,11 +58,11 @@ inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, t
 cv::FileStorage& operator<<(cv::FileStorage& stream, const RefinementConfig& config);
 cv::FileStorage& operator>>(cv::FileStorage& stream, RefinementConfig& config);
 
-typedef std::function<cv::Mat(cv::Mat& initial_disparity, StereoSingleTask& task, cv::Mat base_quant, cv::Mat match_quant, RegionContainer& container, const RefinementConfig& config)> refinement_func_type;
+typedef std::function<cv::Mat(cv::Mat& initial_disparity, StereoSingleTask& task, cv::Mat base_quant, cv::Mat match_quant, region_container& container, const RefinementConfig& config)> refinement_func_type;
 
 
 template<typename cost_func, int quantizer>
-cv::Mat refineInitialDisparity(cv::Mat& initial_disparity, StereoSingleTask& task, cv::Mat base_quant, cv::Mat match_quant, RegionContainer& container, const RefinementConfig& config)
+cv::Mat refineInitialDisparity(cv::Mat& initial_disparity, StereoSingleTask& task, cv::Mat base_quant, cv::Mat match_quant, region_container& container, const RefinementConfig& config)
 {
 	std::cout << "windows" << std::endl;
 

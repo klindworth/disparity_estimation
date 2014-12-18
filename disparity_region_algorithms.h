@@ -52,10 +52,10 @@ void foreach_warped_region_point(Iterator it, Iterator end, int width, int d, la
 }
 
 template<typename lambda_type>
-float corresponding_regions_average(const std::vector<disparity_region>& container, const std::vector<MutualRegion>& cdisp, lambda_type func)
+float corresponding_regions_average(const std::vector<disparity_region>& container, const std::vector<corresponding_region>& cdisp, lambda_type func)
 {
 	float result = 0.0f;
-	for(const MutualRegion& cval : cdisp)
+	for(const corresponding_region& cval : cdisp)
 	{
 		result += cval.percent * func(container[cval.index]);
 	}
@@ -63,10 +63,10 @@ float corresponding_regions_average(const std::vector<disparity_region>& contain
 }
 
 template<typename lambda_type>
-float corresponding_regions_average_by_index(const std::vector<MutualRegion>& cdisp, lambda_type func)
+float corresponding_regions_average_by_index(const std::vector<corresponding_region>& cdisp, lambda_type func)
 {
 	float result = 0.0f;
-	for(const MutualRegion& cval : cdisp)
+	for(const corresponding_region& cval : cdisp)
 	{
 		result += cval.percent * func(cval.index);
 	}
@@ -74,9 +74,9 @@ float corresponding_regions_average_by_index(const std::vector<MutualRegion>& cd
 }
 
 template<typename lambda_type>
-void foreach_corresponding_region(const std::vector<MutualRegion>& cdisp, lambda_type func)
+void foreach_corresponding_region(const std::vector<corresponding_region>& cdisp, lambda_type func)
 {
-	for(const MutualRegion& cval : cdisp)
+	for(const corresponding_region& cval : cdisp)
 		func(cval.index, cval.percent);
 }
 

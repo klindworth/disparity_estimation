@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <QTreeWidgetItem>
 #include <memory>
 
-class RegionContainer;
+class region_container;
 class disparity_region;
 class DebugMatStore;
 class InitialDisparityConfig;
@@ -49,7 +49,7 @@ class RegionWindow : public QMainWindow
 public:
 	explicit RegionWindow(QWidget *parent = 0);
 	~RegionWindow();
-	void setData(std::shared_ptr<RegionContainer>& left, std::shared_ptr<RegionContainer>& right);
+	void setData(std::shared_ptr<region_container>& left, std::shared_ptr<region_container>& right);
 	void setStore(DebugMatStore* store, InitialDisparityConfig* config);
 
 private slots:
@@ -74,7 +74,7 @@ private:
 	void refreshImages(std::vector<disparity_region> markLeft, bool markLeftOnRight, std::vector<disparity_region> markRight, bool markRightOnLeft);
 	void fillTree(int index, disparity_region& baseRegion, std::vector<disparity_region>& other_regions , QTreeWidget *tree);
 	Ui::RegionWindow *ui;
-	std::shared_ptr<RegionContainer> m_left, m_right;
+	std::shared_ptr<region_container> m_left, m_right;
 	DebugMatStore *m_store;
 	InitialDisparityConfig *m_config;
 

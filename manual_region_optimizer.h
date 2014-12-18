@@ -31,9 +31,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class manual_region_optimizer : public region_optimizer
 {
 public:
-	void run(RegionContainer& left, RegionContainer& right, const optimizer_settings& config, int refinement= 0) override;
-	void optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const disparity_region&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta);
-	void reset(const RegionContainer& left, const RegionContainer& right) override;
+	void run(region_container& left, region_container& right, const optimizer_settings& config, int refinement= 0) override;
+	void optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, region_container& base, region_container& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const disparity_region&, const region_container&, const region_container&, int)> prop_eval, int delta);
+	void reset(const region_container& left, const region_container& right) override;
 
 	void training() override;
 

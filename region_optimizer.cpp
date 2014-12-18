@@ -162,10 +162,10 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	}
 
 	//lr_pot
-	assert(baseRegion.other_regions.size() >= range);
+	assert(baseRegion.corresponding_regions.size() >= range);
 	for(short cdisp = dispStart; cdisp <= dispEnd; ++cdisp)
 	{
-		lr_pot_values[cdisp - dispStart] = corresponding_regions_average_by_index(baseRegion.other_regions[cdisp-dispMin], [&](std::size_t idx){
+		lr_pot_values[cdisp - dispStart] = corresponding_regions_average_by_index(baseRegion.corresponding_regions[cdisp-dispMin], [&](std::size_t idx){
 			return (float)abs_pott(cdisp, (short)-match_disparities_cache[idx], pot_trunc);
 		});
 	}
@@ -243,7 +243,7 @@ float calculate_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_r
 	return (count > 0 ? (float)occ_sum/count : 1.0f);
 }
 
-void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, RegionContainer& base, const RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
+void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, region_container& base, const region_container& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
 {
 	cv::Mat disp = disparity_by_segments(base);
 	cv::Mat occmap = occlusion_stat<short>(disp, 1.0);
@@ -277,7 +277,7 @@ void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization
 		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, optimization_vectors[i]);
 		for(short d = range.first; d <= range.second; ++d)
 		{
-			std::vector<MutualRegion>& cregionvec = baseRegion.other_regions[d-dispMin];
+			std::vector<corresponding_region>& cregionvec = baseRegion.corresponding_regions[d-dispMin];
 			if(!cregionvec.empty())
 				baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - range.first), optimization_vectors[i].data(), stat_eval);
 		}

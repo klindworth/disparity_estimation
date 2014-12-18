@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 
 class disparity_region;
-class RegionContainer;
+class region_container;
 class InitialDisparityConfig;
 
 namespace Ui {
@@ -46,9 +46,9 @@ public:
 	explicit RegionWidget(QWidget *parent = 0);
 	void showResultHistory(disparity_region& region);
 	void warpTree(int index, disparity_region& baseRegion, std::vector<disparity_region>& other_regions , QTreeWidget *tree, int dispMin, int currentDisparity);
-	void mutualDisparity(disparity_region& baseRegion, RegionContainer &base, RegionContainer& match, QTreeWidget *tree, int dispMin);
+	void mutualDisparity(disparity_region& baseRegion, region_container &base, region_container& match, QTreeWidget *tree, int dispMin);
 	void neighborTree(std::vector<disparity_region>& regionsBase, int index, int dispMin);
-	void setData(std::shared_ptr<RegionContainer>& base, std::shared_ptr<RegionContainer>& match, int index, InitialDisparityConfig *config, bool delta);
+	void setData(std::shared_ptr<region_container>& base, std::shared_ptr<region_container>& match, int index, InitialDisparityConfig *config, bool delta);
 	void setInverted(bool inverted);
 	~RegionWidget();
 
@@ -64,7 +64,7 @@ private slots:
 	void on_treeNeighbors_itemDoubleClicked(QTreeWidgetItem *item, int column);
 
 private:
-	std::shared_ptr<RegionContainer> m_base, m_match;
+	std::shared_ptr<region_container> m_base, m_match;
 	int m_index;
 	int m_baseDispMin;
 	int m_matchDispMin;
