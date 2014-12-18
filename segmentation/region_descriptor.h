@@ -35,7 +35,7 @@ typedef std::vector<std::pair<std::size_t, std::size_t> > neighbor_vector;
  * @brief The RegionDescriptor class saves the shape of an region. It holds a vector of line intervalls which shapes the region
  * Additionally it saves a bounding box of the region, the size (in pixel).
  */
-class RegionDescriptor
+class region_descriptor
 {
 public:
 	std::vector<RegionInterval> lineIntervals;
@@ -43,8 +43,10 @@ public:
 
 	//! Returns a cv::Mat with a binary image of the region. The image can be made bigger than actually nedded by setting a margin > 0
 	cv::Mat mask(int margin) const;
+
 	//! Returns all pixels of the region as 1D cv::Mat. You can move the region horizontally (by setting d != 0), where the pixels will be extracted.
 	cv::Mat as_mat(const cv::Mat& src, int d) const;
+
 	//! Returns the size of the region in pixel (the actual region, not the bounding box)
 	int size() const;
 
@@ -64,10 +66,11 @@ public:
  */
 cv::Mat region_as_mat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d);
 
-int getSizeOfRegion(const std::vector<RegionInterval>& intervals);
-void calculate_average_color(RegionDescriptor& region, const cv::Mat& lab_image);
-std::vector<RegionInterval> getDilatedRegion(RegionDescriptor &cregion, unsigned int dilate_grow, cv::Mat base);
-void setMask(const cv::Mat &mask, std::vector<RegionInterval>& pixel_idx, int py, int px, int height, int width);
+int size_of_region(const std::vector<RegionInterval>& intervals);
+void calculate_average_color(region_descriptor& region, const cv::Mat& lab_image);
+std::vector<RegionInterval> dilated_region(region_descriptor &cregion, unsigned int dilate_grow, cv::Mat base);
+
+void create_region_from_mask(std::vector<RegionInterval>& region, const cv::Mat &mask, int py, int px, int height, int width);
 
 cv::Mat lab_to_bgr(const cv::Mat& src);
 cv::Mat bgr_to_lab(const cv::Mat& src);

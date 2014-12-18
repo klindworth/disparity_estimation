@@ -1,7 +1,7 @@
 #ifndef SEGMENTATION_REFINEMENT_H
 #define SEGMENTATION_REFINEMENT_H
 
-class RegionDescriptor;
+class region_descriptor;
 #include <opencv2/core/core.hpp>
 #include <vector>
 
@@ -11,9 +11,9 @@ class RegionDescriptor;
 
 
 //interally used ones
-void hsplit_region(const RegionDescriptor& descriptor, RegionDescriptor& first, RegionDescriptor& second, int split_threshold);
-void vsplit_region(const RegionDescriptor& descriptor, RegionDescriptor& first, RegionDescriptor& second, int split_threshold);
-cv::Point region_avg_point(const RegionDescriptor& descriptor);
+void hsplit_region(const region_descriptor& descriptor, region_descriptor& first, region_descriptor& second, int split_threshold);
+void vsplit_region(const region_descriptor& descriptor, region_descriptor& first, region_descriptor& second, int split_threshold);
+cv::Point region_avg_point(const region_descriptor& descriptor);
 
 template<typename T, typename InsertIterator>
 void insert_pair(T pair, InsertIterator it)

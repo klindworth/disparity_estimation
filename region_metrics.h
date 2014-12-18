@@ -152,7 +152,7 @@ public:
 template<typename cost_type>
 void getRegionDisparityInternal(std::vector<RegionInterval>& actual_region, cost_type& cost_agg, typename cost_type::thread_type& thread, DisparityRegion &cregion, const cv::Mat&, const cv::Mat& match, int dispMin, int dispMax)
 {
-	int length = getSizeOfRegion(actual_region);
+	int length = size_of_region(actual_region);
 
 	//cregion.confidence = cv::Mat(dispMax-dispMin+1, 1, CV_32FC1, cv::Scalar(0));
 	cregion.disparity_costs = cv::Mat(dispMax-dispMin+1, 1, CV_32FC1, cv::Scalar(cost_agg.normalizationValue()));
@@ -163,7 +163,7 @@ void getRegionDisparityInternal(std::vector<RegionInterval>& actual_region, cost
 	for(int d = dispMin; d <= dispMax; ++d)
 	{
 		std::vector<RegionInterval> filtered = filtered_region(match.size[1], actual_region, d);
-		int filtered_length = getSizeOfRegion(filtered);
+		int filtered_length = size_of_region(filtered);
 
 		if((float)filtered_length/(float)length > 0.6f && filtered_length > 10) //0.4
 		{
@@ -199,7 +199,7 @@ void getRegionDisparity(cost_type& cost_agg, typename cost_type::thread_type& th
 	if(dilate == cregion.old_dilation)
 		return;
 
-	std::vector<RegionInterval> actual_pixel_idx = getDilatedRegion(cregion, dilate, base);
+	std::vector<RegionInterval> actual_pixel_idx = dilated_region(cregion, dilate, base);
 
 	getRegionDisparityInternal(actual_pixel_idx, cost_agg, thread, cregion, base, match, dispMin, dispMax);
 

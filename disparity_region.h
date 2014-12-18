@@ -59,7 +59,7 @@ public:
 	short base_disparity;
 };
 
-class DisparityRegion : public RegionDescriptor
+class DisparityRegion : public region_descriptor
 {
 public:
 	DisparityRegion();
@@ -90,7 +90,7 @@ cv::Mat getDisparityBySegments(const RegionContainer &container);
 void fillRegionContainer(std::shared_ptr<RegionContainer>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm);
 
 int reenumerate(cv::Mat& labels, int old_count);
-void replace_neighbor_idx(std::vector<RegionDescriptor>& regions, std::size_t old_idx, std::size_t new_idx);
+void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t old_idx, std::size_t new_idx);
 
 void generateStats(std::vector<DisparityRegion>& regions, const StereoSingleTask& task, const int delta);
 void generateStats(DisparityRegion& region, const StereoSingleTask& task, int delta);

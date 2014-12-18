@@ -602,8 +602,8 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 
 	//segment_based_disparity_internal(task, left, right, config, disparity_function);
 
-	auto segmentationLeft  = create_segmentation_class(config.segmentation);
-	auto segmentationRight = create_segmentation_class(config.segmentation);
+	auto segmentationLeft  = create_segmentation_instance(config.segmentation);
+	auto segmentationRight = create_segmentation_instance(config.segmentation);
 
 	fillRegionContainer(left, task.forward, segmentationLeft);
 	fillRegionContainer(right, task.backward, segmentationRight);

@@ -3,7 +3,7 @@
 #include "intervals.h"
 #include "region_descriptor.h"
 
-void hsplit_region(const RegionDescriptor& descriptor, RegionDescriptor& first, RegionDescriptor& second, int split_threshold)
+void hsplit_region(const region_descriptor& descriptor, region_descriptor& first, region_descriptor& second, int split_threshold)
 {
 	first.lineIntervals.clear();
 	first.bounding_box.height = split_threshold - descriptor.bounding_box.y;
@@ -20,11 +20,11 @@ void hsplit_region(const RegionDescriptor& descriptor, RegionDescriptor& first, 
 			second.lineIntervals.push_back(cinterval);
 	}
 
-	first.m_size = getSizeOfRegion(first.lineIntervals);
-	second.m_size = getSizeOfRegion(second.lineIntervals);
+	first.m_size = size_of_region(first.lineIntervals);
+	second.m_size = size_of_region(second.lineIntervals);
 }
 
-void vsplit_region(const RegionDescriptor& descriptor, RegionDescriptor& first, RegionDescriptor& second, int split_threshold)
+void vsplit_region(const region_descriptor& descriptor, region_descriptor& first, region_descriptor& second, int split_threshold)
 {
 	first.lineIntervals.clear();
 	first.bounding_box.width = split_threshold - descriptor.bounding_box.x;
@@ -46,11 +46,11 @@ void vsplit_region(const RegionDescriptor& descriptor, RegionDescriptor& first, 
 			second.lineIntervals.push_back(cinterval);
 	}
 
-	first.m_size = getSizeOfRegion(first.lineIntervals);
-	second.m_size = getSizeOfRegion(second.lineIntervals);
+	first.m_size = size_of_region(first.lineIntervals);
+	second.m_size = size_of_region(second.lineIntervals);
 }
 
-cv::Point region_avg_point(const RegionDescriptor& descriptor)
+cv::Point region_avg_point(const region_descriptor& descriptor)
 {
 	long long x_avg = 0;
 	long long y_avg = 0;

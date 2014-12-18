@@ -69,7 +69,7 @@ void region_ground_truth2(const std::vector<region_type>& regions, cv::Mat_<unsi
 	}
 }
 
-cv::Mat_<unsigned char> region_ground_truth_image(const cv::Mat_<unsigned char>& disp, std::shared_ptr<segmentation_image<RegionDescriptor>> seg_image)
+cv::Mat_<unsigned char> region_ground_truth_image(const cv::Mat_<unsigned char>& disp, std::shared_ptr<segmentation_image<region_descriptor>> seg_image)
 {
 	std::vector<unsigned char> averages;
 	region_ground_truth2(seg_image->regions, disp, std::back_inserter(averages));

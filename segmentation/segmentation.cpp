@@ -140,7 +140,7 @@ cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Mat_<int>& labels, int la
 	return regions.size();
 }*/
 
-std::shared_ptr<segmentation_algorithm> create_segmentation_class(const segmentation_settings& settings) {
+std::shared_ptr<segmentation_algorithm> create_segmentation_instance(const segmentation_settings& settings) {
 #ifdef USE_MEANSHIFT
 	if(settings.algorithm == "meanshift")
 		return std::make_shared<meanshift_segmentation>(settings);

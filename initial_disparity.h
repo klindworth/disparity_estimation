@@ -41,7 +41,7 @@ class DisparityRegion;
 class RegionContainer;
 class segmentation_algorithm;
 class RegionInterval;
-class RegionDescriptor;
+class region_descriptor;
 class region_optimizer;
 
 void generateRegionInformation(RegionContainer& left, RegionContainer& right);

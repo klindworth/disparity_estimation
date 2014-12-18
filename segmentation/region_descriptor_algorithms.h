@@ -130,7 +130,7 @@ void fillRegionDescriptors(Iterator begin, Iterator end, const cv::Mat_<label_ty
 
 	intervals::convert_differential<label_type>(labels, factory);
 
-	parallel_region(begin, end, [&](RegionDescriptor& region){
+	parallel_region(begin, end, [&](region_descriptor& region){
 		//compute size
 		region.m_size = region.size();
 		assert(region.m_size != 0);
@@ -196,7 +196,7 @@ void generate_neighborhood(const cv::Mat_<label_type> &labels, std::vector<T> &r
 template<typename Iterator, typename label_type>
 void refresh_bounding_boxes(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
 {
-	parallel_region(begin, end, [&](RegionDescriptor& region){
+	parallel_region(begin, end, [&](region_descriptor& region){
 		region.bounding_box.x = labels.cols;
 		region.bounding_box.y = labels.rows;
 		region.bounding_box.height = 0;
@@ -220,7 +220,7 @@ void refresh_bounding_boxes(Iterator begin, Iterator end, const cv::Mat_<label_t
 		}
 	}
 
-	parallel_region(begin, end, [&](RegionDescriptor& region){
+	parallel_region(begin, end, [&](region_descriptor& region){
 		region.bounding_box.width  -= region.bounding_box.x - 1;
 		region.bounding_box.height -= region.bounding_box.y - 1;
 	});
@@ -236,7 +236,7 @@ bool checkLabelsIntervalsInvariant(Iterator begin, Iterator end, const cv::Mat_<
 	int pixelcount = 0;
 	for(Iterator it = begin; it != end; ++it)
 	{
-		const RegionDescriptor& cregion = *it;
+		const region_descriptor& cregion = *it;
 		int segsize = cregion.size();
 		assert(segsize == cregion.m_size);
 		assert(segsize != 0);
@@ -269,7 +269,7 @@ bool checkNeighborhoodInvariant(const std::vector<T> &regions, std::size_t regio
 {
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
-		const RegionDescriptor& cregion = regions[i];
+		const region_descriptor& cregion = regions[i];
 		const std::size_t neigh_count = cregion.neighbors.size();
 
 		for(std::size_t j = 0; j < neigh_count; ++j)
@@ -278,7 +278,7 @@ bool checkNeighborhoodInvariant(const std::vector<T> &regions, std::size_t regio
 
 			assert(c_idx < regions_count);
 
-			const RegionDescriptor& cneighbor = regions[c_idx];
+			const region_descriptor& cneighbor = regions[c_idx];
 
 			bool found = false;
 			const std::size_t inner_neigh_count = cneighbor.neighbors.size();
@@ -304,7 +304,7 @@ void calculate_all_average_colors(const cv::Mat& image, Iterator begin, Iterator
 	cv::Mat lab_double_image;
 	lab_image.convertTo(lab_double_image, CV_64FC3);
 
-	parallel_region(begin, end, [&](RegionDescriptor& region)
+	parallel_region(begin, end, [&](region_descriptor& region)
 	{
 		calculate_average_color(region, lab_double_image);
 	});

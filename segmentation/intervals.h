@@ -101,7 +101,7 @@ public:
 };
 
 /**
- * @brief This is like @see RegionInterval but also stores an value associated with the interval.
+ * @brief This is like RegionInterval but also stores an value associated with the interval.
  * The type of the value is the type that is passed as template parameter
  * @author Kai Klindworth
  */

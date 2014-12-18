@@ -48,7 +48,7 @@ void region_as_mat_internal(const cv::Mat& src, const std::vector<RegionInterval
 
 cv::Mat region_as_mat(const cv::Mat& src, const std::vector<RegionInterval> &pixel_idx, int d)
 {
-	int length = getSizeOfRegion(pixel_idx);
+	int length = size_of_region(pixel_idx);
 
 	int dim3 = src.dims == 2 ? 1 : src.size[2];
 	cv::Mat region(length, dim3, src.type());
@@ -57,7 +57,7 @@ cv::Mat region_as_mat(const cv::Mat& src, const std::vector<RegionInterval> &pix
 	return region;
 }
 
-cv::Mat RegionDescriptor::mask(int margin) const
+cv::Mat region_descriptor::mask(int margin) const
 {
 	assert(bounding_box.width > 0 && bounding_box.height > 0);
 
@@ -72,9 +72,9 @@ cv::Mat RegionDescriptor::mask(int margin) const
 	return mask;
 }
 
-void setMask(const cv::Mat& mask, std::vector<RegionInterval>& pixel_idx, int py, int px, int height, int width)
+void create_region_from_mask(std::vector<RegionInterval>& region, const cv::Mat& mask, int py, int px, int height, int width)
 {
-	pixel_idx.clear();
+	region.clear();
 
 	int y_max = std::min(std::min(mask.rows, height), height-py);
 	int x_max = std::min(std::min(mask.cols, width), width-px);
@@ -88,7 +88,7 @@ void setMask(const cv::Mat& mask, std::vector<RegionInterval>& pixel_idx, int py
 		if(value == 255)
 		{
 			assert(y-y_min < height-py && lower+px+x_min >= 0 && y+py+y_min >= 0 && upper+px+x_min > 0 && upper+x_min <= width-px);
-			pixel_idx.push_back(RegionInterval(y+py+y_min, lower+px+x_min, upper+px+x_min));
+			region.push_back(RegionInterval(y+py+y_min, lower+px+x_min, upper+px+x_min));
 		}
 	};
 
@@ -96,7 +96,7 @@ void setMask(const cv::Mat& mask, std::vector<RegionInterval>& pixel_idx, int py
 	intervals::convert_differential<unsigned char>(mask2, factory);
 }
 
-std::vector<RegionInterval> getDilatedRegion(RegionDescriptor& cregion, unsigned int dilate_grow, cv::Mat base)
+std::vector<RegionInterval> dilated_region(region_descriptor& cregion, unsigned int dilate_grow, cv::Mat base)
 {
 	if(dilate_grow > 0)
 	{
@@ -105,7 +105,7 @@ std::vector<RegionInterval> getDilatedRegion(RegionDescriptor& cregion, unsigned
 		cv::Mat mask = cregion.mask(dilate_grow);
 		cv::dilate(mask, mask, strucElem);
 
-		setMask(mask, dil_pixel_idx, cregion.bounding_box.y - dilate_grow, cregion.bounding_box.x - dilate_grow, base.size[0], base.size[1]);
+		create_region_from_mask(dil_pixel_idx, mask, cregion.bounding_box.y - dilate_grow, cregion.bounding_box.x - dilate_grow, base.size[0], base.size[1]);
 		//TODO: refresh bounding boxes
 		return dil_pixel_idx;
 	}
@@ -113,13 +113,13 @@ std::vector<RegionInterval> getDilatedRegion(RegionDescriptor& cregion, unsigned
 		return cregion.lineIntervals;
 }
 
-cv::Mat RegionDescriptor::as_mat(const cv::Mat& src, int d) const
+cv::Mat region_descriptor::as_mat(const cv::Mat& src, int d) const
 {
 	return region_as_mat(src, lineIntervals, d);
 }
 
 
-int getSizeOfRegion(const std::vector<RegionInterval>& intervals)
+int size_of_region(const std::vector<RegionInterval>& intervals)
 {
 	int length = 0;
 	for(const RegionInterval& cinterval : intervals)
@@ -128,12 +128,12 @@ int getSizeOfRegion(const std::vector<RegionInterval>& intervals)
 	return length;
 }
 
-int RegionDescriptor::size() const
+int region_descriptor::size() const
 {
-	return getSizeOfRegion(lineIntervals);
+	return size_of_region(lineIntervals);
 }
 
-void calculate_average_color(RegionDescriptor& region, const cv::Mat& lab_image)
+void calculate_average_color(region_descriptor& region, const cv::Mat& lab_image)
 {
 	cv::Mat values = region_as_mat(lab_image, region.lineIntervals, 0);
 	cv::Scalar means = cv::mean(values);

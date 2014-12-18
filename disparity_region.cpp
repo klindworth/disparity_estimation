@@ -130,7 +130,7 @@ int reenumerate(cv::Mat& labels, int old_count)
 	return count;
 }
 
-void replace_neighbor_idx(std::vector<RegionDescriptor>& regions, std::size_t old_idx, std::size_t new_idx)
+void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t old_idx, std::size_t new_idx)
 {
 	for(std::pair<std::size_t, std::size_t>& cpair : regions[old_idx].neighbors)
 	{
