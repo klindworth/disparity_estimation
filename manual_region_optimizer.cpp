@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "disparity_utils.h"
 
-void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
+void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, RegionContainer& base, RegionContainer& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const disparity_region&, const RegionContainer&, const RegionContainer&, int)> prop_eval, int delta)
 {
 	//std::cout << "base" << std::endl;
 	refreshOptimizationBaseValues(optimization_vectors_base, base, match, base_eval, delta);
@@ -48,7 +48,7 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 	//pragma omp parallel for default(none) shared(base, match, prop_eval, delta) private(random_dist, random_gen, temp_results)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		DisparityRegion& baseRegion = base.regions[j];
+		disparity_region& baseRegion = base.regions[j];
 		temp_results = cv::Mat_<float>(crange, 1, 5500.0f); //TODO: try another mt safe with less memory allocations...
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 

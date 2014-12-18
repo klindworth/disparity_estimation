@@ -106,24 +106,24 @@ public:
  * @author Kai Klindworth
  */
 template<typename T>
-class ValueRegionInterval : public RegionInterval
+class value_region_interval : public RegionInterval
 {
 public:
 	T value;
-	ValueRegionInterval() {}
-	ValueRegionInterval(RegionInterval interval, T value) {
+	value_region_interval() {}
+	value_region_interval(RegionInterval interval, T value) {
 		init(interval.y, interval.lower, interval.upper);
 		this->value = value;
 	}
 
-	ValueRegionInterval(int y, int x_lower, int x_upper, T value)
+	value_region_interval(int y, int x_lower, int x_upper, T value)
 	{
 		init(y, x_lower, x_upper);
 		this->value = value;
 	}
 
 	//! Constructs an classic version of this interval without the additional value.
-	RegionInterval toInterval()
+	RegionInterval to_interval()
 	{
 		return RegionInterval(y, lower, upper);
 	}

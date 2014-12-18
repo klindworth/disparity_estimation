@@ -68,7 +68,7 @@ public:
 		result->regions = std::vector<typename seg_image_type::regions_type>(result->segment_count);
 		result->image_size = image.size();
 
-		fillRegionDescriptors(result->regions.begin(), result->regions.end(), result->labels);
+		fill_region_descriptors(result->regions.begin(), result->regions.end(), result->labels);
 		generate_neighborhood(result->labels, result->regions);
 
 		return result;

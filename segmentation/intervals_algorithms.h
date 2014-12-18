@@ -245,7 +245,7 @@ template<typename value_type, typename InserterIterator>
 void convert_mat_to_value(const cv::Mat_<value_type>& values, InserterIterator inserter)
 {
 	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, value_type value) {
-		*inserter = ValueRegionInterval<value_type>(y,lower,upper, value);
+		*inserter = value_region_interval<value_type>(y,lower,upper, value);
 		++inserter;
 	};
 
@@ -300,7 +300,7 @@ inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, t
 }
 
 template<typename charT, typename traits, typename T>
-inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const ValueRegionInterval<T>& interval)
+inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const value_region_interval<T>& interval)
 {
 	stream << "(y: " << interval.y << ", x: " << interval.lower << "-" << interval.upper << ", value: " << interval.value << ") ";
 	return stream;

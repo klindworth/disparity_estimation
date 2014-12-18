@@ -87,7 +87,7 @@ cv::Mat_<T> set_regionwise(const segmentation_image<reg_type>& image, lambda_typ
 
 //! Returns an image, that will show each region with a random color.
 template<typename reg_type>
-cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Size size, const std::vector<reg_type>& regions)
+cv::Mat_<cv::Vec3b> wrong_color_segmentation_image(cv::Size size, const std::vector<reg_type>& regions)
 {
 	std::srand(0);
 	return set_regionwise<cv::Vec3b>(size, regions, [&](const reg_type&){
@@ -97,6 +97,12 @@ cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Size size, const std::vec
 		ccolor[2] = std::rand() % 256;
 		return ccolor;
 	});
+}
+
+template<typename reg_type>
+cv::Mat_<cv::Vec3b> wrong_color_segmentation_image(const segmentation_image<reg_type>& image)
+{
+	return wrong_color_segmentation_image(image.image_size, image.regions);
 }
 
 //! Creates a matrix (int) with the segmentation labels as content.
@@ -113,15 +119,9 @@ cv::Mat_<int> generate_label_matrix(cv::Size size, const std::vector<reg_type>& 
 	return result;
 }
 
-template<typename reg_type>
-cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(const segmentation_image<reg_type>& image)
-{
-	return getWrongColorSegmentationImage(image.image_size, image.regions);
-}
-
 //! Fills a vector of RegionDescriptors with the correct lineIntervals and sizes
 template<typename Iterator, typename label_type>
-void fillRegionDescriptors(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
+void fill_region_descriptors(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
 {
 	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, label_type value) {
 		assert(value < std::distance(begin, end) && value >= 0);

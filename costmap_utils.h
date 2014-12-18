@@ -33,7 +33,7 @@ class Mat;
 }
 
 class RegionInterval;
-class DisparityRegion;
+class disparity_region;
 
 //saves the statistics for an pixel in a cost map
 typedef struct statistics {
@@ -54,7 +54,7 @@ typedef struct statistics {
 cv::Mat deriveCostmap(const cv::Mat &cost_map);
 void derivePartialCostmap(const float *cost_map, float *result, int len);
 void analyzeDisparityRange(stat_t& cstat, const float *src_ptr, const float *derived_ptr, int range);
-void analyzeDisparityRange2(DisparityRegion& region);
+void analyzeDisparityRange2(disparity_region& region);
 
 //sums all values up in a window and saves the sum in the middlepoint (like boxfilter - but here for 3D matrix)
 cv::Mat windowSum(cv::Mat& cost_map_old, int windowsize);

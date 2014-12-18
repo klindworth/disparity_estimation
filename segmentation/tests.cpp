@@ -213,9 +213,9 @@ TEST(Interval, ValueRegion)
 	for(int i = 9; i <= 14; ++i)
 		mat.at<unsigned char>(0,i) = 5;
 
-	std::vector<ValueRegionInterval<unsigned char>> desired = {ValueRegionInterval<unsigned char>(0, 0, 3, 0), ValueRegionInterval<unsigned char>(0, 3, 6, 2), ValueRegionInterval<unsigned char>(0, 6, 9, 0), ValueRegionInterval<unsigned char>(0, 9, 15, 5), ValueRegionInterval<unsigned char>(0, 15, 20, 0)};
+	std::vector<value_region_interval<unsigned char>> desired = {value_region_interval<unsigned char>(0, 0, 3, 0), value_region_interval<unsigned char>(0, 3, 6, 2), value_region_interval<unsigned char>(0, 6, 9, 0), value_region_interval<unsigned char>(0, 9, 15, 5), value_region_interval<unsigned char>(0, 15, 20, 0)};
 
-	std::vector<ValueRegionInterval<unsigned char>> calc;
+	std::vector<value_region_interval<unsigned char>> calc;
 
 	cv::Mat_<unsigned char> mat1 = mat;
 

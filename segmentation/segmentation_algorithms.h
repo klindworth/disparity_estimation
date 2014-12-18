@@ -164,7 +164,7 @@ template<typename T, typename lambda_type>
 void defuse(std::vector<T>& fused_regions, cv::Mat_<int>& newlabels, int newsegcount, const fusion_work_data& data, lambda_type transfer_region)
 {
 	std::vector<T> regions(newsegcount);
-	fillRegionDescriptors(regions.begin(), regions.end(), newlabels);
+	fill_region_descriptors(regions.begin(), regions.end(), newlabels);
 
 	const std::size_t regions_count = regions.size();
 	std::vector<std::size_t> inverse_mapping;

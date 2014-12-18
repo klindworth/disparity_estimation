@@ -75,7 +75,7 @@ void RegionWindow::setData(std::shared_ptr<RegionContainer>& left, std::shared_p
 		ui->treeSegments->clear();
 		for(std::size_t i = 0; i < m_left->regions.size(); ++i)
 		{
-			DisparityRegion& baseRegion =  m_left->regions[i];
+			disparity_region& baseRegion =  m_left->regions[i];
 
 			QStringList currentItem;
 			currentItem << QString::number(i);
@@ -86,19 +86,19 @@ void RegionWindow::setData(std::shared_ptr<RegionContainer>& left, std::shared_p
 
 		}
 
-		cv::Mat disparityLeft = getDisparityBySegments(*m_left);
-		ui->disparityLeft->setCVMat(createDisparityImage(disparityLeft));
+		cv::Mat disparityLeft = disparity_by_segments(*m_left);
+		ui->disparityLeft->setCVMat(create_disparity_image(disparityLeft));
 
 		cv::Mat warpedLeft = warpDisparity<short>(disparityLeft, 1.0f);
 		//cv::Mat warpedLeft = warpImage<short, short>(disparityLeft, disparityLeft, 1.0f);
-		ui->warpedLeft->setCVMat(createDisparityImage(warpedLeft));
+		ui->warpedLeft->setCVMat(create_disparity_image(warpedLeft));
 
-		cv::Mat disparityRight = getDisparityBySegments(*m_right);
-		ui->disparityRight->setCVMat(createDisparityImage(disparityRight));
+		cv::Mat disparityRight = disparity_by_segments(*m_right);
+		ui->disparityRight->setCVMat(create_disparity_image(disparityRight));
 
 		cv::Mat warpedRight = warpDisparity<short>(disparityRight, 1.0f);
 		//cv::Mat warpedRight = warpImage<short, short>(disparityRight, disparityRight, 1.0f);
-		ui->warpedRight->setCVMat(createDisparityImage(warpedRight));
+		ui->warpedRight->setCVMat(create_disparity_image(warpedRight));
 	}
 }
 
@@ -130,12 +130,12 @@ void markRegionColor(cv::Mat& color_image, const std::vector<RegionInterval>& pi
 	}
 }
 
-cv::Mat createModifiedImage(cv::Mat& gray_image, std::vector<DisparityRegion>& regions, bool disparityApplied)
+cv::Mat createModifiedImage(cv::Mat& gray_image, std::vector<disparity_region>& regions, bool disparityApplied)
 {
 	cv::Mat color_image;
 	cv::cvtColor(gray_image, color_image, CV_GRAY2BGR);
 
-	for(DisparityRegion& cregion : regions)
+	for(disparity_region& cregion : regions)
 	{
 		//markRegionColor(color_image, cregion.pixel_idx, disparityApplied ? cregion.disparity : 0);
 		markRegionColor(color_image, cregion.lineIntervals, disparityApplied ? cregion.disparity : 0);
@@ -144,24 +144,24 @@ cv::Mat createModifiedImage(cv::Mat& gray_image, std::vector<DisparityRegion>& r
 	return color_image;
 }
 
-cv::Mat createModifiedImage(cv::Mat& gray_image, std::vector<DisparityRegion>& regionsLeft, bool disparityApplied, std::vector<DisparityRegion>& regionsRight, bool disparityAppliedRight)
+cv::Mat createModifiedImage(cv::Mat& gray_image, std::vector<disparity_region>& regionsLeft, bool disparityApplied, std::vector<disparity_region>& regionsRight, bool disparityAppliedRight)
 {
 	cv::Mat color_image;
 	cv::cvtColor(gray_image, color_image, CV_GRAY2BGR);
 
-	for(DisparityRegion& cregion : regionsLeft)
+	for(disparity_region& cregion : regionsLeft)
 		markRegionColor(color_image, cregion.lineIntervals, disparityApplied ? cregion.disparity : 0);
 
-	for(DisparityRegion& cregion : regionsRight)
+	for(disparity_region& cregion : regionsRight)
 		markRegionColor(color_image, cregion.lineIntervals, disparityAppliedRight ? cregion.disparity : 0);
 
 	return color_image;
 }
 
-void RegionWindow::refreshImages(std::vector<DisparityRegion> markLeft, bool markLeftOnRight, std::vector<DisparityRegion> markRight, bool markRightOnLeft)
+void RegionWindow::refreshImages(std::vector<disparity_region> markLeft, bool markLeftOnRight, std::vector<disparity_region> markRight, bool markRightOnLeft)
 {
-	cv::Mat disparityLeft = getDisparityBySegments(*m_left);
-	cv::Mat dispImageLeft = createDisparityImage(disparityLeft);
+	cv::Mat disparityLeft = disparity_by_segments(*m_left);
+	cv::Mat dispImageLeft = create_disparity_image(disparityLeft);
 	cv::Mat colorLeft;
 	if(!markRightOnLeft)
 		colorLeft = createModifiedImage(dispImageLeft,markLeft, false);
@@ -170,7 +170,7 @@ void RegionWindow::refreshImages(std::vector<DisparityRegion> markLeft, bool mar
 	ui->disparityLeft->setCVMat(colorLeft);
 
 	cv::Mat warpedLeft = warpDisparity<short>(disparityLeft, 1.0f);
-	cv::Mat warpedImageLeft = createDisparityImage(warpedLeft);
+	cv::Mat warpedImageLeft = create_disparity_image(warpedLeft);
 	cv::Mat colorWarpedLeft;
 	if(!markRightOnLeft)
 		colorWarpedLeft = createModifiedImage(warpedImageLeft,markLeft, true);
@@ -180,8 +180,8 @@ void RegionWindow::refreshImages(std::vector<DisparityRegion> markLeft, bool mar
 
 
 	//mark same on diff image
-	cv::Mat disparityRight = getDisparityBySegments(*m_right);
-	cv::Mat dispImageRight = createDisparityImage(disparityRight);
+	cv::Mat disparityRight = disparity_by_segments(*m_right);
+	cv::Mat dispImageRight = create_disparity_image(disparityRight);
 	cv::Mat colorRight;
 	if(!markLeftOnRight)
 		colorRight = createModifiedImage(dispImageRight,markRight, false);
@@ -190,7 +190,7 @@ void RegionWindow::refreshImages(std::vector<DisparityRegion> markLeft, bool mar
 	ui->disparityRight->setCVMat(colorRight);
 
 	cv::Mat warpedRight = warpDisparity<short>(disparityRight, 1.0f);
-	cv::Mat warpedImageRight = createDisparityImage(warpedRight);
+	cv::Mat warpedImageRight = create_disparity_image(warpedRight);
 	cv::Mat colorWarpedRight;
 	if(!markLeftOnRight)
 		colorWarpedRight = createModifiedImage(warpedImageRight, markRight, true);
@@ -214,7 +214,7 @@ void RegionWindow::refreshImages(std::vector<DisparityRegion> markLeft, bool mar
 
 void RegionWindow::selectLeftRegion(int index)
 {
-	std::vector<DisparityRegion> regions{m_left->regions[index]};
+	std::vector<disparity_region> regions{m_left->regions[index]};
 	refreshImages(regions, true, {}, false);
 
 	ui->regionLeft->setData(m_left, m_right, index, m_config, true);
@@ -222,7 +222,7 @@ void RegionWindow::selectLeftRegion(int index)
 
 void RegionWindow::selectRightRegion(int index)
 {
-	std::vector<DisparityRegion> regions{m_right->regions[index]};
+	std::vector<disparity_region> regions{m_right->regions[index]};
 	refreshImages({}, false, regions, true);
 
 	ui->regionRight->setData(m_right, m_left, index, m_config, true);
@@ -299,16 +299,16 @@ void RegionWindow::on_pbOptimize_clicked()
 
 	double pot_factor = ui->spDispFinal->value();
 
-	auto prop_eval = [=](const DisparityRegion& baseRegion, const RegionContainer& base, const RegionContainer& match, int disparity) {
+	auto prop_eval = [=](const disparity_region& baseRegion, const RegionContainer& base, const RegionContainer& match, int disparity) {
 
 		const std::vector<MutualRegion>& other_regions = baseRegion.other_regions[disparity-base.task.dispMin];
-		float disp_pot = corresponding_regions_average(match.regions, other_regions, [&](const DisparityRegion& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
+		float disp_pot = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
 		//float stddev = getOtherRegionsAverage(match.regions, other_regions, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
 
-		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
+		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
 		float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
 
-		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const DisparityRegion& cregion){return cregion.stats.confidence2;}), std::numeric_limits<float>::min());
+		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.stats.confidence2;}), std::numeric_limits<float>::min());
 		//float mi_confidence = getOtherRegionsAverage(match.regions, other_regions, [&](const SegRegion& cregion){return cregion.confidence(-disparity-match.task.dispMin);});
 
 		//float stddev_sum = stddev + baseRegion.stats.stddev;
@@ -353,7 +353,7 @@ void resetContainerDisparities(RegionContainer& container)
 {
 	short dispMin = container.task.dispMin;
 	short dispMax = container.task.dispMax;
-	for(DisparityRegion& cregion : container.regions)
+	for(disparity_region& cregion : container.regions)
 	{
 		float minCost = std::numeric_limits<float>::max();
 		short minD = dispMin;

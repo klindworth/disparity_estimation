@@ -89,7 +89,7 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	}
 }
 
-disparity_hypothesis_vector::disparity_hypothesis_vector(const std::vector<DisparityRegion>& base_regions, const std::vector<DisparityRegion>& match_regions) : base_disparities_cache(base_regions.size()), match_disparities_cache(match_regions.size()), color_cache(base_regions.size())
+disparity_hypothesis_vector::disparity_hypothesis_vector(const std::vector<disparity_region>& base_regions, const std::vector<disparity_region>& match_regions) : base_disparities_cache(base_regions.size()), match_disparities_cache(match_regions.size()), color_cache(base_regions.size())
 {
 	for(std::size_t i = 0; i < match_regions.size(); ++i)
 		match_disparities_cache[i] = match_regions[i].disparity;
@@ -100,7 +100,7 @@ disparity_hypothesis_vector::disparity_hypothesis_vector(const std::vector<Dispa
 		color_cache[i] = base_regions[i].average_color;
 }
 
-void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector)
+void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector)
 {
 	this->dispStart = dispStart;
 	const int range = dispEnd - dispStart + 1;
@@ -230,7 +230,7 @@ float calculate_end_result(int disp_idx, const float *raw_results, const dispari
 	return calculate_end_result(result_ptr, wv);
 }
 
-float calculate_occ_avg(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short disparity)
+float calculate_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short disparity)
 {
 	//occ
 	int occ_sum = 0;
@@ -245,8 +245,8 @@ float calculate_occ_avg(const cv::Mat_<unsigned char>& occmap, const DisparityRe
 
 void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, RegionContainer& base, const RegionContainer& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
 {
-	cv::Mat disp = getDisparityBySegments(base);
-	cv::Mat occmap = occlusionStat<short>(disp, 1.0);
+	cv::Mat disp = disparity_by_segments(base);
+	cv::Mat occmap = occlusion_stat<short>(disp, 1.0);
 	int pot_trunc = 10;
 
 	const short dispMin = base.task.dispMin;
@@ -266,7 +266,7 @@ void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization
 	#pragma omp parallel for
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
-		DisparityRegion& baseRegion = base.regions[i];
+		disparity_region& baseRegion = base.regions[i];
 		int thread_idx = omp_get_thread_num();
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 

@@ -38,7 +38,7 @@ cv::Mat estimatedOcclusionMap(const cv::Mat& disparity, int subsample, bool inve
 {
 	cv::Mat occ;
 	if(!invert)
-		occ = occlusionStat<unsigned char>(disparity / subsample);
+		occ = occlusion_stat<unsigned char>(disparity / subsample);
 	else
 	{
 		cv::Mat dispN = cv::Mat(disparity.size(), CV_16SC1);
@@ -47,7 +47,7 @@ cv::Mat estimatedOcclusionMap(const cv::Mat& disparity, int subsample, bool inve
 		for(unsigned int i = 0; i < dispN.total(); ++i)
 			*dst++ = - *src++ / subsample;
 
-		occ  = occlusionStat<short>(dispN);
+		occ  = occlusion_stat<short>(dispN);
 	}
 
 	unsigned char* ptr = occ.data;

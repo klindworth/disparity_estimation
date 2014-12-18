@@ -38,7 +38,7 @@ inline T abs_pott(const T& v1, const T& v2, const T& trunc)
 }
 
 class RegionContainer;
-class DisparityRegion;
+class disparity_region;
 class InitialDisparityConfig;
 class StereoTask;
 
@@ -80,8 +80,8 @@ class disparity_hypothesis_vector
 
 public:
 	static const int vector_size = 7;
-	disparity_hypothesis_vector(const std::vector<DisparityRegion>& left_regions, const std::vector<DisparityRegion>& right_regions);
-	void operator()(const cv::Mat_<unsigned char>& occmap, const DisparityRegion& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector);
+	disparity_hypothesis_vector(const std::vector<disparity_region>& left_regions, const std::vector<disparity_region>& right_regions);
+	void operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector);
 };
 
 class optimizer_settings
@@ -90,7 +90,7 @@ public:
 	int rounds;
 	bool enable_damping;
 
-	std::function<float(const DisparityRegion&, const RegionContainer&, const RegionContainer&, int)> prop_eval, prop_eval2, prop_eval_refine;
+	std::function<float(const disparity_region&, const RegionContainer&, const RegionContainer&, int)> prop_eval, prop_eval2, prop_eval_refine;
 	disparity_hypothesis_weight_vector base_eval, base_eval2, base_eval_refine;
 };
 

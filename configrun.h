@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <segmentation/segmentation.h>
 
 class StereoTask;
-class DisparityRegion;
+class disparity_region;
 class RegionContainer;
 class TaskTestSet;
 class ClassicSearchConfig;

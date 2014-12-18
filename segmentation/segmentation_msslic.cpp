@@ -26,7 +26,7 @@ int segmentImage2(cv::Mat& src, cv::Mat& labels_dst, int spatial_variance, float
 int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
 	int regions_count = slicSuperpixels(image, labels, settings.superpixel_size, settings.superpixel_compactness);
 	std::vector<region_descriptor> regions(regions_count);
-	fillRegionDescriptors(regions.begin(), regions.end(), labels);
+	fill_region_descriptors(regions.begin(), regions.end(), labels);
 
 	superpixel = labels.clone();
 	regions_count_superpixel = regions_count;

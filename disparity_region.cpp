@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "disparity_region_algorithms.h"
 
-DisparityRegion::DisparityRegion()
+disparity_region::disparity_region()
 {
 	old_dilation = -1;
 	dilation = 0;
@@ -57,7 +57,7 @@ std::vector<RegionInterval> filtered_region(int width, const std::vector<RegionI
 	return filtered;
 }
 
-void labelLRCheck(const cv::Mat_<int>& labelsMatch, DisparityRegion& region, const short dispMin, const short dispMax)
+void labelLRCheck(const cv::Mat_<int>& labelsMatch, disparity_region& region, const short dispMin, const short dispMax)
 {
 	const int dispRange = dispMax-dispMin + 1;
 	region.other_regions = std::vector<std::vector<MutualRegion>>(dispRange);
@@ -83,7 +83,7 @@ void labelLRCheck(const cv::Mat_<int>& labelsMatch, DisparityRegion& region, con
 
 void checkLabelLRCheck(const RegionContainer& base, const RegionContainer& match)
 {
-	for(const DisparityRegion& cregion : base.regions)
+	for(const disparity_region& cregion : base.regions)
 	{
 		for(const std::vector<MutualRegion>& cdisp : cregion.other_regions)
 		{
@@ -142,19 +142,19 @@ void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t o
 	}
 }
 
-bool checkLabelsIntervalsInvariant(const std::vector<DisparityRegion>& regions, const cv::Mat_<int>& labels, int segcount)
+bool checkLabelsIntervalsInvariant(const std::vector<disparity_region>& regions, const cv::Mat_<int>& labels, int segcount)
 {
 	return checkLabelsIntervalsInvariant(regions.begin(), regions.begin() + segcount, labels);
 }
 
-void generateStats(std::vector<DisparityRegion>& regions, const StereoSingleTask& task, const int delta)
+void generate_stats(std::vector<disparity_region>& regions, const StereoSingleTask& task, const int delta)
 {
-	parallel_region(regions, [&](DisparityRegion& region) {
-		generateStats(region, task, delta);
+	parallel_region(regions, [&](disparity_region& region) {
+		generate_stats(region, task, delta);
 	});
 }
 
-void generateStats(DisparityRegion& region, const StereoSingleTask& task, int delta)
+void generate_stats(disparity_region& region, const StereoSingleTask& task, int delta)
 {
 	auto range = getSubrange(region.base_disparity, delta, task);
 	int len = range.second - range.first + 1;
@@ -168,9 +168,9 @@ void generateStats(DisparityRegion& region, const StereoSingleTask& task, int de
 	delete[] derived;
 }
 
-cv::Mat getDisparityBySegments(const RegionContainer& container)
+cv::Mat disparity_by_segments(const RegionContainer& container)
 {
-	return set_regionwise<short>(container, [](const DisparityRegion& cregion){return cregion.disparity;});
+	return set_regionwise<short>(container, [](const disparity_region& cregion){return cregion.disparity;});
 	//return regionWiseSet<short>(container.task.base.size(), container.regions, [](const DisparityRegion& cregion){return cregion.disparity;});
 }
 
@@ -180,7 +180,7 @@ void refreshWarpedIdx(RegionContainer& container)
 	#pragma omp parallel for default(none) shared(container)
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
-		DisparityRegion& cregion = container.regions[i];
+		disparity_region& cregion = container.regions[i];
 		cregion.warped_interval.clear();
 		cregion.warped_interval.reserve(cregion.lineIntervals.size());
 		cregion.warped_interval = filtered_region(container.task.base.cols, cregion.lineIntervals, cregion.disparity);
@@ -194,7 +194,7 @@ void refreshWarpedIdx(RegionContainer& container)
 	}
 }
 
-MutualRegion DisparityRegion::getMutualRegion(std::size_t idx, std::size_t disparity_idx)
+MutualRegion disparity_region::getMutualRegion(std::size_t idx, std::size_t disparity_idx)
 {
 	assert(disparity_idx < other_regions.size());
 	auto it = std::find_if(other_regions[disparity_idx].begin(), other_regions[disparity_idx].end(), [=](const MutualRegion& creg){return (creg.index == idx);});

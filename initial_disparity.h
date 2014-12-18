@@ -37,7 +37,7 @@ namespace cv {
 
 class StereoTask;
 class StereoSingleTask;
-class DisparityRegion;
+class disparity_region;
 class RegionContainer;
 class segmentation_algorithm;
 class RegionInterval;

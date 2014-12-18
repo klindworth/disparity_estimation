@@ -39,10 +39,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& optimization_vectors, const RegionContainer& base, const RegionContainer& match, int delta)
 {
-	cv::Mat disp = getDisparityBySegments(base);
+	cv::Mat disp = disparity_by_segments(base);
 	//std::copy(disp.ptr<short>(91,0), disp.ptr<short>(91, base.image_size.width), std::ostream_iterator<int>(std::cout, ","));
 	//std::cout << "\n" << std::endl;
-	cv::Mat occmap = occlusionStat<short>(disp, 1.0);
+	cv::Mat occmap = occlusion_stat<short>(disp, 1.0);
 	int pot_trunc = 10;
 
 	const short dispMin = base.task.dispMin;
@@ -60,7 +60,7 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 	#pragma omp parallel for
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
-		const DisparityRegion& baseRegion = base.regions[i];
+		const disparity_region& baseRegion = base.regions[i];
 		int thread_idx = omp_get_thread_num();
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
@@ -163,7 +163,7 @@ void ml_region_optimizer::refresh_base_optimization_vector(const RegionContainer
 }
 
 template<typename dst_type, typename src_type>
-void gather_region_optimization_vector(dst_type *dst_ptr, const DisparityRegion& baseRegion, const std::vector<src_type>& optimization_vector_base, const std::vector<std::vector<src_type>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task)
+void gather_region_optimization_vector(dst_type *dst_ptr, const disparity_region& baseRegion, const std::vector<src_type>& optimization_vector_base, const std::vector<std::vector<src_type>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task)
 {
 	const int crange = task.range_size();
 	auto range = getSubrange(baseRegion.base_disparity, delta, task);

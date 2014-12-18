@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <memory>
 
 class RegionContainer;
-class DisparityRegion;
+class disparity_region;
 class DebugMatStore;
 class InitialDisparityConfig;
 class disparity_hypothesis_weight_vector;
@@ -71,8 +71,8 @@ private slots:
 
 private:
 	disparity_hypothesis_weight_vector get_weight_vector() const;
-	void refreshImages(std::vector<DisparityRegion> markLeft, bool markLeftOnRight, std::vector<DisparityRegion> markRight, bool markRightOnLeft);
-	void fillTree(int index, DisparityRegion& baseRegion, std::vector<DisparityRegion>& other_regions , QTreeWidget *tree);
+	void refreshImages(std::vector<disparity_region> markLeft, bool markLeftOnRight, std::vector<disparity_region> markRight, bool markRightOnLeft);
+	void fillTree(int index, disparity_region& baseRegion, std::vector<disparity_region>& other_regions , QTreeWidget *tree);
 	Ui::RegionWindow *ui;
 	std::shared_ptr<RegionContainer> m_left, m_right;
 	DebugMatStore *m_store;

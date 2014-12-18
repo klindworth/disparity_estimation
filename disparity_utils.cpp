@@ -30,7 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 typedef float costmap_type;
 
 template<typename T>
-std::size_t getMinimalCostDisparity(const T* cost_ptr, int range, int dispMin)
+std::size_t minimal_cost_disparity(const T* cost_ptr, int range, int dispMin)
 {
 	T min_cost = std::numeric_limits<T>::max();
 	std::size_t min_d = 0;
@@ -46,7 +46,7 @@ std::size_t getMinimalCostDisparity(const T* cost_ptr, int range, int dispMin)
 }
 
 template<typename T>
-T disparityInterpolate(const T* cost_ptr, std::size_t min_d, std::size_t range, int subsample)
+T disparity_interpolate(const T* cost_ptr, std::size_t min_d, std::size_t range, int subsample)
 {
 	T ndisp;
 	if(min_d > 0 && min_d < range-2 && (cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]) > 0 && subsample > 1)
@@ -60,7 +60,7 @@ T disparityInterpolate(const T* cost_ptr, std::size_t min_d, std::size_t range, 
 	return ndisp;
 }
 
-cv::Mat createDisparity(const cv::Mat& cost_map, int dispMin, int subsample)
+cv::Mat create_disparity(const cv::Mat& cost_map, int dispMin, int subsample)
 {
 	costmap_type dispMinF = dispMin*subsample;
 
@@ -71,15 +71,15 @@ cv::Mat createDisparity(const cv::Mat& cost_map, int dispMin, int subsample)
 		for(int j = 0; j < cost_map.size[1]; ++j)
 		{
 			const costmap_type *cost_ptr = cost_map.ptr<costmap_type>(i,j);
-			std::size_t min_d = getMinimalCostDisparity(cost_ptr, range, dispMin);
-			disparity_map(i,j) = disparityInterpolate(cost_ptr, min_d, range, subsample)+dispMinF;
+			std::size_t min_d = minimal_cost_disparity(cost_ptr, range, dispMin);
+			disparity_map(i,j) = disparity_interpolate(cost_ptr, min_d, range, subsample)+dispMinF;
 		}
 	}
 
 	return disparity_map;
 }
 
-cv::Mat createDisparityImage(const cv::Mat& disparity)
+cv::Mat create_disparity_image(const cv::Mat& disparity)
 {
 	assert(disparity.type() == CV_16SC1);
 

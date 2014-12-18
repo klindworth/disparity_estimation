@@ -4,7 +4,7 @@
 #include "disparity_region.h"
 
 template<typename T>
-inline void parallel_region(std::vector<DisparityRegion>& regions, T func)
+inline void parallel_region(std::vector<disparity_region>& regions, T func)
 {
 	parallel_region(regions.begin(), regions.end(), func);
 }
@@ -52,7 +52,7 @@ void foreach_warped_region_point(Iterator it, Iterator end, int width, int d, la
 }
 
 template<typename lambda_type>
-float corresponding_regions_average(const std::vector<DisparityRegion>& container, const std::vector<MutualRegion>& cdisp, lambda_type func)
+float corresponding_regions_average(const std::vector<disparity_region>& container, const std::vector<MutualRegion>& cdisp, lambda_type func)
 {
 	float result = 0.0f;
 	for(const MutualRegion& cval : cdisp)
@@ -100,19 +100,19 @@ inline void gather_other_regions_weights(std::vector<float>& weights, const std:
 }*/
 
 template<typename lambda_type>
-float getNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, lambda_type func)
+float getNeighborhoodsAverage(const std::vector<disparity_region>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, lambda_type func)
 {
 	return getNeighborhoodsAverage(container, neighbors, 0.0f, func);
 }
 
 template<typename lambda_type>
-float getWeightedNeighborhoodsAverage(const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, lambda_type func)
+float getWeightedNeighborhoodsAverage(const std::vector<disparity_region>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, lambda_type func)
 {
 	return getWeightedNeighborhoodsAverage(container, neighbors, 0.0f, func);
 }
 
 template<typename lambda_type>
-std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& base_color, double color_trunc, const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, lambda_type func)
+std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& base_color, double color_trunc, const std::vector<disparity_region>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, lambda_type func)
 {
 	float result = 0.0f;
 	float sum_weight = 0.0f;
@@ -127,7 +127,7 @@ std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& bas
 	return std::make_pair(result/sum_weight, sum_weight);
 }
 
-inline float gather_neighbor_color_weights(std::vector<float>& weights, const cv::Vec3d& base_color, double color_trunc, const std::vector<DisparityRegion>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors)
+inline float gather_neighbor_color_weights(std::vector<float>& weights, const cv::Vec3d& base_color, double color_trunc, const std::vector<disparity_region>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors)
 {
 	std::size_t nsize = neighbors.size();
 	weights.resize(nsize);

@@ -64,7 +64,7 @@ void foreach_warped_pixel(const cv::Mat& disparity, float scaling, T func)
  * That means, if you have a subsampling factor of four, your disparity matrix is scaled by four.
  */
 template<typename disparity_type>
-cv::Mat occlusionStat(const cv::Mat& disparity, float scaling = 1.0f)
+cv::Mat occlusion_stat(const cv::Mat& disparity, float scaling = 1.0f)
 {
 	cv::Mat stat_image(disparity.size(), CV_8UC1, cv::Scalar(0));
 
@@ -194,7 +194,7 @@ inline bool gotDisparity(short disparity, short baseDisparity, short delta, cons
 	return disparity >= range.first && range.second <= range.second;
 }
 
-cv::Mat createDisparity(const cv::Mat &cost_map_org, int dispMin, int subsample);
-cv::Mat createDisparityImage(const cv::Mat &disparity);
+cv::Mat create_disparity(const cv::Mat &cost_map_org, int dispMin, int subsample);
+cv::Mat create_disparity_image(const cv::Mat &disparity);
 
 #endif // DISPARITY_UTILS_H

@@ -81,8 +81,8 @@ std::pair<cv::Mat, cv::Mat> singleLoggedRun(StereoTask& task, disparity_estimato
 	std::cout << "finished" << std::endl;
 
 	TaskAnalysis analysis(task, disparity.first, disparity.second, subsampling);
-	cv::Mat disp_left  = createDisparityImage(disparity.first);
-	cv::Mat disp_right = createDisparityImage(disparity.second);
+	cv::Mat disp_left  = create_disparity_image(disparity.first);
+	cv::Mat disp_right = create_disparity_image(disparity.second);
 	if(logging)
 	{
 		fs << "taskname" << task.name;
@@ -239,8 +239,8 @@ void singleClassicRun(StereoTask& task, ClassicSearchConfig& config, std::string
 
 		matToFile(resultLeft[i], fullfilename + "-left.cvmat");
 		matToFile(resultRight[i], fullfilename + "-right.cvmat");
-		cv::imwrite(fullfilename + "-left.png",  createDisparityImage(resultLeft[i]));
-		cv::imwrite(fullfilename + "-right.png", createDisparityImage(resultRight[i]));
+		cv::imwrite(fullfilename + "-left.png",  create_disparity_image(resultLeft[i]));
+		cv::imwrite(fullfilename + "-right.png", create_disparity_image(resultRight[i]));
 		if(task.groundLeft.data)
 		{
 			cv::Mat err_image = getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_left);
