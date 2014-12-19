@@ -39,8 +39,8 @@ void showWindowSizes(cv::Mat& sizes)
 
 	cv::mixChannels(&sizes, 1, out, 2, conf, 2);
 
-	matstore.addMat(getValueScaledImage<unsigned char, unsigned char>(y_sizes), "sizesY");
-	matstore.addMat(getValueScaledImage<unsigned char, unsigned char>(x_sizes), "sizesX");
+	matstore.addMat(value_scaled_image<unsigned char, unsigned char>(y_sizes), "sizesY");
+	matstore.addMat(value_scaled_image<unsigned char, unsigned char>(x_sizes), "sizesX");
 }
 
 inline int countLabels(cv::Mat window, int clabel)

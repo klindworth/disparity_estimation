@@ -32,7 +32,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region_descriptor_algorithms.h"
 
 #include <stdexcept>
-#include <fstream>
 
 #include "segmentation_cr.h"
 #ifdef USE_MEANSHIFT
@@ -71,7 +70,11 @@ cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Mat_<int>& labels, int la
 	int *src_ptr = labels[0];
 
 	for(std::size_t i = 0; i < labels.total(); ++i)
-		*dst_ptr++ = colors[*src_ptr++];
+	{
+		int label = *src_ptr++;
+		assert(label < colors.size());
+		*dst_ptr++ = colors[label];
+	}
 	return result;
 }
 

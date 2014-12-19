@@ -130,7 +130,7 @@ void derivedMat(const cv::Mat& input, cv::Mat& grad_x, cv::Mat& grad_y, bool blu
 	cv::Scharr( temp, grad_y, CV_32FC1, 0, 1);
 }
 
-cv::Mat slidingGradient(StereoSingleTask& task, int windowsize)
+cv::Mat sliding_gradient(StereoSingleTask& task, int windowsize)
 {
 	cv::Mat gradLeftX;
 	cv::Mat gradLeftY;

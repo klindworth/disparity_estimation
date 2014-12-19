@@ -484,8 +484,8 @@ void single_pass_region_disparity(StereoTask& task, region_container& left, regi
 		cv::Mat initial_disp_left  = disparity_by_segments(left);
 		cv::Mat initial_disp_right = disparity_by_segments(right);
 
-		matstore.addMat(create_disparity_image(initial_disp_left), "init_left");
-		matstore.addMat(create_disparity_image(initial_disp_right), "right_left");
+		matstore.addMat(disparity::create_image(initial_disp_left), "init_left");
+		matstore.addMat(disparity::create_image(initial_disp_right), "right_left");
 	}
 
 	generateRegionInformation(left, right);
@@ -523,7 +523,7 @@ void single_pass_region_disparity(StereoTask& task, region_container& left, regi
 
 cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, const RefinementConfig& refconfig, int subsampling = 1)
 {
-	return convertDisparityFromPartialCostmap(create_disparity(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
+	return convertDisparityFromPartialCostmap(disparity::create_from_costmap(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
 }
 
 std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling, region_optimizer& optimizer)

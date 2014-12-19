@@ -30,6 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "stereotask.h"
 
+namespace disparity {
+
 /**
  * Calls for every pixel a function with the coordinates of the original pixel and the warped pixel and passes additionally the disparity.
  * The function is only called, if the coordinate in the warped space is still valid, that means within the bodunaries of the image
@@ -163,6 +165,11 @@ cv::Mat_<short> wta_disparity(cv::Mat base, data_type data, int dispMin, int dis
 	return result;
 }
 
+cv::Mat create_from_costmap(const cv::Mat &cost_map_org, int dispMin, int subsample);
+cv::Mat create_image(const cv::Mat &disparity);
+
+}
+
 inline std::pair<short,short> getSubrange(short baseDisparity, short delta, const StereoSingleTask& task)
 {
 	if(delta == 0)
@@ -194,7 +201,6 @@ inline bool gotDisparity(short disparity, short baseDisparity, short delta, cons
 	return disparity >= range.first && range.second <= range.second;
 }
 
-cv::Mat create_disparity(const cv::Mat &cost_map_org, int dispMin, int subsample);
-cv::Mat create_disparity_image(const cv::Mat &disparity);
+
 
 #endif // DISPARITY_UTILS_H

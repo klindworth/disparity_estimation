@@ -87,18 +87,18 @@ void RegionWindow::setData(std::shared_ptr<region_container>& left, std::shared_
 		}
 
 		cv::Mat disparityLeft = disparity_by_segments(*m_left);
-		ui->disparityLeft->setCVMat(create_disparity_image(disparityLeft));
+		ui->disparityLeft->setCVMat(disparity::create_image(disparityLeft));
 
-		cv::Mat warpedLeft = warp_disparity<short>(disparityLeft, 1.0f);
+		cv::Mat warpedLeft = disparity::warp_disparity<short>(disparityLeft, 1.0f);
 		//cv::Mat warpedLeft = warpImage<short, short>(disparityLeft, disparityLeft, 1.0f);
-		ui->warpedLeft->setCVMat(create_disparity_image(warpedLeft));
+		ui->warpedLeft->setCVMat(disparity::create_image(warpedLeft));
 
 		cv::Mat disparityRight = disparity_by_segments(*m_right);
-		ui->disparityRight->setCVMat(create_disparity_image(disparityRight));
+		ui->disparityRight->setCVMat(disparity::create_image(disparityRight));
 
-		cv::Mat warpedRight = warp_disparity<short>(disparityRight, 1.0f);
+		cv::Mat warpedRight = disparity::warp_disparity<short>(disparityRight, 1.0f);
 		//cv::Mat warpedRight = warpImage<short, short>(disparityRight, disparityRight, 1.0f);
-		ui->warpedRight->setCVMat(create_disparity_image(warpedRight));
+		ui->warpedRight->setCVMat(disparity::create_image(warpedRight));
 	}
 }
 
@@ -161,7 +161,7 @@ cv::Mat createModifiedImage(cv::Mat& gray_image, std::vector<disparity_region>& 
 void RegionWindow::refreshImages(std::vector<disparity_region> markLeft, bool markLeftOnRight, std::vector<disparity_region> markRight, bool markRightOnLeft)
 {
 	cv::Mat disparityLeft = disparity_by_segments(*m_left);
-	cv::Mat dispImageLeft = create_disparity_image(disparityLeft);
+	cv::Mat dispImageLeft = disparity::create_image(disparityLeft);
 	cv::Mat colorLeft;
 	if(!markRightOnLeft)
 		colorLeft = createModifiedImage(dispImageLeft,markLeft, false);
@@ -169,8 +169,8 @@ void RegionWindow::refreshImages(std::vector<disparity_region> markLeft, bool ma
 		colorLeft = createModifiedImage(dispImageLeft,markLeft, false, markRight, true);
 	ui->disparityLeft->setCVMat(colorLeft);
 
-	cv::Mat warpedLeft = warp_disparity<short>(disparityLeft, 1.0f);
-	cv::Mat warpedImageLeft = create_disparity_image(warpedLeft);
+	cv::Mat warpedLeft = disparity::warp_disparity<short>(disparityLeft, 1.0f);
+	cv::Mat warpedImageLeft = disparity::create_image(warpedLeft);
 	cv::Mat colorWarpedLeft;
 	if(!markRightOnLeft)
 		colorWarpedLeft = createModifiedImage(warpedImageLeft,markLeft, true);
@@ -181,7 +181,7 @@ void RegionWindow::refreshImages(std::vector<disparity_region> markLeft, bool ma
 
 	//mark same on diff image
 	cv::Mat disparityRight = disparity_by_segments(*m_right);
-	cv::Mat dispImageRight = create_disparity_image(disparityRight);
+	cv::Mat dispImageRight = disparity::create_image(disparityRight);
 	cv::Mat colorRight;
 	if(!markLeftOnRight)
 		colorRight = createModifiedImage(dispImageRight,markRight, false);
@@ -189,8 +189,8 @@ void RegionWindow::refreshImages(std::vector<disparity_region> markLeft, bool ma
 		colorRight = createModifiedImage(dispImageRight,markRight, false, markLeft, true);
 	ui->disparityRight->setCVMat(colorRight);
 
-	cv::Mat warpedRight = warp_disparity<short>(disparityRight, 1.0f);
-	cv::Mat warpedImageRight = create_disparity_image(warpedRight);
+	cv::Mat warpedRight = disparity::warp_disparity<short>(disparityRight, 1.0f);
+	cv::Mat warpedImageRight = disparity::create_image(warpedRight);
 	cv::Mat colorWarpedRight;
 	if(!markLeftOnRight)
 		colorWarpedRight = createModifiedImage(warpedImageRight, markRight, true);

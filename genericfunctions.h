@@ -29,13 +29,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 #include <string>
 
-//saves a matrix to a binary file
-void matToFile(const cv::Mat& input , const std::string &filename);
-//opens a binary file and constructs a matrix out of it
-cv::Mat fileToMat(const std::string &filename);
+//! Saves a matrix to a binary file
+void mat_to_file(const cv::Mat& input , const std::string &filename);
 
-cv::Mat streamToMat(std::ifstream& istream);
-void matToStream(const cv::Mat& input, std::ofstream& ostream);
+//! Opens a binary file and constructs a matrix out of it
+cv::Mat file_to_mat(const std::string &filename);
+
+cv::Mat stream_to_mat(std::ifstream& istream);
+void mat_to_stream(const cv::Mat& input, std::ofstream& ostream);
 
 inline cv::Mat subwindow(const cv::Mat& image, int x, int y, int windowsize)
 {
@@ -168,7 +169,7 @@ cv::Mat slidingWindow(const cv::Mat& image, unsigned int windowsize)
 }
 
 template<typename src_t, typename dst_t>
-cv::Mat_<dst_t> getValueScaledImage(const cv::Mat& image)
+cv::Mat_<dst_t> value_scaled_image(const cv::Mat& image)
 {
 	double dmin, dmax;
 	cv::minMaxIdx(image, &dmin, &dmax);

@@ -42,7 +42,7 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 	cv::Mat disp = disparity_by_segments(base);
 	//std::copy(disp.ptr<short>(91,0), disp.ptr<short>(91, base.image_size.width), std::ostream_iterator<int>(std::cout, ","));
 	//std::cout << "\n" << std::endl;
-	cv::Mat occmap = occlusion_stat<short>(disp, 1.0);
+	cv::Mat occmap = disparity::occlusion_stat<short>(disp, 1.0);
 	int pot_trunc = 10;
 
 	const short dispMin = base.task.dispMin;

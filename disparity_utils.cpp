@@ -27,6 +27,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "genericfunctions.h"
 
+namespace disparity
+{
+
 typedef float costmap_type;
 
 template<typename T>
@@ -60,7 +63,7 @@ T disparity_interpolate(const T* cost_ptr, std::size_t min_d, std::size_t range,
 	return ndisp;
 }
 
-cv::Mat create_disparity(const cv::Mat& cost_map, int dispMin, int subsample)
+cv::Mat create_from_costmap(const cv::Mat& cost_map, int dispMin, int subsample)
 {
 	costmap_type dispMinF = dispMin*subsample;
 
@@ -79,7 +82,7 @@ cv::Mat create_disparity(const cv::Mat& cost_map, int dispMin, int subsample)
 	return disparity_map;
 }
 
-cv::Mat create_disparity_image(const cv::Mat& disparity)
+cv::Mat create_image(const cv::Mat& disparity)
 {
 	assert(disparity.type() == CV_16SC1);
 
@@ -103,3 +106,4 @@ cv::Mat create_disparity_image(const cv::Mat& disparity)
 	return result;
 }
 
+}

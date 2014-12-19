@@ -81,8 +81,8 @@ std::pair<cv::Mat, cv::Mat> singleLoggedRun(StereoTask& task, disparity_estimato
 	std::cout << "finished" << std::endl;
 
 	TaskAnalysis analysis(task, disparity.first, disparity.second, subsampling);
-	cv::Mat disp_left  = create_disparity_image(disparity.first);
-	cv::Mat disp_right = create_disparity_image(disparity.second);
+	cv::Mat disp_left  = disparity::create_image(disparity.first);
+	cv::Mat disp_right = disparity::create_image(disparity.second);
 	if(logging)
 	{
 		fs << "taskname" << task.name;
@@ -90,8 +90,8 @@ std::pair<cv::Mat, cv::Mat> singleLoggedRun(StereoTask& task, disparity_estimato
 		fs << task;
 		fs << analysis;
 
-		matToFile(disparity.first, filename + "-left.cvmat");
-		matToFile(disparity.second, filename + "-right.cvmat");
+		mat_to_file(disparity.first, filename + "-left.cvmat");
+		mat_to_file(disparity.second, filename + "-right.cvmat");
 
 		cv::imwrite(filename + "-left.png",  disp_left);
 		cv::imwrite(filename + "-right.png", disp_right);
@@ -175,10 +175,10 @@ std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(StereoSingleTask& t
 
 	auto data_single = std::make_pair(entropy.X, entropy.Y);
 
-	return std::vector<cv::Mat_<short>> {wta_disparity<entropy_agg<mutual_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										wta_disparity<entropy_agg<variation_of_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										wta_disparity<entropy_agg<normalized_variation_of_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										wta_disparity<entropy_agg<normalized_information_distance_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax)};
+	return std::vector<cv::Mat_<short>> {disparity::wta_disparity<entropy_agg<mutual_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
+										disparity::wta_disparity<entropy_agg<variation_of_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
+										disparity::wta_disparity<entropy_agg<normalized_variation_of_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
+										disparity::wta_disparity<entropy_agg<normalized_information_distance_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax)};
 }
 
 void singleClassicRun(StereoTask& task, ClassicSearchConfig& config, std::string filename, std::vector<cv::FileStorage*>& fs)
@@ -237,10 +237,10 @@ void singleClassicRun(StereoTask& task, ClassicSearchConfig& config, std::string
 		*(fs[i]) << task;
 		*(fs[i]) << analysis;
 
-		matToFile(resultLeft[i], fullfilename + "-left.cvmat");
-		matToFile(resultRight[i], fullfilename + "-right.cvmat");
-		cv::imwrite(fullfilename + "-left.png",  create_disparity_image(resultLeft[i]));
-		cv::imwrite(fullfilename + "-right.png", create_disparity_image(resultRight[i]));
+		mat_to_file(resultLeft[i], fullfilename + "-left.cvmat");
+		mat_to_file(resultRight[i], fullfilename + "-right.cvmat");
+		cv::imwrite(fullfilename + "-left.png",  disparity::create_image(resultLeft[i]));
+		cv::imwrite(fullfilename + "-right.png", disparity::create_image(resultRight[i]));
 		if(task.groundLeft.data)
 		{
 			cv::Mat err_image = getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_left);

@@ -38,7 +38,7 @@ cv::Mat estimatedOcclusionMap(const cv::Mat& disparity, int subsample, bool inve
 {
 	cv::Mat occ;
 	if(!invert)
-		occ = occlusion_stat<unsigned char>(disparity / subsample);
+		occ = disparity::occlusion_stat<unsigned char>(disparity / subsample);
 	else
 	{
 		cv::Mat dispN = cv::Mat(disparity.size(), CV_16SC1);
@@ -47,7 +47,7 @@ cv::Mat estimatedOcclusionMap(const cv::Mat& disparity, int subsample, bool inve
 		for(unsigned int i = 0; i < dispN.total(); ++i)
 			*dst++ = - *src++ / subsample;
 
-		occ  = occlusion_stat<short>(dispN);
+		occ  = disparity::occlusion_stat<short>(dispN);
 	}
 
 	unsigned char* ptr = occ.data;
@@ -122,7 +122,7 @@ void StereoTask::loadGroundTruth(const std::string& nameGroundLeft, const std::s
 	else
 	{
 		if(groundLeft.data)
-			groundRight = warp_disparity<short>(groundLeft);
+			groundRight = disparity::warp_disparity<short>(groundLeft);
 		std::cout << "no ground truth data for right image" << std::endl;
 	}
 }

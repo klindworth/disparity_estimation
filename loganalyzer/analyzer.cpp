@@ -319,16 +319,16 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 			StereoTask task(name.toStdString(), left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
 
 			std::cout << abs_prefix << std::endl;
-			cv::Mat disp_left = fileToMat(abs_prefix + "-left.cvmat");
-			cv::Mat disp_right = fileToMat(abs_prefix + "-right.cvmat");
+			cv::Mat disp_left = file_to_mat(abs_prefix + "-left.cvmat");
+			cv::Mat disp_right = file_to_mat(abs_prefix + "-right.cvmat");
 
 			TaskAnalysis analysis(task, disp_left, disp_right, subsampling, windowsize/2);
 
 			cv::Mat warpedLeft  = warpImageAdvanced<cv::Vec3b, short>(task.left, disp_left, 1.0f/subsampling);
 			cv::Mat warpedRight = warpImageAdvanced<cv::Vec3b, short>(task.right, disp_right, 1.0f/subsampling);
 
-			cv::Mat disp_left_img  = create_disparity_image(disp_left);
-			cv::Mat disp_right_img = create_disparity_image(disp_right);
+			cv::Mat disp_left_img  = disparity::create_image(disp_left);
+			cv::Mat disp_right_img = disparity::create_image(disp_right);
 			cv::Mat disp_left_img_color, disp_right_img_color;
 			cv::cvtColor(disp_left_img, disp_left_img_color, CV_GRAY2BGR);
 			cv::cvtColor(disp_right_img, disp_right_img_color, CV_GRAY2BGR);
@@ -530,8 +530,8 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 				StereoTask task(name.toStdString(), left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
 
 				std::cout << abs_prefix << std::endl;
-				cv::Mat disp_left = fileToMat(abs_prefix + "-left.cvmat");
-				cv::Mat disp_right = fileToMat(abs_prefix + "-right.cvmat");
+				cv::Mat disp_left = file_to_mat(abs_prefix + "-left.cvmat");
+				cv::Mat disp_right = file_to_mat(abs_prefix + "-right.cvmat");
 
 				TaskAnalysis analysis(task, disp_left, disp_right, subsampling, windowsize/2);
 				hist_left = std::vector<int>(analysis.error_hist_left.begin(), analysis.error_hist_left.end());
@@ -539,13 +539,13 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 
 
 				CompareRow *crow_left  = getElement(rows, name +" (left)");
-				crow_left->images.push_back(create_disparity_image(disp_left));
+				crow_left->images.push_back(disparity::create_image(disp_left));
 				//crow_left->images.push_back(getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_left));
 				crow_left->images.push_back(analysis.diff_mat_left);
 				crow_left->hist.push_back(hist_left);
 
 				CompareRow *crow_right = getElement(rows, name +" (right)");
-				crow_right->images.push_back(create_disparity_image(disp_right));
+				crow_right->images.push_back(disparity::create_image(disp_right));
 				//crow_right->images.push_back(getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_right));
 				crow_right->images.push_back(analysis.diff_mat_right);
 				crow_right->hist.push_back(hist_right);

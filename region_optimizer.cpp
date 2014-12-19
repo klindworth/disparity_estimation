@@ -246,7 +246,7 @@ float calculate_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_r
 void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, region_container& base, const region_container& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
 {
 	cv::Mat disp = disparity_by_segments(base);
-	cv::Mat occmap = occlusion_stat<short>(disp, 1.0);
+	cv::Mat occmap = disparity::occlusion_stat<short>(disp, 1.0);
 	int pot_trunc = 10;
 
 	const short dispMin = base.task.dispMin;

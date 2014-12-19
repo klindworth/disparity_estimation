@@ -60,8 +60,8 @@ inline void move_x_region(Iterator it, Iterator end, int offset, int width)
 		it->move(offset, width);
 }
 
-//! Creates a cv::Mat with the size, that's defined via parameter. The content will be defined by a passed function, that returns for each region value.
 /**
+ * @brief Creates a cv::Mat with the size, that's defined via parameter. The content will be defined by a passed function, that returns for each region value.
  * T defines type of the resulting matrix. Therefore the passed function must return T. The function will be called for each region in the container passed as parameter.
  * @param size Size of the resulting matrix.
  * @param regions The regions, on which the function will be applied.

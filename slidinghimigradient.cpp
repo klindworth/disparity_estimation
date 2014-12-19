@@ -46,7 +46,7 @@ void filterGradientCostmap(cv::Mat& cost_map, int threshold)
 
 cv::Mat onestepSlidingInfoGradient(StereoSingleTask task, std::function<cv::Mat(StereoSingleTask)> func, int windowsize)
 {
-	cv::Mat cost_gradient = slidingGradient(task, windowsize);
+	cv::Mat cost_gradient = sliding_gradient(task, windowsize);
 	//cv::Mat cost_gradient = slidingGradient<windowsizeGrad>(task);
 	filterGradientCostmap(cost_gradient, 10);
 	cv::Mat invert_grad = -cost_gradient;

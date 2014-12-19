@@ -46,7 +46,7 @@ cv::Mat lowerDimensionality(const cv::Mat& input)
 	return result;
 }
 
-void matToStream(const cv::Mat& input, std::ofstream& ostream)
+void mat_to_stream(const cv::Mat& input, std::ofstream& ostream)
 {
 	int type = input.type();
 	ostream.write((char*)&type, sizeof(int));
@@ -60,14 +60,14 @@ void matToStream(const cv::Mat& input, std::ofstream& ostream)
 	ostream.write(input.ptr<char>(0), elems*input.elemSize());
 }
 
-void matToFile(const cv::Mat& input, const std::string& filename)
+void mat_to_file(const cv::Mat& input, const std::string& filename)
 {
 	std::ofstream ostream(filename, std::ofstream::binary);
-	matToStream(input, ostream);
+	mat_to_stream(input, ostream);
 	ostream.close();
 }
 
-cv::Mat streamToMat(std::ifstream& istream)
+cv::Mat stream_to_mat(std::ifstream& istream)
 {
 	assert(istream.is_open());
 	int type;
@@ -89,11 +89,11 @@ cv::Mat streamToMat(std::ifstream& istream)
 	return output;
 }
 
-cv::Mat fileToMat(const std::string& filename)
+cv::Mat file_to_mat(const std::string& filename)
 {
 	std::ifstream istream(filename, std::ifstream::binary);
 	assert(istream.is_open());
-	cv::Mat output = streamToMat(istream);
+	cv::Mat output = stream_to_mat(istream);
 	istream.close();
 	return output;
 }
