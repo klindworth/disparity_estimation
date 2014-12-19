@@ -56,7 +56,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "ml_region_optimizer.h"
 #include "disparity_region_algorithms.h"
 
-class slidingSADThread
+class sliding_sad_threaddata
 {
 public:
 	cv::Mat m_base;
@@ -65,27 +65,27 @@ public:
 	int crow;
 };
 
-class slidingSAD
+class sliding_sad
 {
 public:
 	typedef float prob_table_type;
-	typedef slidingSADThread thread_type;
+	typedef sliding_sad_threaddata thread_type;
 private:
 
 	cv::Mat m_match;
 
 public:
-	inline slidingSAD(const cv::Mat& match, unsigned int /*max_windowsize*/) : m_match(match)
+	inline sliding_sad(const cv::Mat& match, unsigned int /*max_windowsize*/) : m_match(match)
 	{
 	}
 
 	//prepares a row for calculation
-	inline void prepareRow(thread_type& thread, const cv::Mat& /*match*/, int y)
+	inline void prepare_row(thread_type& thread, const cv::Mat& /*match*/, int y)
 	{
 		thread.crow = y;
 	}
 
-	inline void prepareWindow(thread_type& thread, const cv::Mat& base, int cwindowsizeX, int cwindowsizeY)
+	inline void prepare_window(thread_type& thread, const cv::Mat& base, int cwindowsizeX, int cwindowsizeY)
 	{
 		thread.cwindowsizeX = cwindowsizeX;
 		thread.cwindowsizeY = cwindowsizeY;
@@ -384,30 +384,11 @@ cv::Mat convertToFullDisparityCostMap(const cv::Mat& cost_map, const cv::Mat& ra
 	return result;
 }
 
-void generateRegionInformation(region_container& left, region_container& right)
+void generate_region_information(region_container& left, region_container& right)
 {
 	std::cout << "warped_idx" << std::endl;
 	refreshWarpedIdx(left);
 	refreshWarpedIdx(right);
-}
-
-std::vector<value_region_interval<short> > getIntervalDisparityBySegments(const region_container& container, std::size_t exclude)
-{
-	std::vector<value_region_interval<short> > result;
-
-	for(std::size_t i = 0; i < container.regions.size(); ++i)
-	{
-		if(i != exclude)
-		{
-			result.reserve(result.size() + container.regions[i].lineIntervals.size());
-			for(const region_interval& cinterval : container.regions[i].lineIntervals)
-				result.push_back(value_region_interval<short>(cinterval, container.regions[i].disparity));
-		}
-	}
-
-	std::sort(result.begin(), result.end());
-
-	return result;
 }
 
 std::vector<region_interval> exposureVector(const cv::Mat& occlusionMap)
@@ -439,7 +420,7 @@ void dilateLR(single_stereo_task& task, std::vector<disparity_region>& regions_b
 	});
 }
 
-void single_pass_region_disparity(stereo_task& task, region_container& left, region_container& right, const InitialDisparityConfig& config, bool b_refinement, disparity_region_func disparity_calculator, region_optimizer& optimizer)
+void single_pass_region_disparity(stereo_task& task, region_container& left, region_container& right, const initial_disparity_config& config, bool b_refinement, disparity_region_func disparity_calculator, region_optimizer& optimizer)
 {
 	int refinement = 0;
 	if(b_refinement)
@@ -488,7 +469,7 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 		matstore.addMat(disparity::create_image(initial_disp_right), "right_left");
 	}
 
-	generateRegionInformation(left, right);
+	generate_region_information(left, right);
 	generate_stats(left.regions, task.forward, refinement);
 	generate_stats(right.regions, task.backward, refinement);
 
@@ -526,7 +507,7 @@ cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, c
 	return convertDisparityFromPartialCostmap(disparity::create_from_costmap(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
 }
 
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling, region_optimizer& optimizer)
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const initial_disparity_config& config , const RefinementConfig& refconfig, int subsampling, region_optimizer& optimizer)
 {
 	const int quantizer = 4;
 
@@ -535,7 +516,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 	if(config.metric_type == "sad")
 	{
 		//SAD
-		typedef slidingSAD refinement_metric;
+		typedef sliding_sad refinement_metric;
 		disparity_function = calculate_region_generic<sad_disparitywise_calculator>;
 		//disparity_function = calculate_relaxed_region_generic<sad_disparitywise_calculator>;
 		task.algoLeft = task.left;
@@ -544,7 +525,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 	}
 	else if(config.metric_type == "sncc")
 	{
-		typedef slidingSAD refinement_metric;
+		typedef sliding_sad refinement_metric;
 		//disparity_function = calculate_region_generic<sncc_disparitywise_calculator>;
 		disparity_function = calculate_relaxed_region_generic<sncc_disparitywise_calculator>;
 		task.algoLeft = task.leftGray;
@@ -588,7 +569,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(left)), "disp_fused_left");
 	//matstore.addMat(createDisparityImage(getDisparityBySegments(right)), "disp_fused_right");
 
-	InitialDisparityConfig config2 = config;
+	initial_disparity_config config2 = config;
 	for(int i = 0; i < config2.region_refinement_rounds; ++i)
 	{
 		//regionwise refinement
@@ -635,7 +616,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 
 
 
-initial_disparity_algo::initial_disparity_algo(InitialDisparityConfig &config, RefinementConfig &refconfig) : m_config(config), m_refconfig(refconfig)
+initial_disparity_algo::initial_disparity_algo(initial_disparity_config &config, RefinementConfig &refconfig) : m_config(config), m_refconfig(refconfig)
 {
 }
 

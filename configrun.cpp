@@ -119,7 +119,7 @@ std::pair<cv::Mat, cv::Mat> singleLoggedRun(stereo_task& task, disparity_estimat
 	return disparity;
 }
 
-void loggedRun(stereo_task& task, InitialDisparityConfig& config, RefinementConfig& refconfig)
+void loggedRun(stereo_task& task, initial_disparity_config& config, RefinementConfig& refconfig)
 {
 	TaskTestSet testset;
 	testset.name = task.name;
@@ -156,7 +156,7 @@ void loggedRun(task_collection& testset, disparity_estimator_algo& disparity_est
 	//fs << refconfig;
 }
 
-void loggedRun(task_collection& testset, InitialDisparityConfig& config, RefinementConfig& refconfig)
+void loggedRun(task_collection& testset, initial_disparity_config& config, RefinementConfig& refconfig)
 {
 	initial_disparity_algo algo(config, refconfig);
 
@@ -297,7 +297,7 @@ void classicLoggedRun(task_collection& taskset, ClassicSearchConfig& config)
 	}
 }
 
-cv::FileStorage& operator<<(cv::FileStorage& stream, const InitialDisparityConfig& config)
+cv::FileStorage& operator<<(cv::FileStorage& stream, const initial_disparity_config& config)
 {
 	stream << "metric_type" << config.metric_type;
 	stream << "configname" << config.name;
@@ -312,7 +312,7 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const InitialDisparityConfi
 	return stream;
 }
 
-void readInitialDisparityConfig(const cv::FileNode& stream, InitialDisparityConfig& config)
+void readInitialDisparityConfig(const cv::FileNode& stream, initial_disparity_config& config)
 {
 	int dilate;
 	stream["metric_type"] >> config.metric_type;
@@ -332,7 +332,7 @@ void readInitialDisparityConfig(const cv::FileNode& stream, InitialDisparityConf
 	stream >> config.optimizer;
 }
 
-cv::FileStorage& operator>>(cv::FileStorage& stream, InitialDisparityConfig& config)
+cv::FileStorage& operator>>(cv::FileStorage& stream, initial_disparity_config& config)
 {
 	readInitialDisparityConfig(stream.root(), config);
 	return stream;

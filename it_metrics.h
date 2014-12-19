@@ -59,24 +59,25 @@ public:
 };
 
 template<int quantizer>
-costmap_creators::entropy::Entropies calculateEntropies(single_stereo_task task, bool soft, unsigned int windowsize)
+costmap_creators::entropy::entropies calculateEntropies(single_stereo_task task, bool soft, unsigned int windowsize)
 {
-	using namespace costmap_creators::entropy;
-	Entropies result;
+	using namespace costmap_creators;
+
+	entropy::entropies result;
 	cv::Mat base  = quantizeImage(task.baseGray, quantizer);
 	cv::Mat match = quantizeImage(task.matchGray, quantizer);
 
 	if(!soft)
 	{
-		result.XY = slidingJointWindow<joint_fixed_windowsize<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
-		result.X  = slidingWindow<single_fixed_windowsize<quantizer> >(base,  windowsize);
-		result.Y  = slidingWindow<single_fixed_windowsize<quantizer> >(match, windowsize);
+		result.XY = slidingJointWindow<entropy::joint_fixed_windowsize<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
+		result.X  = slidingWindow<entropy::single_fixed_windowsize<quantizer> >(base,  windowsize);
+		result.Y  = slidingWindow<entropy::single_fixed_windowsize<quantizer> >(match, windowsize);
 	}
 	else
 	{
-		result.XY = slidingJointWindow<joint_fixed_windowsize_soft<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
-		result.X  = slidingWindow<single_fixed_windowsize_soft<quantizer> >(base,  windowsize);
-		result.Y  = slidingWindow<single_fixed_windowsize_soft<quantizer> >(match, windowsize);
+		result.XY = slidingJointWindow<entropy::joint_fixed_windowsize_soft<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
+		result.X  = slidingWindow<entropy::single_fixed_windowsize_soft<quantizer> >(base,  windowsize);
+		result.Y  = slidingWindow<entropy::single_fixed_windowsize_soft<quantizer> >(match, windowsize);
 	}
 
 	return result;
@@ -110,7 +111,7 @@ cv::Mat InformationTheoreticDistance(single_stereo_task& task, bool soft, unsign
 	//start = cv::getCPUTickCount() - start;
 	//std::cout << "entropy " << start << std::endl;
 
-	return costmapCalculation<entropy_agg<cost_agg>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
+	return costmap_creators::calculate_pixelwise<entropy_agg<cost_agg>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
 }
 
 template<typename T>
@@ -178,13 +179,13 @@ cv::Mat InformationTheoreticDistance(single_stereo_task task, IT_Metric metric, 
 	switch(metric)
 	{
 	case IT_Metric::MutualInformation:
-		return costmapCalculation<entropy_agg<mutual_information_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
+		return costmap_creators::calculate_pixelwise<entropy_agg<mutual_information_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
 	case IT_Metric::VariationOfInformation:
-		return costmapCalculation<entropy_agg<variation_of_information_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
+		return costmap_creators::calculate_pixelwise<entropy_agg<variation_of_information_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
 	case IT_Metric::NormalizedVariationOfInformation:
-		return costmapCalculation<entropy_agg<normalized_variation_of_information_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
+		return costmap_creators::calculate_pixelwise<entropy_agg<normalized_variation_of_information_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
 	case IT_Metric::NormalizedInformationDistance:
-		return costmapCalculation<entropy_agg<normalized_information_distance_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
+		return costmap_creators::calculate_pixelwise<entropy_agg<normalized_information_distance_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
 	}
 
 	assert(false);

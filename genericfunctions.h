@@ -105,7 +105,7 @@ cv::Mat serializeRow(const cv::Mat& input, int y, int windowsize, bool enable_pa
 }
 
 template<typename data_type, typename thres_type, typename func_type>
-void foreignThresholdInternal(cv::Mat& image, const cv::Mat& thresValues, func_type func)
+void foreign_threshold_internal(cv::Mat& image, const cv::Mat& thresValues, func_type func)
 {
 	for(int i = 0; i < image.rows; ++i)
 	{
@@ -121,20 +121,20 @@ void foreignThresholdInternal(cv::Mat& image, const cv::Mat& thresValues, func_t
 
 //sets all points of a foreign matrix to zero, when the value is above the threshold
 template<typename data_type, typename thres_type>
-void foreignThreshold(cv::Mat& image, const cv::Mat& thresValues, thres_type threshold, bool inverted)
+void foreign_threshold(cv::Mat& image, const cv::Mat& thresValues, thres_type threshold, bool inverted)
 {
 	assert(image.size == thresValues.size);
 
 	if(!inverted)
 	{
-		foreignThresholdInternal<data_type, thres_type>(image, thresValues, [=](thres_type val, data_type* data) {
+		foreign_threshold_internal<data_type, thres_type>(image, thresValues, [=](thres_type val, data_type* data) {
 			if(val > threshold)
 				*data = 0;
 		});
 	}
 	else
 	{
-		foreignThresholdInternal<data_type, thres_type>(image, thresValues, [=](thres_type val, data_type* data) {
+		foreign_threshold_internal<data_type, thres_type>(image, thresValues, [=](thres_type val, data_type* data) {
 			if(val < threshold)
 				*data = 0;
 		});

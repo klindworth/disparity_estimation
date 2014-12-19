@@ -102,7 +102,7 @@ void RegionWindow::setData(std::shared_ptr<region_container>& left, std::shared_
 	}
 }
 
-void RegionWindow::setStore(DebugMatStore* store, InitialDisparityConfig *config)
+void RegionWindow::setStore(DebugMatStore* store, initial_disparity_config *config)
 {
 	m_config = config;
 	m_store = store;
@@ -335,9 +335,9 @@ void RegionWindow::on_pbOptimize_clicked()
 
 	std::cout << "optimization" << std::endl;
 	optimizer->optimize(left_damping_history, left_optimization_vectors, right_optimization_vectors, *m_left, *m_right, wv, prop_eval, 0);
-	generateRegionInformation(*m_left, *m_right);
+	generate_region_information(*m_left, *m_right);
 	optimizer->optimize(right_damping_history, right_optimization_vectors, left_optimization_vectors, *m_right, *m_left, wv, prop_eval, 0);
-	generateRegionInformation(*m_left, *m_right);
+	generate_region_information(*m_left, *m_right);
 	std::cout << "finished" << std::endl;
 	setData(m_left, m_right);
 }
@@ -377,6 +377,6 @@ void RegionWindow::on_pbResetOptimization_clicked()
 
 	resetContainerDisparities(*m_left);
 	resetContainerDisparities(*m_right);
-	generateRegionInformation(*m_left, *m_right);
+	generate_region_information(*m_left, *m_right);
 	setData(m_left, m_right);
 }

@@ -205,7 +205,7 @@ void optimizeWidth(QTreeWidget *widget)
 		widget->resizeColumnToContents(i);
 }
 
-void RegionWidget::setData(std::shared_ptr<region_container>& base, std::shared_ptr<region_container>& match, int index, InitialDisparityConfig *config, bool delta)
+void RegionWidget::setData(std::shared_ptr<region_container>& base, std::shared_ptr<region_container>& match, int index, initial_disparity_config *config, bool delta)
 {
 	m_config = config;
 	m_base = base;

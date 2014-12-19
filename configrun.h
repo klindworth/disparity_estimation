@@ -49,12 +49,12 @@ public:
 	virtual void writeConfig(cv::FileStorage& fs) = 0;
 };
 
-cv::FileStorage& operator<<(cv::FileStorage& stream, const InitialDisparityConfig& config);
-cv::FileStorage& operator>>(cv::FileStorage& stream, InitialDisparityConfig& config);
+cv::FileStorage& operator<<(cv::FileStorage& stream, const initial_disparity_config& config);
+cv::FileStorage& operator>>(cv::FileStorage& stream, initial_disparity_config& config);
 
 std::pair<cv::Mat, cv::Mat> singleLoggedRun(stereo_task& task, disparity_estimator_algo &disparity_estimator, cv::FileStorage& fs, const std::string& filename);
-void loggedRun(stereo_task& task, InitialDisparityConfig& config, RefinementConfig& refconfig);
-void loggedRun(task_collection& testset, InitialDisparityConfig& config, RefinementConfig& refconfig);
+void loggedRun(stereo_task& task, initial_disparity_config& config, RefinementConfig& refconfig);
+void loggedRun(task_collection& testset, initial_disparity_config& config, RefinementConfig& refconfig);
 void classicLoggedRun(task_collection& taskset, ClassicSearchConfig& config);
 
 #endif // CONFIGRUN_H

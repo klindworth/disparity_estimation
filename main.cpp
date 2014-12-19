@@ -190,7 +190,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	InitialDisparityConfig config;
+	initial_disparity_config config;
 	fs >> config;
 	config.optimizer.prop_eval = prop_eval;
 	config.optimizer.prop_eval2 = prop_eval2;

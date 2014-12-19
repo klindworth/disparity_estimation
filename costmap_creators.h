@@ -29,8 +29,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+namespace costmap_creators
+{
+
 template<typename cost_class>
-cv::Mat slidingJointWindow(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, unsigned int windowsize)
+cv::Mat sliding_joint_fixed_windowsize(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, unsigned int windowsize)
 {
 	int disparityRange = dispMax - dispMin + 1;
 
@@ -50,11 +53,11 @@ cv::Mat slidingJointWindow(const cv::Mat& base, const cv::Mat& match, int dispMi
 	#pragma omp parallel for private(thread_data)
 	for(int y = y_min; y < y_max; ++y)
 	{
-		cost_agg.prepareRow(thread_data, match, y);
+		cost_agg.prepare_row(thread_data, match, y);
 		cv::Mat windowBase = subwindow(base, x_min, y, windowsize);
 		for(int x = x_min; x < x_max; ++x)
 		{
-			cost_agg.prepareWindow(thread_data, windowBase);
+			cost_agg.prepare_window(thread_data, windowBase);
 			int disp_start = std::min(std::max(x+dispMin, x_min), x_max-1) - x;
 			int disp_end   = std::max(std::min(x+dispMax, x_max-1), x_min) - x;
 
@@ -76,7 +79,7 @@ cv::Mat slidingJointWindow(const cv::Mat& base, const cv::Mat& match, int dispMi
 }
 
 template<typename cost_class>
-cv::Mat slidingParametricJointWindow(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, const cv::Mat& windowsizes)
+cv::Mat sliding_joint_flexible_windowsize(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, const cv::Mat& windowsizes)
 {
 	int min_windowsize = 7;
 	int disparityRange = dispMax - dispMin + 1;
@@ -148,7 +151,7 @@ cv::Mat slidingParametricJointWindowFlex(const cv::Mat& base, const cv::Mat& mat
 	#pragma omp parallel for private(thread_data)
 	for(int y = y_min; y < y_max; ++y)
 	{
-		cost_agg.prepareRow(thread_data, match, y);
+		cost_agg.prepare_row(thread_data, match, y);
 
 		for(int x = x_min; x < x_max; ++x)
 		{
@@ -168,7 +171,7 @@ cv::Mat slidingParametricJointWindowFlex(const cv::Mat& base, const cv::Mat& mat
 			if(cwindowsize[0] > 0 && cwindowsize[1] > 0 && disp_end > disp_start)
 			{
 				cv::Mat windowBase = subwindow(base, x, y, cwindowsize[1], cwindowsize[0] );
-				cost_agg.prepareWindow(thread_data, windowBase, cwindowsize[1], cwindowsize[0] );
+				cost_agg.prepare_window(thread_data, windowBase, cwindowsize[1], cwindowsize[0] );
 
 				assert(disp_start-dispMin >= 0);
 				assert(disp_start-dispMin < dispMax - dispMin + 1);
@@ -259,9 +262,9 @@ cv::Mat slidingParametricJointWindowDispFlex(const cv::Mat& base, const cv::Mat&
 	return cost_map;
 }*/
 
-//calculates pointwise (no window involved) the disparity. cost aggregator must be passed as a function object, returns a cost map
+//! Calculates pointwise (no window involved) the disparity. cost aggregator must be passed as a function object, returns a cost map
 template<typename cost_class, typename data_type>
-cv::Mat costmapCalculation(cv::Mat base, data_type data, int dispMin, int dispMax)
+cv::Mat calculate_pixelwise(cv::Mat base, data_type data, int dispMin, int dispMax)
 {
 	int disparityRange = dispMax - dispMin + 1;
 	int sz[]  = {base.size[0], base.size[1], disparityRange};
@@ -317,6 +320,7 @@ cv::Mat flexBoxFilter(cv::Mat src, cv::Mat windowsizes)
 	return cost_map;
 }*/
 
+}
 
 template<typename cost_type, typename window_type>
 cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv::Mat base, int dispMin, int dispMax)

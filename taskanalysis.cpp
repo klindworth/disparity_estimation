@@ -106,8 +106,8 @@ void TaskAnalysis::createInternal(const single_stereo_task& task, const cv::Mat&
 		//cv::imshow("ground", scaledGround);
 		cv::absdiff(ndisp, scaledGround, error_mat);
 		if(task.occ.data)
-			foreignThreshold<unsigned char, unsigned char>(error_mat, task.occ, 128, true);
-		foreignThreshold<unsigned char, unsigned char>(error_mat, task.groundTruth, 1, true);
+			foreign_threshold<unsigned char, unsigned char>(error_mat, task.occ, 128, true);
+		foreign_threshold<unsigned char, unsigned char>(error_mat, task.groundTruth, 1, true);
 		//if(ignore_border > 0)
 			//resetBorder<unsigned char>(error_mat, ignore_border);
 

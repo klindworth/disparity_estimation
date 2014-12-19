@@ -82,7 +82,7 @@ cv::Mat refineInitialDisparity(cv::Mat& initial_disparity, single_stereo_task& t
 	//cv::Mat test = slidingParametricJointWindow<slidingSoftJointEntropyInternalFlex<61,8>>(left_quant, right_quant, dispMin, dispMax, sizes);
 	//cv::Mat test  = slidingParametricJointWindowFlex<slidingSoftJointEntropyInternalFlex<max_windowsize,quantizer>>(left_quant, right_quant, sizes,  initial_disp_left,  deltaDisp, task.forward.dispMin,  task.forward.dispMax);
 	//cv::Mat test2 = slidingParametricJointWindowFlex<slidingSoftJointEntropyInternalFlex<max_windowsize,quantizer>>(right_quant, left_quant, sizes2, initial_disp_right, deltaDisp, task.backward.dispMin, task.backward.dispMax);
-	cv::Mat costmap  = slidingParametricJointWindowFlex<cost_func>(base_quant, match_quant, sizes, initial_disparity, config.deltaDisp, task.dispMin, task.dispMax, config.min_windowsize, config.max_windowsize);
+	cv::Mat costmap  = costmap_creators::slidingParametricJointWindowFlex<cost_func>(base_quant, match_quant, sizes, initial_disparity, config.deltaDisp, task.dispMin, task.dispMax, config.min_windowsize, config.max_windowsize);
 	//cv::Mat costmap = scaleDisparity<cost_func,quantizer>(task, task.baseGray, task.matchGray, config, sizes, initial_disparity);
 	start = cv::getCPUTickCount() - start;
 	std::cout << "varwindow: " << start << std::endl;

@@ -39,7 +39,7 @@ namespace entropy
 {
 
 
-class Entropies
+class entropies
 {
 public:
 	cv::Mat X, Y, XY;
@@ -315,12 +315,12 @@ public:
 	}
 
 	//prepares a row for calculation
-	inline void prepareRow(thread_type& thread, const cv::Mat& match, int y)
+	inline void prepare_row(thread_type& thread, const cv::Mat& match, int y)
 	{
 		thread.m_match_table = serializeRow<unsigned char>(match, y, windowsize, false);
 	}
 
-	inline void prepareWindow(thread_type& thread, const cv::Mat& base)
+	inline void prepare_window(thread_type& thread, const cv::Mat& base)
 	{
 		//copy the window for L1 Cache friendlieness
 		thread.m_base = base.clone();
@@ -358,12 +358,12 @@ public:
 	}
 
 	//prepares a row for calculation
-	inline void prepareRow(thread_type& thread, const cv::Mat& match, int y)
+	inline void prepare_row(thread_type& thread, const cv::Mat& match, int y)
 	{
 		thread.m_match_table = serializeRow<unsigned char>(match, y, windowsize, false);
 	}
 
-	inline void prepareWindow(thread_type& thread, const cv::Mat& base)
+	inline void prepare_window(thread_type& thread, const cv::Mat& base)
 	{
 		//copy the window for L1 Cache friendlieness
 		thread.m_base = base.clone();
@@ -417,12 +417,12 @@ public:
 	}
 
 	//prepares a row for calculation
-	inline void prepareRow(thread_type& thread, const cv::Mat& /*match*/, int y)
+	inline void prepare_row(thread_type& thread, const cv::Mat& /*match*/, int y)
 	{
 		thread.crow = y;
 	}
 
-	inline void prepareWindow(thread_type& thread, const cv::Mat& base, int cwindowsizeX, int cwindowsizeY)
+	inline void prepare_window(thread_type& thread, const cv::Mat& base, int cwindowsizeX, int cwindowsizeY)
 	{
 		thread.cwindowsizeX = cwindowsizeX;
 		thread.cwindowsizeY = cwindowsizeY;

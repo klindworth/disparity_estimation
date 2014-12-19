@@ -39,7 +39,7 @@ inline T abs_pott(const T& v1, const T& v2, const T& trunc)
 
 class region_container;
 class disparity_region;
-class InitialDisparityConfig;
+class initial_disparity_config;
 class stereo_task;
 
 /*namespace cv {
