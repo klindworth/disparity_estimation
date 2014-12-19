@@ -1,9 +1,9 @@
 #ifndef SEGMENTATION_REFINEMENT_H
 #define SEGMENTATION_REFINEMENT_H
 
-class region_descriptor;
 #include <opencv2/core/core.hpp>
 #include <vector>
+#include "region_descriptor_algorithms.h"
 
 //int split_region(const RegionDescriptor& descriptor, int min_size, std::back_insert_iterator<std::vector<RegionDescriptor>> it);
 //void split_region_test();
@@ -120,7 +120,7 @@ cv::Mat_<int> segmentation_iteration(std::vector<T>& regions, cv::Size size)
 	std::swap(regions, created_regions);
 
 
-	return generate_label_matrix(size, regions);
+	return region_descriptors::generate_label_matrix(size, regions);
 }
 
 #endif

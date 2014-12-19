@@ -26,12 +26,12 @@ int segmentImage2(cv::Mat& src, cv::Mat& labels_dst, int spatial_variance, float
 int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels) {
 	int regions_count = slicSuperpixels(image, labels, settings.superpixel_size, settings.superpixel_compactness);
 	std::vector<region_descriptor> regions(regions_count);
-	fill_region_descriptors(regions.begin(), regions.end(), labels);
+	region_descriptors::fill(regions.begin(), regions.end(), labels);
 
 	superpixel = labels.clone();
 	regions_count_superpixel = regions_count;
 
-	calculate_all_average_colors(image, regions.begin(), regions.end());
+	region_descriptors::calculate_all_average_colors(image, regions.begin(), regions.end());
 
 	std::pair<int,int> slic_size = get_slic_seeds(image.cols, image.rows, settings.superpixel_size);
 	cv::Mat slic_image_lab(slic_size.first, slic_size.second, CV_64FC3);
@@ -53,7 +53,7 @@ int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& l
 		}
 	}
 
-	checkLabelsIntervalsInvariant(regions.begin(), regions.end(), labels);
+	region_descriptors::checkLabelsIntervalsInvariant(regions.begin(), regions.end(), labels);
 
 	cv::Mat slic_image = lab_to_bgr(slic_image_lab);
 	cv::Mat msResult;

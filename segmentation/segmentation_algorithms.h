@@ -130,7 +130,7 @@ void fuse(fusion_work_data& data, std::vector<T>& regions, cv::Mat_<int>& labels
 	//assert(checkLabelsIntervalsInvariant(regions, labels, regions.size()));
 	//assert(std::count(data.active.begin(), data.active.end(), 1) == regions.size()); //TODO: fixme
 
-	generate_neighborhood(labels, regions);
+	region_descriptors::generate_neighborhood(labels, regions);
 }
 
 template<typename T>

@@ -44,7 +44,7 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	assert((int)result.size() == dx_max - dx_min + 1);
 
 	std::vector<region_interval> old_region = region;
-	move_x_region(old_region.begin(), old_region.end(), dx_min, src.cols);
+	region_descriptors::move_x(old_region.begin(), old_region.end(), dx_min, src.cols);
 
 	sum_type sum = 0;
 	int count = 0;
@@ -125,7 +125,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		return cregion.disparity;
 	});*/
 
-	gather_neighbor_values_idx(neighbor_disparities, baseRegion.neighbors, [&](std::size_t idx){
+	region_descriptors::gather_neighbor_values_idx(neighbor_disparities, baseRegion.neighbors, [&](std::size_t idx){
 		assert(base_disparities_cache.size() > idx);
 		return base_disparities_cache[idx];
 	});

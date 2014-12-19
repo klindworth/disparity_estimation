@@ -69,13 +69,13 @@ costmap_creators::entropy::entropies calculateEntropies(single_stereo_task task,
 
 	if(!soft)
 	{
-		result.XY = slidingJointWindow<entropy::joint_fixed_windowsize<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
+		result.XY = sliding_joint_fixed_windowsize<entropy::joint_fixed_windowsize<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
 		result.X  = slidingWindow<entropy::single_fixed_windowsize<quantizer> >(base,  windowsize);
 		result.Y  = slidingWindow<entropy::single_fixed_windowsize<quantizer> >(match, windowsize);
 	}
 	else
 	{
-		result.XY = slidingJointWindow<entropy::joint_fixed_windowsize_soft<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
+		result.XY = sliding_joint_fixed_windowsize<entropy::joint_fixed_windowsize_soft<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
 		result.X  = slidingWindow<entropy::single_fixed_windowsize_soft<quantizer> >(base,  windowsize);
 		result.Y  = slidingWindow<entropy::single_fixed_windowsize_soft<quantizer> >(match, windowsize);
 	}

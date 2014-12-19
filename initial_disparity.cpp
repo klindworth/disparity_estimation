@@ -426,8 +426,8 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 	if(b_refinement)
 		refinement = config.region_refinement_delta;
 
-	calculate_all_average_colors(task.forward.base, left.regions.begin(), left.regions.end());
-	calculate_all_average_colors(task.backward.base, right.regions.begin(), right.regions.end());
+	region_descriptors::calculate_all_average_colors(task.forward.base, left.regions.begin(), left.regions.end());
+	region_descriptors::calculate_all_average_colors(task.backward.base, right.regions.begin(), right.regions.end());
 
 	std::cout << "lr-check" << std::endl;
 	labelLRCheck(left, right, 0);

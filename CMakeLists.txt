@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.0)
 
 project(disparity_estimation)
 
@@ -85,7 +85,6 @@ set(FORMS
 
 qt4_wrap_cpp(HEADERS_MOC ${QTHEADERS})
 qt4_wrap_ui(FORMS_HEADERS ${FORMS})
-qt4_add_resources(RESOURCES_RCC ${RESOURCES})
 
 include_directories(. gui loganalyzer ${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(${QT_DEFINITIONS})
@@ -96,7 +95,6 @@ add_executable(${PROJECT_NAME}
     ${SOURCES}
     ${HEADERS_MOC}
     ${FORMS_HEADERS}
-    ${RESOURCES_RCC}
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -139,11 +137,12 @@ set(FORMS_ANALYZER
     loganalyzer/detailviewer.ui
 )
 
-qt4_wrap_cpp(HEADERS_ANALYZER_MOC ${QTHEADERS_ANALYZER})
 qt4_wrap_ui(FORMS_ANALYZER_HEADERS ${FORMS_ANALYZER})
-#qt4_add_resources(RESOURCES_RCC ${RESOURCES})
 
-add_executable(${PROJECT_NAME}_loganalyzer ${SOURCES_ANALYZER} ${HEADERS_ANALYZER_MOC} ${FORMS_ANALYZER_HEADERS})
+add_executable(${PROJECT_NAME}_loganalyzer ${SOURCES_ANALYZER} ${FORMS_ANALYZER_HEADERS})
+
+set_target_properties(${PROJECT_NAME}_loganalyzer PROPERTIES AUTOMOC TRUE)
+#set_target_properties(${PROJECT_NAME}_loganalyzer PROPERTIES AUTOUIC TRUE)
 
 target_link_libraries(${PROJECT_NAME}_loganalyzer
     ${QT_LIBRARIES} ${OpenCV_LIBS} ${Boost_LIBRARIES} cvwidgets cvsegmentation_lib

@@ -52,9 +52,12 @@ cv::Mat_<T> regionWiseSet(cv::Size size, const std::vector<reg_type>& regions, s
 	return result;
 }*/
 
+namespace region_descriptors
+{
+
 //! Moves a range of RegionIntervals in x-direction (amount: offset). The intervals will be capped to stay in the range [0..width)
 template<typename Iterator>
-inline void move_x_region(Iterator it, Iterator end, int offset, int width)
+inline void move_x(Iterator it, Iterator end, int offset, int width)
 {
 	for(; it != end; ++it)
 		it->move(offset, width);
@@ -119,9 +122,48 @@ cv::Mat_<int> generate_label_matrix(cv::Size size, const std::vector<reg_type>& 
 	return result;
 }
 
+/**
+ * @brief Updates all bounding boxes of region_descriptors in a container
+ * @param begin begin Iterator of the container with region_descriptors in it
+ * @param end end Iterator of the container with region_descriptors in it
+ * @param labels Matrix with segment labels
+ */
+template<typename Iterator, typename label_type>
+void refresh_bounding_boxes(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
+{
+	parallel_region(begin, end, [&](region_descriptor& region){
+		region.bounding_box.x = labels.cols;
+		region.bounding_box.y = labels.rows;
+		region.bounding_box.height = 0;
+		region.bounding_box.width = 0;
+	});
+
+	const label_type* clabel = labels[0];
+	for(int y = 0; y < labels.rows; ++y)
+	{
+		for(int x = 0; x < labels.cols; ++x)
+		{
+			label_type i = *clabel++;//labels.at<int>(y,x);
+			cv::Rect& crect = (*(begin + i)).bounding_box;
+
+			assert(i < std::distance(begin, end) && i >= 0);
+
+			crect.x = std::min(x, crect.x);
+			crect.y = std::min(y, crect.y);
+			crect.width  = std::max(x, crect.width); //save temp the maximal x coordinate
+			crect.height = std::max(y, crect.height);
+		}
+	}
+
+	parallel_region(begin, end, [&](region_descriptor& region){
+		region.bounding_box.width  -= region.bounding_box.x - 1;
+		region.bounding_box.height -= region.bounding_box.y - 1;
+	});
+}
+
 //! Fills a vector of RegionDescriptors with the correct lineIntervals and sizes
 template<typename Iterator, typename label_type>
-void fill_region_descriptors(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
+void fill(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
 {
 	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, label_type value) {
 		assert(value < std::distance(begin, end) && value >= 0);
@@ -136,6 +178,7 @@ void fill_region_descriptors(Iterator begin, Iterator end, const cv::Mat_<label_
 		assert(region.m_size != 0);
 	});
 
+	//FIXME rectivate!!!
 	refresh_bounding_boxes(begin, end, labels);
 }
 
@@ -191,39 +234,6 @@ void generate_neighborhood(const cv::Mat_<label_type> &labels, std::vector<T> &r
 		for(int j = 0; j < labels.cols; ++j)
 			save_neighbors(regions, labels(i,j), labels(i-1, j));
 	}
-}
-
-template<typename Iterator, typename label_type>
-void refresh_bounding_boxes(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
-{
-	parallel_region(begin, end, [&](region_descriptor& region){
-		region.bounding_box.x = labels.cols;
-		region.bounding_box.y = labels.rows;
-		region.bounding_box.height = 0;
-		region.bounding_box.width = 0;
-	});
-
-	const label_type* clabel = labels[0];
-	for(int y = 0; y < labels.rows; ++y)
-	{
-		for(int x = 0; x < labels.cols; ++x)
-		{
-			label_type i = *clabel++;//labels.at<int>(y,x);
-			cv::Rect& crect = (*(begin + i)).bounding_box;
-
-			assert(i < std::distance(begin, end) && i >= 0);
-
-			crect.x = std::min(x, crect.x);
-			crect.y = std::min(y, crect.y);
-			crect.width  = std::max(x, crect.width); //save temp the maximal x coordinate
-			crect.height = std::max(y, crect.height);
-		}
-	}
-
-	parallel_region(begin, end, [&](region_descriptor& region){
-		region.bounding_box.width  -= region.bounding_box.x - 1;
-		region.bounding_box.height -= region.bounding_box.y - 1;
-	});
 }
 
 /**
@@ -310,10 +320,18 @@ void calculate_all_average_colors(const cv::Mat& image, Iterator begin, Iterator
 	});
 }
 
-template<typename T, typename reg_type, typename lambda_type>
-T neighbors_average(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, lambda_type func)
+/**
+ * @brief Calculates an average value of the neighboring segments.
+ * @param container Container with the regions
+ * @param neighbors Vector with the neighbors of a region
+ * @param init_value Initial value for calculating the sum for the average
+ * @param func A function which returns a value for a given region, which will be summed up by this function.
+ * Therefore it must be a function that returns a value of type T and accepts a parameter of tyoe region_type
+ */
+template<typename T, typename region_type, typename lambda_type>
+T neighbors_average(const std::vector<region_type>& container, const neighbor_vector& neighbors, const T& init_value, lambda_type func)
 {
-	T result = initVal;
+	T result = init_value;
 	for(const std::pair<std::size_t, std::size_t>& cpair : neighbors)
 	{
 		result += func(container[cpair.first]);
@@ -330,8 +348,15 @@ void index_foreach_neighborhood(const neighbor_vector& neighbors, lambda_func)
 	}
 }*/
 
-template<typename cache_type, typename reg_type, typename lambda_type>
-void gather_neighbor_values(std::vector<cache_type>& cache, const std::vector<reg_type>& container, const neighbor_vector& neighbors, lambda_type gather_caching_value)
+/**
+ * Saves the value of each neighbor in a vector
+ * @param cache The vector, where the gathered values from the neighbors will be saved in. Therefore the vector will have the size of the neighborhood
+ * @param container Vector with the regions
+ * @param neighbors Vector with the neighbors
+ * @param gather_caching_value Function that accepts a region of type region_type and returns a value of type cache_type
+ */
+template<typename cache_type, typename region_type, typename lambda_type>
+void gather_neighbor_values(std::vector<cache_type>& cache, const std::vector<region_type>& container, const neighbor_vector& neighbors, lambda_type gather_caching_value)
 {
 	std::size_t nsize = neighbors.size();
 	cache.resize(nsize);
@@ -340,6 +365,9 @@ void gather_neighbor_values(std::vector<cache_type>& cache, const std::vector<re
 		cache[i] = gather_caching_value(container[neighbors[i].first]);
 }
 
+/**
+ * This function works like gather_neighbor_value, but the passed function must accept a vector index/segment id as parameter instead a reference to the region itself @see gather_neighbor_value
+ */
 template<typename cache_type, typename lambda_type>
 void gather_neighbor_values_idx(std::vector<cache_type>& cache, const neighbor_vector& neighbors, lambda_type gather_caching_value)
 {
@@ -350,6 +378,9 @@ void gather_neighbor_values_idx(std::vector<cache_type>& cache, const neighbor_v
 		cache[i] = gather_caching_value(neighbors[i].first);
 }
 
+/**
+ * Like gather_neighbor_values, but the values are weighted by the size of the shared boundary between the region and that neighbor
+ */
 template<typename T, typename reg_type, typename lambda_type>
 T weighted_neighbors_average(const std::vector<reg_type>& container, const neighbor_vector& neighbors, const T& initVal, lambda_type func)
 {
@@ -361,6 +392,7 @@ T weighted_neighbors_average(const std::vector<reg_type>& container, const neigh
 		sum_weights += cpair.second;
 	}
 	return result/sum_weights;
+}
 }
 
 #endif // REGION_DESCRIPTOR_ALGORITHMS_H

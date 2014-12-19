@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 template<typename T, typename reg_type, typename lambda_type>
 cv::Mat regionWiseImage(const segmentation_image<reg_type>& image, lambda_type func)
 {
-	return value_scaled_image<T, unsigned char>(set_regionwise<T>(image.image_size, image.regions, func));
+	return value_scaled_image<T, unsigned char>(region_descriptors::set_regionwise<T>(image.image_size, image.regions, func));
 }
 
 #endif // MISC_H

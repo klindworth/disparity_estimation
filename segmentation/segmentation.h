@@ -68,8 +68,8 @@ public:
 		result->regions = std::vector<typename seg_image_type::regions_type>(result->segment_count);
 		result->image_size = image.size();
 
-		fill_region_descriptors(result->regions.begin(), result->regions.end(), result->labels);
-		generate_neighborhood(result->labels, result->regions);
+		region_descriptors::fill(result->regions.begin(), result->regions.end(), result->labels);
+		region_descriptors::generate_neighborhood(result->labels, result->regions);
 
 		return result;
 	}
@@ -79,7 +79,7 @@ public:
 	{
 		container.labels = segmentation_iteration(container.regions, container.task.base.size());
 
-		generate_neighborhood(container.labels, container.regions);
+		region_descriptors::generate_neighborhood(container.labels, container.regions);
 	}
 
 	/**
