@@ -7,10 +7,8 @@ int meanshift_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labe
 	return mean_shift_segmentation(image, labels, settings.spatial_var, settings.color_var, 20);
 }
 
-std::string meanshift_segmentation::cacheName() const
+std::string meanshift_segmentation::name() const
 {
-	std::stringstream stream;
-	stream << "meanshift_" << settings.spatial_var;
-	return stream.str();
+	return "meanshift";
 }
 

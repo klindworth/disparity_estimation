@@ -349,36 +349,6 @@ void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& bas
 	}
 }
 
-int cachedSegmentation(StereoSingleTask& task, cv::Mat_<int>& labels, std::shared_ptr<segmentation_algorithm>& algorithm)
-{
-	int regions_count = 0;
-	if(algorithm->cacheAllowed())
-	{
-		std::string filename = "cache/" + task.fullname + "_" + algorithm->cacheName() + ".cache.cvmat";
-		std::ifstream istream(filename, std::ifstream::binary);
-		if(istream.is_open())
-		{
-			std::cout << "use cachefile: " << filename << std::endl;
-			istream.read((char*)&regions_count, sizeof(int));
-			labels = streamToMat(istream);
-			istream.close();
-		}
-		else
-		{
-			std::cout << "create cachefile: " << filename << std::endl;
-			regions_count = (*algorithm)(task.base, labels);
-
-			std::ofstream ostream(filename, std::ofstream::binary);
-			ostream.write((char*)&regions_count, sizeof(int));
-			matToStream(labels, ostream);
-			ostream.close();
-		}
-	}
-	else
-		regions_count = (*algorithm)(task.base, labels);
-	return regions_count;
-}
-
 //untested
 cv::Mat convertDisparityFromPartialCostmap(const cv::Mat& disparity, const cv::Mat& rangeCenters, int subsampling = 1)
 {

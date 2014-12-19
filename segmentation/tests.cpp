@@ -228,7 +228,8 @@ TEST(Interval, ValueRegion)
 	EXPECT_TRUE(mismatch_output(calc.begin(), calc.end(), desired.begin()));
 }
 
-TEST(Interval, ThresholdConvert)
+//move up
+/*TEST(Interval, ThresholdConvert)
 {
 	cv::Mat_<unsigned char> test(1, 20, 15);
 
@@ -243,7 +244,7 @@ TEST(Interval, ThresholdConvert)
 	std::vector<region_interval> expected {region_interval(0, 5, 10), region_interval(0,12,17)};
 
 	EXPECT_TRUE(mismatch_output(result.begin(), result.end(), expected.begin()));
-}
+}*/
 
 //ported
 TEST(Interval, Intersecting)

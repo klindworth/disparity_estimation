@@ -7,8 +7,7 @@ class mssuperpixel_segmentation : public segmentation_algorithm {
 public:
 	mssuperpixel_segmentation(const segmentation_settings& psettings) : settings(psettings) {}
 	int operator()(const cv::Mat& image, cv::Mat_<int>& labels) override;
-	std::string cacheName() const override;
-	bool cacheAllowed() const override;
+	std::string name() const override;
 
 private:
 	std::shared_ptr<fusion_work_data> fusion_data;

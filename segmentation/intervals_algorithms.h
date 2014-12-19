@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace intervals
 {
 
-inline bool weakIntervalLess(const region_interval& lhs, const region_interval& rhs, int d)
+inline bool weak_interval_less(const region_interval& lhs, const region_interval& rhs, int d)
 {
 	return (lhs.y < rhs.y) || (lhs.y == rhs.y && lhs.upper <= rhs.lower - d); //TODO: check upper >= lower
 }
@@ -53,7 +53,7 @@ void difference(InputIterator1 base_it, InputIterator1 base_end, InputIterator2 
 	{
 		do
 		{
-			while(base_it != base_end && (weakIntervalLess(*base_it, *match_it, d) || match_it == match_end ))
+			while(base_it != base_end && (weak_interval_less(*base_it, *match_it, d) || match_it == match_end ))
 			{
 				if(lastSet && last.y == base_it->y) //process rest of line
 				{
@@ -68,14 +68,14 @@ void difference(InputIterator1 base_it, InputIterator1 base_end, InputIterator2 
 				++base_it;
 			}
 
-			while(match_it != match_end && weakIntervalLess(*match_it, *base_it, -d))
+			while(match_it != match_end && weak_interval_less(*match_it, *base_it, -d))
 				++match_it;
 
 			//if((base_it == base_end) || (match_it == match_end))
 				//return;
 			if(base_it == base_end)
 				return;
-		} while(weakIntervalLess(*base_it, *match_it, d) || weakIntervalLess(*match_it, *base_it, -d) || match_it == match_end);//while(match_it->y != base_it->y);
+		} while(weak_interval_less(*base_it, *match_it, d) || weak_interval_less(*match_it, *base_it, -d) || match_it == match_end);//while(match_it->y != base_it->y);
 
 		assert(match_it->y == base_it->y);
 		assert(match_it != match_end && base_it != base_end);
@@ -270,24 +270,6 @@ void turn_value_into_intervals(const cv::Mat_<value_type>& values, InserterItera
 	};
 
 	convert_differential<value_type>(values, factory);
-}
-
-template<typename value_type, typename InserterIterator>
-void convert_minima_ranges(const cv::Mat_<value_type>& values, InserterIterator inserter, value_type threshold)
-{
-	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, value_type value) {
-		if(value < threshold)
-		{
-			*inserter = region_interval(y,lower,upper);
-			++inserter;
-		}
-	};
-
-	auto cmp_func = [=](value_type last, value_type current) {
-		return (last > threshold && current > threshold) || (last <= threshold && current <= threshold);
-	};
-
-	convert_generic<value_type>(values, factory, cmp_func);
 }
 
 }

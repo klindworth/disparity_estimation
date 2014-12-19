@@ -83,16 +83,10 @@ public:
 	}
 
 	/**
-	 * @brief cacheAllowed Returns, if caching for this segmentation algorithm is allowed
-	 * @return
+	 * @brief name Name of the algorithm
+	 * @return Name of the algorithm
 	 */
-	virtual bool cacheAllowed() const { return true; }
-
-	/**
-	 * @brief cacheName Name of algorithm for filenames
-	 * @return
-	 */
-	virtual std::string cacheName() const = 0;
+	virtual std::string name() const = 0;
 };
 
 std::shared_ptr<segmentation_algorithm> create_segmentation_instance(const segmentation_settings& settings);

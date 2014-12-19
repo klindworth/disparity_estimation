@@ -96,11 +96,7 @@ int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& l
 	return regions.size();
 }
 
-bool mssuperpixel_segmentation::cacheAllowed() const {
-	return false;
-}
-
-std::string mssuperpixel_segmentation::cacheName() const
+std::string mssuperpixel_segmentation::name() const
 {
 	return "mssuperpixel";
 }

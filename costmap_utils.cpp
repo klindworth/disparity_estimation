@@ -32,11 +32,29 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <numeric>
 
+template<typename value_type, typename InserterIterator>
+void convert_minima_ranges(const cv::Mat_<value_type>& values, InserterIterator inserter, value_type threshold)
+{
+	auto factory = [&](std::size_t y, std::size_t lower, std::size_t upper, value_type value) {
+		if(value < threshold)
+		{
+			*inserter = region_interval(y,lower,upper);
+			++inserter;
+		}
+	};
+
+	auto cmp_func = [=](value_type last, value_type current) {
+		return (last > threshold && current > threshold) || (last <= threshold && current <= threshold);
+	};
+
+	intervals::convert_generic<value_type>(values, factory, cmp_func);
+}
+
 void analyzeDisparityRange2(disparity_region& region)
 {
 	cv::Mat temp = region.disparity_costs.reshape(0,1);
 	std::vector<region_interval> minima_ranges;
-	intervals::convert_minima_ranges<float>(temp, std::back_inserter(minima_ranges), region.stats.mean - region.stats.stddev);
+	convert_minima_ranges<float>(temp, std::back_inserter(minima_ranges), region.stats.mean - region.stats.stddev);
 
 	int minima_width = 0;
 	for(const region_interval& interval : minima_ranges)

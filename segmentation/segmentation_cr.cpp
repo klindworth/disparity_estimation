@@ -40,10 +40,8 @@ int crslic_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& labels)
 	return 1+*(std::max_element(labels.begin(), labels.end()));
 }
 
-std::string crslic_segmentation::cacheName() const
+std::string crslic_segmentation::name() const
 {
-	std::stringstream stream;
-	stream << "crsuperpixel_" << settings.superpixel_size;
-	return stream.str();
+	return "crsuperpixel";
 }
 
