@@ -316,7 +316,7 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 			for(std::string* cpath : pathToTransform)
 				*cpath = base_folder + "/" + *cpath;
 
-			StereoTask task(name.toStdString(), left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
+			stereo_task task(name.toStdString(), left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
 
 			std::cout << abs_prefix << std::endl;
 			cv::Mat disp_left = file_to_mat(abs_prefix + "-left.cvmat");
@@ -527,7 +527,7 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 					std::cout << *cpath << std::endl;
 				}
 
-				StereoTask task(name.toStdString(), left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
+				stereo_task task(name.toStdString(), left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
 
 				std::cout << abs_prefix << std::endl;
 				cv::Mat disp_left = file_to_mat(abs_prefix + "-left.cvmat");

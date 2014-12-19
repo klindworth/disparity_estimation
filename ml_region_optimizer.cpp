@@ -163,7 +163,7 @@ void ml_region_optimizer::refresh_base_optimization_vector(const region_containe
 }
 
 template<typename dst_type, typename src_type>
-void gather_region_optimization_vector(dst_type *dst_ptr, const disparity_region& baseRegion, const std::vector<src_type>& optimization_vector_base, const std::vector<std::vector<src_type>>& optimization_vectors_match, const region_container& match, int delta, const StereoSingleTask& task)
+void gather_region_optimization_vector(dst_type *dst_ptr, const disparity_region& baseRegion, const std::vector<src_type>& optimization_vector_base, const std::vector<std::vector<src_type>>& optimization_vectors_match, const region_container& match, int delta, const single_stereo_task& task)
 {
 	const int crange = task.range_size();
 	auto range = getSubrange(baseRegion.base_disparity, delta, task);

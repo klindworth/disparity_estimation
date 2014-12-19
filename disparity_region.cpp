@@ -147,14 +147,14 @@ bool checkLabelsIntervalsInvariant(const std::vector<disparity_region>& regions,
 	return checkLabelsIntervalsInvariant(regions.begin(), regions.begin() + segcount, labels);
 }
 
-void generate_stats(std::vector<disparity_region>& regions, const StereoSingleTask& task, const int delta)
+void generate_stats(std::vector<disparity_region>& regions, const single_stereo_task& task, const int delta)
 {
 	parallel_region(regions, [&](disparity_region& region) {
 		generate_stats(region, task, delta);
 	});
 }
 
-void generate_stats(disparity_region& region, const StereoSingleTask& task, int delta)
+void generate_stats(disparity_region& region, const single_stereo_task& task, int delta)
 {
 	auto range = getSubrange(region.base_disparity, delta, task);
 	int len = range.second - range.first + 1;
@@ -204,7 +204,7 @@ corresponding_region disparity_region::get_corresponding_region(std::size_t idx,
 		return *it;
 }
 
-void fill_region_container(std::shared_ptr<region_container>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm)
+void fill_region_container(std::shared_ptr<region_container>& result, single_stereo_task& task, std::shared_ptr<segmentation_algorithm>& algorithm)
 {
 	result = algorithm->segmentation_image<region_container>(task.base);
 	result->task = task;

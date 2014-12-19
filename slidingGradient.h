@@ -30,11 +30,13 @@ namespace cv {
 class Mat;
 }
 
-class StereoSingleTask;
+class single_stereo_task;
 
 cv::Mat norm2(cv::Mat mat1, cv::Mat mat2);
 
-cv::Mat gradientImage(cv::Mat base, cv::Mat base2, cv::Mat match, cv::Mat match2, int d);
-cv::Mat slidingGradient(StereoSingleTask& task, int windowsize);
+cv::Mat gradient_image(cv::Mat base, cv::Mat base2, cv::Mat match, cv::Mat match2, int d);
+
+//! Calulates a dense costmap for the disparity with gradients as metric
+cv::Mat sliding_gradient(single_stereo_task& task, int windowsize);
 
 #endif // SLIDINGGRADIENT_H

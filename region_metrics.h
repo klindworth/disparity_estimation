@@ -43,6 +43,7 @@ public:
 template<typename T, int bins, typename counter, typename joint_counter, typename entropy_type>
 std::tuple<T, T, T> entropies_calculator(joint_counter& counter_joint, counter& counter_array, const entropy_type& entropy_table, const cv::Mat& base_region, const cv::Mat& match_region)
 {
+	using namespace costmap_creators::entropy;
 	calculate_joint_soft_histogramm(counter_joint, base_region.data, match_region.data, base_region.total());
 	T joint_entropy;
 	if(base_region.total()*6 > bins*bins)
@@ -128,7 +129,7 @@ public:
 
 	RegionInfoDisparity(const cv::Mat& base, const cv::Mat& match, int size) : m_base(base), m_match(match)
 	{
-		fill_entropytable_unnormalized(entropy_table, size*9);
+		costmap_creators::entropy::fill_entropytable_unnormalized(entropy_table, size*9);
 	}
 
 	static float normalizationValue()

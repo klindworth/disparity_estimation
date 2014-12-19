@@ -59,23 +59,24 @@ public:
 };
 
 template<int quantizer>
-Entropies calculateEntropies(StereoSingleTask task, bool soft, unsigned int windowsize)
+costmap_creators::entropy::Entropies calculateEntropies(single_stereo_task task, bool soft, unsigned int windowsize)
 {
+	using namespace costmap_creators::entropy;
 	Entropies result;
 	cv::Mat base  = quantizeImage(task.baseGray, quantizer);
 	cv::Mat match = quantizeImage(task.matchGray, quantizer);
 
 	if(!soft)
 	{
-		result.XY = slidingJointWindow<slidingJointEntropyInternal<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
-		result.X  = slidingWindow<slidingEntropyInternal<quantizer> >(base,  windowsize);
-		result.Y  = slidingWindow<slidingEntropyInternal<quantizer> >(match, windowsize);
+		result.XY = slidingJointWindow<joint_fixed_windowsize<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
+		result.X  = slidingWindow<single_fixed_windowsize<quantizer> >(base,  windowsize);
+		result.Y  = slidingWindow<single_fixed_windowsize<quantizer> >(match, windowsize);
 	}
 	else
 	{
-		result.XY = slidingJointWindow<slidingSoftJointEntropyInternal<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
-		result.X  = slidingWindow<slidingSoftEntropyInternal<quantizer> >(base,  windowsize);
-		result.Y  = slidingWindow<slidingSoftEntropyInternal<quantizer> >(match, windowsize);
+		result.XY = slidingJointWindow<joint_fixed_windowsize_soft<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
+		result.X  = slidingWindow<single_fixed_windowsize_soft<quantizer> >(base,  windowsize);
+		result.Y  = slidingWindow<single_fixed_windowsize_soft<quantizer> >(match, windowsize);
 	}
 
 	return result;
@@ -101,7 +102,7 @@ public:
 };
 
 template<typename cost_agg, int quantizer>
-cv::Mat InformationTheoreticDistance(StereoSingleTask& task, bool soft, unsigned int windowsize)
+cv::Mat InformationTheoreticDistance(single_stereo_task& task, bool soft, unsigned int windowsize)
 {
 	//long long start = cv::getCPUTickCount();
 	auto entropy = calculateEntropies<quantizer>(task, soft, windowsize);
@@ -170,7 +171,7 @@ public:
 };
 
 template<int windowsize, int quantizer>
-cv::Mat InformationTheoreticDistance(StereoSingleTask task, IT_Metric metric, bool soft)
+cv::Mat InformationTheoreticDistance(single_stereo_task task, IT_Metric metric, bool soft)
 {
 	auto entropy = calculateEntropies<windowsize, quantizer>(task, soft);
 

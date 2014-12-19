@@ -44,7 +44,7 @@ void filterGradientCostmap(cv::Mat& cost_map, int threshold)
 	}
 }
 
-cv::Mat onestepSlidingInfoGradient(StereoSingleTask task, std::function<cv::Mat(StereoSingleTask)> func, int windowsize)
+cv::Mat onestepSlidingInfoGradient(single_stereo_task task, std::function<cv::Mat(single_stereo_task)> func, int windowsize)
 {
 	cv::Mat cost_gradient = sliding_gradient(task, windowsize);
 	//cv::Mat cost_gradient = slidingGradient<windowsizeGrad>(task);
@@ -68,7 +68,7 @@ cv::Mat onestepSlidingInfoGradient(StereoSingleTask task, std::function<cv::Mat(
 	return comb;
 }
 
-std::function<cv::Mat(StereoSingleTask)> gradient_enhancer_bind(std::function<cv::Mat(StereoSingleTask)> func, int windowsize)
+std::function<cv::Mat(single_stereo_task)> gradient_enhancer_bind(std::function<cv::Mat(single_stereo_task)> func, int windowsize)
 {
 	using namespace std::placeholders;
 	return std::bind(onestepSlidingInfoGradient, _1, func, windowsize);
@@ -97,7 +97,7 @@ void scaleUpCostMap(cv::Mat& cost_map_src, cv::Mat& cost_map_dst, float oldscale
 	}
 }
 
-cv::Mat genericScaledProcessing(StereoSingleTask task, int border, std::function<cv::Mat(StereoSingleTask)> func)
+cv::Mat genericScaledProcessing(single_stereo_task task, int border, std::function<cv::Mat(single_stereo_task)> func)
 {
 	int disparityRange = task.dispMax - task.dispMin + 1;
 	int sz[] = {task.base.size[0], task.base.size[1], disparityRange};
@@ -119,7 +119,7 @@ cv::Mat genericScaledProcessing(StereoSingleTask task, int border, std::function
 		cv::resize(task.matchGray, matchScaled, cv::Size(), cstep.first, cstep.first, cv::INTER_LANCZOS4);
 
 		//run the algorithm
-		StereoSingleTask scaledTask;
+		single_stereo_task scaledTask;
 		scaledTask.baseGray = baseScaled;
 		scaledTask.matchGray = matchScaled;
 		scaledTask.dispMin = task.dispMin * cstep.first;

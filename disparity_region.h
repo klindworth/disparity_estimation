@@ -81,19 +81,19 @@ public:
 
 struct region_container : public segmentation_image<disparity_region>
 {
-	StereoSingleTask task;
+	single_stereo_task task;
 	//std::vector<short> disparity;
 };
 
 cv::Mat disparity_by_segments(const region_container &container);
 
-void fill_region_container(std::shared_ptr<region_container>& result, StereoSingleTask& task, std::shared_ptr<segmentation_algorithm>& algorithm);
+void fill_region_container(std::shared_ptr<region_container>& result, single_stereo_task& task, std::shared_ptr<segmentation_algorithm>& algorithm);
 
 int reenumerate(cv::Mat& labels, int old_count);
 void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t old_idx, std::size_t new_idx);
 
-void generate_stats(std::vector<disparity_region>& regions, const StereoSingleTask& task, const int delta);
-void generate_stats(disparity_region& region, const StereoSingleTask& task, int delta);
+void generate_stats(std::vector<disparity_region>& regions, const single_stereo_task& task, const int delta);
+void generate_stats(disparity_region& region, const single_stereo_task& task, int delta);
 
 void labelLRCheck(region_container& base, const region_container& match, int delta);
 void refreshWarpedIdx(region_container& container);

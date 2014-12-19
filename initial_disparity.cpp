@@ -102,11 +102,11 @@ public:
 };
 
 
-typedef std::function<void(StereoSingleTask&, const cv::Mat&, const cv::Mat&, std::vector<disparity_region>&, int)> disparity_region_func;
+typedef std::function<void(single_stereo_task&, const cv::Mat&, const cv::Mat&, std::vector<disparity_region>&, int)> disparity_region_func;
 
 //for IT metrics (region wise)
 template<typename cost_type>
-void calculate_region_disparity_regionwise(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<disparity_region>& regions, int delta)
+void calculate_region_disparity_regionwise(single_stereo_task& task, const cv::Mat& base, const cv::Mat& match, std::vector<disparity_region>& regions, int delta)
 {
 	const std::size_t regions_count = regions.size();
 
@@ -151,7 +151,7 @@ private:
 };
 
 template<typename calculator>
-void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<disparity_region>& regions, int delta)
+void calculate_region_generic(single_stereo_task& task, const cv::Mat& base, const cv::Mat& match, std::vector<disparity_region>& regions, int delta)
 {
 	std::cout << "delta: " << delta << std::endl;
 	const std::size_t regions_count = regions.size();
@@ -217,7 +217,7 @@ void calculate_region_generic(StereoSingleTask& task, const cv::Mat& base, const
 }
 
 template<typename calculator>
-void calculate_relaxed_region_generic(StereoSingleTask& task, const cv::Mat& base, const cv::Mat& match, std::vector<disparity_region>& regions, int delta)
+void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& base, const cv::Mat& match, std::vector<disparity_region>& regions, int delta)
 {
 	std::cout << "delta: " << delta << std::endl;
 	const std::size_t regions_count = regions.size();
@@ -429,7 +429,7 @@ std::vector<region_interval> exposureVector(const cv::Mat& occlusionMap)
 	return exposure;
 }
 
-void dilateLR(StereoSingleTask& task, std::vector<disparity_region>& regions_base, int dilate_step, int delta)
+void dilateLR(single_stereo_task& task, std::vector<disparity_region>& regions_base, int dilate_step, int delta)
 {
 	parallel_region(regions_base, [&](disparity_region& cregion) {
 		generate_stats(cregion, task, delta);
@@ -439,7 +439,7 @@ void dilateLR(StereoSingleTask& task, std::vector<disparity_region>& regions_bas
 	});
 }
 
-void single_pass_region_disparity(StereoTask& task, region_container& left, region_container& right, const InitialDisparityConfig& config, bool b_refinement, disparity_region_func disparity_calculator, region_optimizer& optimizer)
+void single_pass_region_disparity(stereo_task& task, region_container& left, region_container& right, const InitialDisparityConfig& config, bool b_refinement, disparity_region_func disparity_calculator, region_optimizer& optimizer)
 {
 	int refinement = 0;
 	if(b_refinement)
@@ -526,7 +526,7 @@ cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, c
 	return convertDisparityFromPartialCostmap(disparity::create_from_costmap(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
 }
 
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling, region_optimizer& optimizer)
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const InitialDisparityConfig& config , const RefinementConfig& refconfig, int subsampling, region_optimizer& optimizer)
 {
 	const int quantizer = 4;
 
@@ -560,7 +560,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const I
 		typedef RegionInfoDisparity<it_metric, quantizer> disparity_metric;
 
 		//IT
-		typedef slidingEntropyFlex<it_metric, quantizer> refinement_metric;
+		typedef costmap_creators::entropy::flexible_windowsize<it_metric, quantizer> refinement_metric;
 		disparity_function = calculate_region_disparity_regionwise<disparity_metric>;
 		task.algoLeft  = quantizeImage(task.leftGray, quantizer);
 		task.algoRight = quantizeImage(task.rightGray, quantizer);
@@ -639,7 +639,7 @@ initial_disparity_algo::initial_disparity_algo(InitialDisparityConfig &config, R
 {
 }
 
-std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(StereoTask& task)
+std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(stereo_task& task)
 {
 	int subsampling = 1; //TODO avoid this
 	matstore.startNewTask(task.name, task);
@@ -647,12 +647,12 @@ std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(StereoTask& task
 	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling, optimizer);
 }
 
-void initial_disparity_algo::train(std::vector<StereoTask>& tasks)
+void initial_disparity_algo::train(std::vector<stereo_task>& tasks)
 {
 	int subsampling = 1; //TODO avoid this
 	ml_region_optimizer optimizer;
 	optimizer.set_training_mode(true);
-	for(StereoTask& ctask : tasks)
+	for(stereo_task& ctask : tasks)
 	{
 		std::cout << "task: " << ctask.name << std::endl;
 		matstore.startNewTask(ctask.name, ctask);

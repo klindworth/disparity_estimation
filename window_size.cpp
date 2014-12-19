@@ -93,8 +93,8 @@ inline float compareEntropies_old(cv::Mat_<float>& log_table, cv::Mat label_wind
 			counter_own(current_pixel)++;
 	}
 
-	float entropy_own = std::max(calculate_entropy_unnormalized<float>(counter_own, log_table, 32), std::numeric_limits<float>::min());
-	float entropy_foreign = std::max(calculate_entropy_unnormalized<float>(counter_foreign, log_table, 32), std::numeric_limits<float>::min());
+	float entropy_own = std::max(costmap_creators::entropy::calculate_entropy_unnormalized<float>(counter_own, log_table, 32), std::numeric_limits<float>::min());
+	float entropy_foreign = std::max(costmap_creators::entropy::calculate_entropy_unnormalized<float>(counter_foreign, log_table, 32), std::numeric_limits<float>::min());
 
 	return entropy_own/entropy_foreign;
 }
@@ -102,7 +102,7 @@ inline float compareEntropies_old(cv::Mat_<float>& log_table, cv::Mat label_wind
 cv::Mat findWindowSizeEntropy(const cv::Mat& image, const cv::Mat& labels, const float& threshold, const int& minsize, const int& maxsize, const std::vector<disparity_region>& regions, std::function<float(cv::Mat_<float>&, cv::Mat, int, const std::vector<disparity_region>&, cv::Mat)> func)
 {
 	cv::Mat_<float> log_table;
-	fill_entropytable_unnormalized(log_table, maxsize*maxsize);
+	costmap_creators::entropy::fill_entropytable_unnormalized(log_table, maxsize*maxsize);
 
 	cv::Mat result = cv::Mat::zeros(labels.size(), CV_8UC2);
 	const int onesidesizeMin = (minsize-1)/2;

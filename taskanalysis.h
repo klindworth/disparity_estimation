@@ -28,21 +28,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/core/core.hpp>
 
-class StereoTask;
-class StereoSingleTask;
+class stereo_task;
+class single_stereo_task;
 
 class TaskAnalysis
 {
 public:
 	TaskAnalysis();
-	TaskAnalysis(const StereoTask& task, const cv::Mat& disparity_left, const cv::Mat& disparity_right, int subsampling, int ignore_border = 0);
+	TaskAnalysis(const stereo_task& task, const cv::Mat& disparity_left, const cv::Mat& disparity_right, int subsampling, int ignore_border = 0);
 	//void write(cv::FileNode& node) const;
 	static const int maxdiff = 15;
 	//StereoSingleTask task;
 	std::array<int, maxdiff> error_hist_left, error_hist_right;
 	cv::Mat diff_mat_left, diff_mat_right;
 private:
-	void createInternal(const StereoSingleTask& task, const cv::Mat& disparity, cv::Mat& error_mat, std::array<int, maxdiff>& hist,  int subsamplingDisparity, unsigned int ignore_border = 0);
+	void createInternal(const single_stereo_task& task, const cv::Mat& disparity, cv::Mat& error_mat, std::array<int, maxdiff>& hist,  int subsamplingDisparity, unsigned int ignore_border = 0);
 };
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const TaskAnalysis& analysis);

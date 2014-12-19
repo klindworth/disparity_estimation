@@ -32,29 +32,29 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region_optimizer.h"
 #include <segmentation/segmentation.h>
 
-class StereoTask;
+class stereo_task;
 class disparity_region;
 class region_container;
 class TaskTestSet;
 class ClassicSearchConfig;
 class RefinementConfig;
-class TaskCollection;
+class task_collection;
 
 class disparity_estimator_algo
 {
 public:
 	disparity_estimator_algo() {}
 	virtual ~disparity_estimator_algo() {}
-	virtual std::pair<cv::Mat, cv::Mat> operator()(StereoTask& task) = 0;
+	virtual std::pair<cv::Mat, cv::Mat> operator()(stereo_task& task) = 0;
 	virtual void writeConfig(cv::FileStorage& fs) = 0;
 };
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const InitialDisparityConfig& config);
 cv::FileStorage& operator>>(cv::FileStorage& stream, InitialDisparityConfig& config);
 
-std::pair<cv::Mat, cv::Mat> singleLoggedRun(StereoTask& task, disparity_estimator_algo &disparity_estimator, cv::FileStorage& fs, const std::string& filename);
-void loggedRun(StereoTask& task, InitialDisparityConfig& config, RefinementConfig& refconfig);
-void loggedRun(TaskCollection& testset, InitialDisparityConfig& config, RefinementConfig& refconfig);
-void classicLoggedRun(TaskCollection& taskset, ClassicSearchConfig& config);
+std::pair<cv::Mat, cv::Mat> singleLoggedRun(stereo_task& task, disparity_estimator_algo &disparity_estimator, cv::FileStorage& fs, const std::string& filename);
+void loggedRun(stereo_task& task, InitialDisparityConfig& config, RefinementConfig& refconfig);
+void loggedRun(task_collection& testset, InitialDisparityConfig& config, RefinementConfig& refconfig);
+void classicLoggedRun(task_collection& taskset, ClassicSearchConfig& config);
 
 #endif // CONFIGRUN_H

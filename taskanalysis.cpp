@@ -83,7 +83,7 @@ TaskAnalysis::TaskAnalysis()
 	std::fill(error_hist_right.begin(), error_hist_right.end(), 0);
 }
 
-void TaskAnalysis::createInternal(const StereoSingleTask& task, const cv::Mat& disparity, cv::Mat& error_mat, std::array<int, maxdiff>& hist, int subsamplingDisparity, unsigned int ignore_border)
+void TaskAnalysis::createInternal(const single_stereo_task& task, const cv::Mat& disparity, cv::Mat& error_mat, std::array<int, maxdiff>& hist, int subsamplingDisparity, unsigned int ignore_border)
 {
 	if(task.groundTruth.data)
 	{
@@ -130,7 +130,7 @@ void TaskAnalysis::createInternal(const StereoSingleTask& task, const cv::Mat& d
 		std::clog << "no ground truth data" << std::endl;
 }
 
-TaskAnalysis::TaskAnalysis(const StereoTask& task, const cv::Mat& disparity_left, const cv::Mat& disparity_right, int subsampling, int ignore_border)
+TaskAnalysis::TaskAnalysis(const stereo_task& task, const cv::Mat& disparity_left, const cv::Mat& disparity_right, int subsampling, int ignore_border)
 {
 	std::fill(error_hist_left.begin(), error_hist_left.end(), 0);
 	std::fill(error_hist_right.begin(), error_hist_right.end(), 0);

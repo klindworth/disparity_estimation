@@ -63,8 +63,8 @@ inline float compareEntropies(const cv::Mat_<float>& log_table, const cv::Mat& p
 		return 1.0f;
 
 
-	float entropy_total = std::max(calculate_entropy_unnormalized<float>(counter_total, log_table, bins), std::numeric_limits<float>::min());
-	float entropy_own   = std::max(calculate_entropy_unnormalized<float>(counter_own, log_table, bins), std::numeric_limits<float>::min());
+	float entropy_total = std::max(costmap_creators::entropy::calculate_entropy_unnormalized<float>(counter_total, log_table, bins), std::numeric_limits<float>::min());
+	float entropy_own   = std::max(costmap_creators::entropy::calculate_entropy_unnormalized<float>(counter_own, log_table, bins), std::numeric_limits<float>::min());
 
 	if(label_own/(float)label_total > 0.3f)
 		return entropy_own/entropy_total;

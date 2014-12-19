@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region_optimizer.h"
 #include <memory>
 
-class StereoSingleTask;
+class single_stereo_task;
 
 template<typename T>
 class neural_network;

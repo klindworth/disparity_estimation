@@ -35,8 +35,8 @@ namespace cv {
 	class Mat;
 }
 
-class StereoTask;
-class StereoSingleTask;
+class stereo_task;
+class single_stereo_task;
 class disparity_region;
 class region_container;
 class segmentation_algorithm;
@@ -46,7 +46,7 @@ class region_optimizer;
 
 void generateRegionInformation(region_container& left, region_container& right);
 
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(StereoTask& task, const InitialDisparityConfig& config, const RefinementConfig& refconfig, int subsampling, region_optimizer& optimizer);
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const InitialDisparityConfig& config, const RefinementConfig& refconfig, int subsampling, region_optimizer& optimizer);
 
 class InitialDisparityConfig
 {
@@ -69,9 +69,9 @@ class initial_disparity_algo : public disparity_estimator_algo
 {
 public:
 	initial_disparity_algo(InitialDisparityConfig& config, RefinementConfig& refconfig);
-	virtual std::pair<cv::Mat, cv::Mat> operator()(StereoTask& task);
+	virtual std::pair<cv::Mat, cv::Mat> operator()(stereo_task& task);
 	virtual void writeConfig(cv::FileStorage& fs);
-	void train(std::vector<StereoTask>& tasks);
+	void train(std::vector<stereo_task>& tasks);
 
 private:
 	InitialDisparityConfig m_config;

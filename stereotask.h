@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iterator>
 #include <string>
 
-class StereoSingleTask
+class single_stereo_task
 {
 public:
 	std::string name, fullname;
@@ -43,14 +43,14 @@ public:
 };
 
 /// Class for saving a StereoTask, forward and backward
-class StereoTask
+class stereo_task
 {
 public:
-	StereoTask(const std::string& name, const cv::Mat& pleft, const cv::Mat& pright, int dispRange);
-	StereoTask(const std::string& name, const std::string &nameLeft, const std::string &nameRight, int dispRange);
-	StereoTask(const std::string& name, const std::string &nameLeft, const std::string &nameRight, const std::string &nameGroundLeft, const std::string &nameGroundRight, unsigned char subsamplingGroundTruth, int dispRange);
-	StereoTask(const std::string& name, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, const std::string& nameOccLeft, const std::string& nameOccRight, unsigned char subsamplingGroundTruth, int dispRange);
-	StereoTask(const std::string& filename);
+	stereo_task(const std::string& name, const cv::Mat& pleft, const cv::Mat& pright, int dispRange);
+	stereo_task(const std::string& name, const std::string &nameLeft, const std::string &nameRight, int dispRange);
+	stereo_task(const std::string& name, const std::string &nameLeft, const std::string &nameRight, const std::string &nameGroundLeft, const std::string &nameGroundRight, unsigned char subsamplingGroundTruth, int dispRange);
+	stereo_task(const std::string& name, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, const std::string& nameOccLeft, const std::string& nameOccRight, unsigned char subsamplingGroundTruth, int dispRange);
+	stereo_task(const std::string& filename);
 	//void write(cv::FileNode& node) const;
 	bool valid() const;
 
@@ -59,19 +59,19 @@ public:
 	unsigned char groundTruthSubsampling;
 	std::string name, filenameLeft, filenameRight, filenameGroundLeft, filenameGroundRight, filenameOccLeft, filenameOccRight;
 
-	StereoSingleTask forward, backward;
+	single_stereo_task forward, backward;
 private:
-	double errorMeasureInternal(const cv::Mat& disparity, const cv::Mat &groundTruth, const cv::Mat& occ, unsigned char subsamplingDisparity, unsigned char subsamplingGroundTruth);
-	cv::Mat diffImageInternal(const cv::Mat& disparity, const cv::Mat& groundTruth, const cv::Mat& occ, unsigned char subsamplingDisparity, unsigned char subsamplingGroundTruth);
-	void initSingleTasks();
-	void loadImages(const std::string& nameLeft, const std::string& nameRight);
-	void loadGroundTruth(const std::string &nameGroundLeft, const std::string &nameGroundRight);
-	void loadOcc(const std::string& nameOccLeft, const std::string& nameOccRight);
-	void estimateOcc();
+	double error_measure_internal(const cv::Mat& disparity, const cv::Mat &groundTruth, const cv::Mat& occ, unsigned char subsamplingDisparity, unsigned char subsamplingGroundTruth);
+	cv::Mat diff_image_internal(const cv::Mat& disparity, const cv::Mat& groundTruth, const cv::Mat& occ, unsigned char subsamplingDisparity, unsigned char subsamplingGroundTruth);
+	void init_single_tasks();
+	void load_images(const std::string& nameLeft, const std::string& nameRight);
+	void load_ground_truth(const std::string &nameGroundLeft, const std::string &nameGroundRight);
+	void load_occ(const std::string& nameOccLeft, const std::string& nameOccRight);
+	void estimate_occ();
 };
 
 template<typename charT, typename traits>
-inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const StereoTask& task)
+inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const stereo_task& task)
 {
 	stream << "left: " << task.filenameLeft << "\nright: " << task.filenameRight << "\ndispRange: " << task.dispRange;
 	stream << "\ngroundLeft: " << task.filenameGroundLeft << "\ngroundRight: " << task.filenameGroundRight;
@@ -80,19 +80,19 @@ inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, t
 	return stream;
 }
 
-cv::FileStorage& operator<<(cv::FileStorage& stream, const StereoTask& task);
+cv::FileStorage& operator<<(cv::FileStorage& stream, const stereo_task& task);
 
-class TaskCollection
+class task_collection
 {
 public:
-	TaskCollection(const std::string& filename) : name(filename) {}
-	TaskCollection() = default;
+	task_collection(const std::string& filename) : name(filename) {}
+	task_collection() = default;
 	std::string name;
-	std::vector<StereoTask> tasks;
+	std::vector<stereo_task> tasks;
 };
 
 /// Container for StereoTasks. It can read a testset file, which contain the filenames for the single StereoTasks
-class TaskTestSet : public TaskCollection
+class TaskTestSet : public task_collection
 {
 public:
 	TaskTestSet () {}
@@ -101,10 +101,10 @@ public:
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const TaskTestSet& testset);
 
-class FolderTestSet : public TaskCollection
+class folder_testset : public task_collection
 {
 public:
-	FolderTestSet(const std::string& filename);
+	folder_testset(const std::string& filename);
 
 	std::string left, right, dispLeft, dispRight;
 	std::string fileextension_images, fileextension_gt;

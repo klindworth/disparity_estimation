@@ -33,7 +33,7 @@ DebugMatStore::DebugMatStore()
 {
 }
 
-void DebugMatStore::startNewTask(const std::string& name, StereoTask &task)
+void DebugMatStore::startNewTask(const std::string& name, stereo_task &task)
 {
 	tasks.push_back(TaskStore(name, &task));
 }
@@ -69,7 +69,7 @@ void DebugMatStore::addMat(const cv::Mat& left, const cv::Mat& right, cv::Mat &c
 	tasks.back().costmaps.push_back(temp);
 }
 
-void DebugMatStore::addMat(const StereoSingleTask& task, cv::Mat& cost, const char* name, int windowsize, cv::Mat windows, cv::Mat offset)
+void DebugMatStore::addMat(const single_stereo_task& task, cv::Mat& cost, const char* name, int windowsize, cv::Mat windows, cv::Mat offset)
 {
 	addMat(task.base, task.match, cost, name, windowsize, task.dispMin < 0, windows, offset);
 }

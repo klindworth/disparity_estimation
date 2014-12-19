@@ -170,7 +170,7 @@ cv::Mat create_image(const cv::Mat &disparity);
 
 }
 
-inline std::pair<short,short> getSubrange(short baseDisparity, short delta, const StereoSingleTask& task)
+inline std::pair<short,short> getSubrange(short baseDisparity, short delta, const single_stereo_task& task)
 {
 	if(delta == 0)
 		return std::make_pair(task.dispMin, task.dispMax);
@@ -183,7 +183,7 @@ inline std::pair<short,short> getSubrange(short baseDisparity, short delta, cons
 	}
 }
 
-inline std::pair<short,short> getSubrangeIdx(short baseDisparity, short delta, const StereoSingleTask& task)
+inline std::pair<short,short> getSubrangeIdx(short baseDisparity, short delta, const single_stereo_task& task)
 {
 	auto range = getSubrange(baseDisparity, delta, task);
 	range.first -= task.dispMin;
@@ -195,7 +195,7 @@ inline std::pair<short,short> getSubrangeIdx(short baseDisparity, short delta, c
 	return std::make_pair(start, end);*/
 }
 
-inline bool gotDisparity(short disparity, short baseDisparity, short delta, const StereoSingleTask& task)
+inline bool gotDisparity(short disparity, short baseDisparity, short delta, const single_stereo_task& task)
 {
 	auto range = getSubrange(baseDisparity, delta, task);
 	return disparity >= range.first && range.second <= range.second;

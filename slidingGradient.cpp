@@ -54,7 +54,7 @@ cv::Mat norm2(cv::Mat mat1, cv::Mat mat2)
 	return norm;
 }
 
-cv::Mat gradientImage(cv::Mat base, cv::Mat base2, cv::Mat match, cv::Mat match2, int d)
+cv::Mat gradient_image(cv::Mat base, cv::Mat base2, cv::Mat match, cv::Mat match2, int d)
 {
 	const int simd_size = 4;
 
@@ -114,7 +114,7 @@ cv::Mat gradientImage(cv::Mat base, cv::Mat base2, cv::Mat match, cv::Mat match2
 	return result;
 }
 
-void derivedMat(const cv::Mat& input, cv::Mat& grad_x, cv::Mat& grad_y, bool blur)
+void derived_mat(const cv::Mat& input, cv::Mat& grad_x, cv::Mat& grad_y, bool blur)
 {
 	cv::Mat temp;
 
@@ -130,18 +130,18 @@ void derivedMat(const cv::Mat& input, cv::Mat& grad_x, cv::Mat& grad_y, bool blu
 	cv::Scharr( temp, grad_y, CV_32FC1, 0, 1);
 }
 
-cv::Mat sliding_gradient(StereoSingleTask& task, int windowsize)
+cv::Mat sliding_gradient(single_stereo_task& task, int windowsize)
 {
 	cv::Mat gradLeftX;
 	cv::Mat gradLeftY;
-	derivedMat(task.baseGray,  gradLeftX,  gradLeftY,  false);
+	derived_mat(task.baseGray,  gradLeftX,  gradLeftY,  false);
 
 	cv::Mat gradRightX;
 	cv::Mat gradRightY;
-	derivedMat(task.matchGray, gradRightX, gradRightY, true);
+	derived_mat(task.matchGray, gradRightX, gradRightY, true);
 
 	auto cost_func = [=](int d) {
-		return gradientImage(gradLeftX, gradLeftY, gradRightX, gradRightY, d);
+		return gradient_image(gradLeftX, gradLeftY, gradRightX, gradRightY, d);
 	};
 
 	return simple_window_disparitywise_calculator(cost_func, cv::Size(windowsize, windowsize), gradLeftX, task.dispMin, task.dispMax);

@@ -34,7 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "disparity_utils.h"
 
-cv::Mat estimatedOcclusionMap(const cv::Mat& disparity, int subsample, bool invert = false)
+cv::Mat estimated_occlusion_map(const cv::Mat& disparity, int subsample, bool invert = false)
 {
 	cv::Mat occ;
 	if(!invert)
@@ -61,7 +61,7 @@ cv::Mat estimatedOcclusionMap(const cv::Mat& disparity, int subsample, bool inve
 
 }
 
-StereoTask::StereoTask(const std::string& filename)
+stereo_task::stereo_task(const std::string& filename)
 {
 	cv::FileStorage stream(filename + ".yml", cv::FileStorage::READ);
 	if(stream.isOpened())
@@ -70,26 +70,26 @@ StereoTask::StereoTask(const std::string& filename)
 		stream["dispRange"] >> this->dispRange;
 		stream["groundTruthSubsampling"] >> this->groundTruthSubsampling;
 
-		loadImages((std::string)stream["left"], (std::string)stream["right"]);
-		loadGroundTruth((std::string)stream["groundLeft"], (std::string)stream["groundRight"]);
-		loadOcc((std::string)stream["occLeft"], (std::string)stream["occRight"]);
+		load_images((std::string)stream["left"], (std::string)stream["right"]);
+		load_ground_truth((std::string)stream["groundLeft"], (std::string)stream["groundRight"]);
+		load_occ((std::string)stream["occLeft"], (std::string)stream["occRight"]);
 
-		initSingleTasks();
+		init_single_tasks();
 	}
 	else
 		std::cerr << "opening task failed: " << filename << std::endl;
 }
 
-StereoTask::StereoTask(const std::string& pname, const cv::Mat& pleft, const cv::Mat& pright, int dispRange) : left(pleft), right(pright), name(pname)
+stereo_task::stereo_task(const std::string& pname, const cv::Mat& pleft, const cv::Mat& pright, int dispRange) : left(pleft), right(pright), name(pname)
 {
 	cv::cvtColor(left,  leftGray,  CV_BGR2GRAY);
 	cv::cvtColor(right, rightGray, CV_BGR2GRAY);
 	this->dispRange = dispRange;
 
-	initSingleTasks();
+	init_single_tasks();
 }
 
-void StereoTask::loadImages(const std::string& nameLeft, const std::string& nameRight)
+void stereo_task::load_images(const std::string& nameLeft, const std::string& nameRight)
 {
 	left  = cv::imread(nameLeft);
 	right = cv::imread(nameRight);
@@ -101,7 +101,7 @@ void StereoTask::loadImages(const std::string& nameLeft, const std::string& name
 	cv::cvtColor(right, rightGray, CV_BGR2GRAY);
 }
 
-void StereoTask::loadGroundTruth(const std::string& nameGroundLeft, const std::string& nameGroundRight)
+void stereo_task::load_ground_truth(const std::string& nameGroundLeft, const std::string& nameGroundRight)
 {
 	cv::Mat ground_temp_left = cv::imread(nameGroundLeft, CV_LOAD_IMAGE_GRAYSCALE);
 	cv::Mat ground_temp_right = cv::imread(nameGroundRight, CV_LOAD_IMAGE_GRAYSCALE);
@@ -127,24 +127,24 @@ void StereoTask::loadGroundTruth(const std::string& nameGroundLeft, const std::s
 	}
 }
 
-StereoTask::StereoTask(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, int dispRange) : name(pname)
+stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, int dispRange) : name(pname)
 {
-	loadImages(nameLeft, nameRight);
+	load_images(nameLeft, nameRight);
 	this->dispRange = dispRange;
 
-	initSingleTasks();
+	init_single_tasks();
 }
 
-StereoTask::StereoTask(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, unsigned char subsamplingGroundTruth, int dispRange) : name(pname)
+stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, unsigned char subsamplingGroundTruth, int dispRange) : name(pname)
 {
 	groundTruthSubsampling = subsamplingGroundTruth;
 	this->dispRange = dispRange;
 
-	loadImages(nameLeft, nameRight);
-	loadGroundTruth(nameGroundLeft, nameGroundRight);
-	estimateOcc();
+	load_images(nameLeft, nameRight);
+	load_ground_truth(nameGroundLeft, nameGroundRight);
+	estimate_occ();
 
-	initSingleTasks();
+	init_single_tasks();
 }
 
 /*void StereoTask::write(cv::FileNode& node) const
@@ -157,7 +157,7 @@ StereoTask::StereoTask(const std::string& pname, const std::string& nameLeft, co
 	return node;
 }*/
 
-void StereoTask::loadOcc(const std::string& nameOccLeft, const std::string& nameOccRight)
+void stereo_task::load_occ(const std::string& nameOccLeft, const std::string& nameOccRight)
 {
 	occLeft  = cv::imread(nameOccLeft, CV_LOAD_IMAGE_GRAYSCALE);
 	occRight = cv::imread(nameOccRight, CV_LOAD_IMAGE_GRAYSCALE);
@@ -170,32 +170,32 @@ void StereoTask::loadOcc(const std::string& nameOccLeft, const std::string& name
 	if(!occRight.data)
 		std::cout << "no occ data for right image" << std::endl;
 
-	estimateOcc();
+	estimate_occ();
 }
 
-void StereoTask::estimateOcc()
+void stereo_task::estimate_occ()
 {
 	if(groundLeft.data && !occRight.data)
-		occRight = estimatedOcclusionMap(groundLeft, groundTruthSubsampling, true);
+		occRight = estimated_occlusion_map(groundLeft, groundTruthSubsampling, true);
 
 
 	if(groundRight.data && !occLeft.data)
-		occLeft = estimatedOcclusionMap(groundRight, groundTruthSubsampling, false);
+		occLeft = estimated_occlusion_map(groundRight, groundTruthSubsampling, false);
 }
 
-StereoTask::StereoTask(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, const std::string& nameOccLeft, const std::string& nameOccRight, unsigned char subsamplingGroundTruth, int dispRange) : name(pname)
+stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, const std::string& nameOccLeft, const std::string& nameOccRight, unsigned char subsamplingGroundTruth, int dispRange) : name(pname)
 {
 	groundTruthSubsampling = subsamplingGroundTruth;
 	this->dispRange = dispRange;
 
-	loadImages(nameLeft, nameRight);
-	loadGroundTruth(nameGroundLeft, nameGroundRight);
-	loadOcc(nameOccLeft, nameOccRight);
+	load_images(nameLeft, nameRight);
+	load_ground_truth(nameGroundLeft, nameGroundRight);
+	load_occ(nameOccLeft, nameOccRight);
 
-	initSingleTasks();
+	init_single_tasks();
 }
 
-bool StereoTask::valid() const
+bool stereo_task::valid() const
 {
 	if(left.size[0] != right.size[0] || left.size[1] != right.size[1] || !right.data || !left.data)
 		return false;
@@ -203,7 +203,7 @@ bool StereoTask::valid() const
 		return true;
 }
 
-cv::FileStorage& operator<<(cv::FileStorage& stream, const StereoTask& task)
+cv::FileStorage& operator<<(cv::FileStorage& stream, const stereo_task& task)
 {
 	stream << "name" << task.name;
 	stream << "left" << task.filenameLeft << "right" << task.filenameRight << "dispRange" << task.dispRange;
@@ -214,7 +214,7 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const StereoTask& task)
 	return stream;
 }
 
-void StereoTask::initSingleTasks()
+void stereo_task::init_single_tasks()
 {
 	forward.name = name;
 	forward.fullname = name + "-forward";
@@ -241,7 +241,7 @@ void StereoTask::initSingleTasks()
 	backward.dispMax = dispRange-1;
 }
 
-TaskTestSet::TaskTestSet(const std::string& filename) : TaskCollection(filename)
+TaskTestSet::TaskTestSet(const std::string& filename) : task_collection(filename)
 {
 	cv::FileStorage stream(filename + ".yml", cv::FileStorage::READ);
 	if(!stream.isOpened())
@@ -251,13 +251,13 @@ TaskTestSet::TaskTestSet(const std::string& filename) : TaskCollection(filename)
 	stream["tasks"] >> taskFilenames;
 
 	for(std::string& cname : taskFilenames)
-		tasks.push_back(StereoTask(cname));
+		tasks.push_back(stereo_task(cname));
 }
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const TaskTestSet& testset)
 {
 	stream << "tasks" << "[:";
-	for(const StereoTask& ctask : testset.tasks)
+	for(const stereo_task& ctask : testset.tasks)
 		stream << ctask.name;
 	stream << "]";
 
@@ -329,7 +329,7 @@ void enforce_completeness(std::vector<std::string>& filenames, const boost::file
 	}), filenames.end());
 }
 
-FolderTestSet::FolderTestSet(const std::string& filename) : TaskCollection(filename)
+folder_testset::folder_testset(const std::string& filename) : task_collection(filename)
 {
 	cv::FileStorage stream(filename + ".yml", cv::FileStorage::READ);
 	if(!stream.isOpened())

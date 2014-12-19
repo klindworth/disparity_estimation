@@ -30,8 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <memory>
 
-class StereoSingleTask;
-class StereoTask;
+class single_stereo_task;
+class stereo_task;
 class region_container;
 
 struct viewerMat
@@ -50,11 +50,11 @@ class TaskStore
 {
 public:
 	TaskStore() {}
-	TaskStore(const std::string& pname, StereoTask* ptask) : name(pname), task(ptask) {}
+	TaskStore(const std::string& pname, stereo_task* ptask) : name(pname), task(ptask) {}
 	std::string name;
 	std::vector<std::pair<cv::Mat, std::string> > simpleMatrices;
 	std::vector<struct viewerMat> costmaps;
-	StereoTask *task;
+	stereo_task *task;
 	std::shared_ptr<region_container> left, right;
 };
 
@@ -62,11 +62,11 @@ class DebugMatStore
 {
 public:
 	DebugMatStore();
-	void startNewTask(const std::string &name, StereoTask& task);
+	void startNewTask(const std::string &name, stereo_task& task);
 	void setRegionContainer(std::shared_ptr<region_container>& left, std::shared_ptr<region_container>& right);
 	void addMat(const cv::Mat &mat, const char* name);
 	void addMat(const cv::Mat &left, const cv::Mat &right, cv::Mat &cost, const char* name, int windowsize, bool forward, cv::Mat windows = cv::Mat(), cv::Mat offset = cv::Mat());
-	void addMat(const StereoSingleTask& task, cv::Mat &cost, const char* name, int windowsize, cv::Mat windows = cv::Mat(), cv::Mat offset = cv::Mat());
+	void addMat(const single_stereo_task& task, cv::Mat &cost, const char* name, int windowsize, cv::Mat windows = cv::Mat(), cv::Mat offset = cv::Mat());
 
 	std::vector<TaskStore> tasks;
 };

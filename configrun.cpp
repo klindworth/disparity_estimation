@@ -65,7 +65,7 @@ std::string timestampString()
 	return std::string(buffer);
 }
 
-std::pair<cv::Mat, cv::Mat> singleLoggedRun(StereoTask& task, disparity_estimator_algo& disparity_estimator, cv::FileStorage& fs, const std::string& filename)
+std::pair<cv::Mat, cv::Mat> singleLoggedRun(stereo_task& task, disparity_estimator_algo& disparity_estimator, cv::FileStorage& fs, const std::string& filename)
 {
 	bool logging = true;
 	int subsampling = 1; //TODO: avoid this
@@ -102,7 +102,7 @@ std::pair<cv::Mat, cv::Mat> singleLoggedRun(StereoTask& task, disparity_estimato
 
 	if(task.groundLeft.data)
 	{
-		cv::Mat err_image = getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_left);
+		cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_left);
 		if(logging)
 			cv::imwrite(filename + "_error-left.png", err_image);
 		matstore.addMat(err_image, "ground-diff-left");
@@ -110,7 +110,7 @@ std::pair<cv::Mat, cv::Mat> singleLoggedRun(StereoTask& task, disparity_estimato
 	}
 	if(task.groundRight.data)
 	{
-		cv::Mat err_image = getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_right);
+		cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_right);
 		if(logging)
 			cv::imwrite(filename + "_error-right.png", err_image);
 		matstore.addMat(err_image, "ground-diff-right");
@@ -119,7 +119,7 @@ std::pair<cv::Mat, cv::Mat> singleLoggedRun(StereoTask& task, disparity_estimato
 	return disparity;
 }
 
-void loggedRun(StereoTask& task, InitialDisparityConfig& config, RefinementConfig& refconfig)
+void loggedRun(stereo_task& task, InitialDisparityConfig& config, RefinementConfig& refconfig)
 {
 	TaskTestSet testset;
 	testset.name = task.name;
@@ -128,14 +128,14 @@ void loggedRun(StereoTask& task, InitialDisparityConfig& config, RefinementConfi
 }
 
 
-void loggedRun(TaskCollection& testset, disparity_estimator_algo& disparity_estimator)
+void loggedRun(task_collection& testset, disparity_estimator_algo& disparity_estimator)
 {
 	std::string filename = "results/" + dateString() + "_" + timestampString();
 	cv::FileStorage fs(filename + ".yml", cv::FileStorage::WRITE);
 
 	fs << "testset" << testset.name;
 	fs << "analysis" << "[";
-	for(StereoTask& ctask : testset.tasks)
+	for(stereo_task& ctask : testset.tasks)
 	{
 		std::cout << "----------------------\nstart task: " << ctask.name << "\n-------------------" << std::endl;
 		if(!ctask.valid())
@@ -156,7 +156,7 @@ void loggedRun(TaskCollection& testset, disparity_estimator_algo& disparity_esti
 	//fs << refconfig;
 }
 
-void loggedRun(TaskCollection& testset, InitialDisparityConfig& config, RefinementConfig& refconfig)
+void loggedRun(task_collection& testset, InitialDisparityConfig& config, RefinementConfig& refconfig)
 {
 	initial_disparity_algo algo(config, refconfig);
 
@@ -164,7 +164,7 @@ void loggedRun(TaskCollection& testset, InitialDisparityConfig& config, Refineme
 }
 
 template<int quantizer>
-std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(StereoSingleTask& task, bool soft, unsigned int windowsize)
+std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(single_stereo_task& task, bool soft, unsigned int windowsize)
 {
 	typedef std::pair<cv::Mat, cv::Mat> data_type;
 	long long start = cv::getCPUTickCount();
@@ -181,7 +181,7 @@ std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(StereoSingleTask& t
 										disparity::wta_disparity<entropy_agg<normalized_information_distance_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax)};
 }
 
-void singleClassicRun(StereoTask& task, ClassicSearchConfig& config, std::string filename, std::vector<cv::FileStorage*>& fs)
+void singleClassicRun(stereo_task& task, ClassicSearchConfig& config, std::string filename, std::vector<cv::FileStorage*>& fs)
 {
 	std::vector<cv::Mat_<short> > resultLeft, resultRight;
 
@@ -243,20 +243,20 @@ void singleClassicRun(StereoTask& task, ClassicSearchConfig& config, std::string
 		cv::imwrite(fullfilename + "-right.png", disparity::create_image(resultRight[i]));
 		if(task.groundLeft.data)
 		{
-			cv::Mat err_image = getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_left);
+			cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_left);
 			cv::imwrite(fullfilename + "_error-left.png", err_image);
 			matstore.addMat(err_image, "ground-diff-left");
 		}
 		if(task.groundRight.data)
 		{
-			cv::Mat err_image = getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_right);
+			cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_right);
 			cv::imwrite(fullfilename + "_error-right.png", err_image);
 			matstore.addMat(err_image, "ground-diff-right");
 		}
 	}
 }
 
-void classicLoggedRun(TaskCollection& taskset, ClassicSearchConfig& config)
+void classicLoggedRun(task_collection& taskset, ClassicSearchConfig& config)
 {
 	std::vector<std::string> names {"_mi", "_vi", "_nvi", "_ndi"};
 
@@ -269,7 +269,7 @@ void classicLoggedRun(TaskCollection& taskset, ClassicSearchConfig& config)
 		*(fs.back()) << "analysis" << "[";
 	}
 
-	for(StereoTask& ctask : taskset.tasks)
+	for(stereo_task& ctask : taskset.tasks)
 	{
 		std::cout << "----------------------\nstart task: " << ctask.name << "\n-------------------" << std::endl;
 		if(!ctask.valid())

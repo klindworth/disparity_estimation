@@ -31,13 +31,13 @@ namespace cv {
 }
 #include <functional>
 
-class StereoSingleTask;
+class single_stereo_task;
 
 void scaleUpCostMap(cv::Mat& cost_map_src, cv::Mat& cost_map_dst, float oldscale);
 
-cv::Mat onestepSlidingInfoGradient(StereoSingleTask task, std::function<cv::Mat(StereoSingleTask)> func, int windowsize);
-std::function<cv::Mat(StereoSingleTask)> gradient_enhancer_bind(std::function<cv::Mat(StereoSingleTask)> func, int windowsize);
+cv::Mat onestepSlidingInfoGradient(single_stereo_task task, std::function<cv::Mat(single_stereo_task)> func, int windowsize);
+std::function<cv::Mat(single_stereo_task)> gradient_enhancer_bind(std::function<cv::Mat(single_stereo_task)> func, int windowsize);
 
-cv::Mat genericScaledProcessing(StereoSingleTask task, int border, std::function<cv::Mat(StereoSingleTask)> func);
+cv::Mat genericScaledProcessing(single_stereo_task task, int border, std::function<cv::Mat(single_stereo_task)> func);
 
 #endif // SLIDINGHIMIGRADIENT_H

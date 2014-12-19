@@ -32,6 +32,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+namespace costmap_creators
+{
+
+namespace entropy
+{
+
+
 class Entropies
 {
 public:
@@ -232,7 +239,7 @@ inline void fill_entropytable_unnormalized(cv::Mat_<double>& entropy_table, int 
 
 
 template<int quantizer>
-class slidingEntropyInternal
+class single_fixed_windowsize
 {
 private:
 	static const int bins = 256/quantizer;
@@ -241,7 +248,7 @@ private:
 public:
 	typedef fast_array<unsigned short, bins> thread_type;
 
-	slidingEntropyInternal(unsigned int pwindowsize) : windowsize(pwindowsize) {
+	single_fixed_windowsize(unsigned int pwindowsize) : windowsize(pwindowsize) {
 		fill_entropytable_normalized(entropy_table, windowsize*windowsize);
 	}
 
@@ -257,7 +264,7 @@ public:
 };
 
 template<int quantizer>
-class slidingSoftEntropyInternal
+class single_fixed_windowsize_soft
 {
 private:
 	static const int bins = 256/quantizer;
@@ -266,7 +273,7 @@ private:
 public:
 	typedef fast_array<unsigned short, bins+2> thread_type;
 
-	slidingSoftEntropyInternal(unsigned int pwindowsize) : windowsize(pwindowsize) {
+	single_fixed_windowsize_soft(unsigned int pwindowsize) : windowsize(pwindowsize) {
 		fill_entropytable_unnormalized(entropy_table, windowsize*windowsize*7);
 	}
 
@@ -282,7 +289,7 @@ public:
 };
 
 template<int bins>
-class slidingJointEntropyThread
+class joint_fixed_windowsize_threaddata
 {
 public:
 	cv::Mat_<unsigned char> m_base;
@@ -291,18 +298,18 @@ public:
 };
 
 template<int quantizer>
-class slidingJointEntropyInternal
+class joint_fixed_windowsize
 {
 public:
 	typedef float prob_table_type;
 	static const int bins = 256/quantizer;
-	typedef slidingJointEntropyThread<bins> thread_type;
+	typedef joint_fixed_windowsize_threaddata<bins> thread_type;
 	const unsigned int windowsize;
 private:
 	cv::Mat_<prob_table_type> entropy_table;
 
 public:
-	slidingJointEntropyInternal(const cv::Mat& /*match*/, int pwindowsize) : windowsize(pwindowsize)
+	joint_fixed_windowsize(const cv::Mat& /*match*/, int pwindowsize) : windowsize(pwindowsize)
 	{
 		fill_entropytable_normalized(entropy_table, windowsize*windowsize);
 	}
@@ -334,18 +341,18 @@ public:
 };
 
 template<int quantizer>
-class slidingSoftJointEntropyInternal
+class joint_fixed_windowsize_soft
 {
 public:
 	typedef float prob_table_type;
 	static const int bins = 256/quantizer;
-	typedef slidingJointEntropyThread<bins+2> thread_type;
+	typedef joint_fixed_windowsize_threaddata<bins+2> thread_type;
 	const unsigned int windowsize;
 private:
 	cv::Mat_<prob_table_type> entropy_table;
 
 public:
-	slidingSoftJointEntropyInternal(const cv::Mat& /*match*/, unsigned int pwindowsize) : windowsize(pwindowsize)
+	joint_fixed_windowsize_soft(const cv::Mat& /*match*/, unsigned int pwindowsize) : windowsize(pwindowsize)
 	{
 		fill_entropytable_unnormalized(entropy_table, windowsize*windowsize*9);
 	}
@@ -379,7 +386,7 @@ public:
 };
 
 template<int bins>
-class slidingParametricWindowThread
+class flexible_windowsize_threaddata
 {
 public:
 	cv::Mat_<unsigned char> m_base;
@@ -391,12 +398,12 @@ public:
 };
 
 template<typename cost_func, int quantizer>
-class slidingEntropyFlex
+class flexible_windowsize
 {
 public:
 	typedef float prob_table_type;
 	static const int bins = 256/quantizer;
-	typedef slidingParametricWindowThread<bins+2> thread_type;
+	typedef flexible_windowsize_threaddata<bins+2> thread_type;
 private:
 	cv::Mat_<prob_table_type> entropy_table;
 	cv::Mat m_match;
@@ -404,7 +411,7 @@ private:
 	const int windowsize;
 
 public:
-	slidingEntropyFlex(const cv::Mat& match, unsigned int max_windowsize) : m_match(match), windowsize(max_windowsize)
+	flexible_windowsize(const cv::Mat& match, unsigned int max_windowsize) : m_match(match), windowsize(max_windowsize)
 	{
 		fill_entropytable_unnormalized(entropy_table, windowsize*windowsize*9);
 	}
@@ -444,5 +451,8 @@ public:
 		return m_evalfunc(joint_entropy, thread.base_entropy, match_entropy);
 	}
 };
+
+}
+}
 
 #endif // SLIDINGENTROPY_H
