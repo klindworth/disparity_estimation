@@ -138,8 +138,8 @@ int main(int argc, char *argv[])
 
 	//RGB tasks
 	//StereoTask testset("tasks/im2rgb");
-	folder_testset testset("tasks/kitti-training_small");
-	//FolderTestSet testset("tasks/kitti-training_debug");
+	//folder_testset testset("tasks/kitti-training_small");
+	folder_testset testset("tasks/kitti-training_debug");
 	//StereoTask testset("tasks/kit3"); //5, 3 neuer problemfall?
 
 	//simulated (hard) tasks
