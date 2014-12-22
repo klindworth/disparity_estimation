@@ -102,7 +102,7 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++11 -O0 -fsanitize=address -fsanitize=undefined")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++11 -DNDEBUG -O3")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -Wall -Wextra -Wnoexcept -std=c++11 -DNDEBUG -O3")
 
 enable_testing()
 find_package(GTest REQUIRED)

@@ -144,7 +144,7 @@ void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t o
 
 bool checkLabelsIntervalsInvariant(const std::vector<disparity_region>& regions, const cv::Mat_<int>& labels, int segcount)
 {
-	return region_descriptors::checkLabelsIntervalsInvariant(regions.begin(), regions.begin() + segcount, labels);
+	return region_descriptors::invariants::check_labels_Intervals(regions.begin(), regions.begin() + segcount, labels);
 }
 
 void generate_stats(std::vector<disparity_region>& regions, const single_stereo_task& task, const int delta)

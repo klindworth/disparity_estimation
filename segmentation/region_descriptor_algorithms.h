@@ -178,7 +178,6 @@ void fill(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
 		assert(region.m_size != 0);
 	});
 
-	//FIXME rectivate!!!
 	refresh_bounding_boxes(begin, end, labels);
 }
 
@@ -236,76 +235,7 @@ void generate_neighborhood(const cv::Mat_<label_type> &labels, std::vector<T> &r
 	}
 }
 
-/**
- * Checks, if the sum of all sizes equals the image size and if the numbers in the labels matrix
- *  equals the position of the corresponding RegionDescriptor
- */
-template<typename Iterator, typename label_type>
-bool checkLabelsIntervalsInvariant(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
-{
-	int pixelcount = 0;
-	for(Iterator it = begin; it != end; ++it)
-	{
-		const region_descriptor& cregion = *it;
-		int segsize = cregion.size();
-		assert(segsize == cregion.m_size);
-		assert(segsize != 0);
-		pixelcount += segsize;
-		for(const region_interval& cinterval : cregion.lineIntervals)
-		{
-			for(int x = cinterval.lower; x < cinterval.upper; ++x)
-			{
-				label_type val = labels(cinterval.y, x);
-				assert(val == std::distance(begin, it));
-				if(val != std::distance(begin, it))
-					return false;
-			}
-		}
-	}
-	assert(pixelcount == labels.rows * labels.cols);
-	if(pixelcount != labels.rows * labels.cols)
-		return false;
-	else
-		return true;
-}
 
-/**
- * Checks if all neighbor ids are existing regions, and it checks if the neighboring region has the
- * region as its neighbor. It parameter regions_count doesn't have to be equal to regions.size(),
- * if it's lower it means only the first regions_count regions will be checked
- */
-template<typename T>
-bool checkNeighborhoodInvariant(const std::vector<T> &regions, std::size_t regions_count)
-{
-	for(std::size_t i = 0; i < regions_count; ++i)
-	{
-		const region_descriptor& cregion = regions[i];
-		const std::size_t neigh_count = cregion.neighbors.size();
-
-		for(std::size_t j = 0; j < neigh_count; ++j)
-		{
-			std::size_t c_idx = cregion.neighbors[j].first;
-
-			assert(c_idx < regions_count);
-
-			const region_descriptor& cneighbor = regions[c_idx];
-
-			bool found = false;
-			const std::size_t inner_neigh_count = cneighbor.neighbors.size();
-			for(std::size_t k = 0; k < inner_neigh_count; ++k)
-			{
-				if(cneighbor.neighbors[k].first == i)
-				{
-					found = true;
-					break;
-				}
-			}
-
-			assert(found);
-		}
-	}
-	return true;
-}
 
 template<typename Iterator>
 void calculate_all_average_colors(const cv::Mat& image, Iterator begin, Iterator end)
@@ -393,6 +323,82 @@ T weighted_neighbors_average(const std::vector<reg_type>& container, const neigh
 	}
 	return result/sum_weights;
 }
+
+namespace invariants
+{
+/**
+ * Checks, if the sum of all sizes equals the image size and if the numbers in the labels matrix
+ *  equals the position of the corresponding RegionDescriptor
+ */
+template<typename Iterator, typename label_type>
+bool check_labels_Intervals(Iterator begin, Iterator end, const cv::Mat_<label_type>& labels)
+{
+	int pixelcount = 0;
+	for(Iterator it = begin; it != end; ++it)
+	{
+		const region_descriptor& cregion = *it;
+		int segsize = cregion.size();
+		assert(segsize == cregion.m_size);
+		assert(segsize != 0);
+		pixelcount += segsize;
+		for(const region_interval& cinterval : cregion.lineIntervals)
+		{
+			for(int x = cinterval.lower; x < cinterval.upper; ++x)
+			{
+				label_type val = labels(cinterval.y, x);
+				assert(val == std::distance(begin, it));
+				if(val != std::distance(begin, it))
+					return false;
+			}
+		}
+	}
+	assert(pixelcount == labels.rows * labels.cols);
+	if(pixelcount != labels.rows * labels.cols)
+		return false;
+	else
+		return true;
+}
+
+/**
+ * Checks if all neighbor ids are existing regions, and it checks if the neighboring region has the
+ * region as its neighbor. It parameter regions_count doesn't have to be equal to regions.size(),
+ * if it's lower it means only the first regions_count regions will be checked
+ */
+template<typename T>
+bool check_neighborhood(const std::vector<T> &regions, std::size_t regions_count)
+{
+	for(std::size_t i = 0; i < regions_count; ++i)
+	{
+		const region_descriptor& cregion = regions[i];
+		const std::size_t neigh_count = cregion.neighbors.size();
+
+		for(std::size_t j = 0; j < neigh_count; ++j)
+		{
+			std::size_t c_idx = cregion.neighbors[j].first;
+
+			assert(c_idx < regions_count);
+
+			const region_descriptor& cneighbor = regions[c_idx];
+
+			bool found = false;
+			const std::size_t inner_neigh_count = cneighbor.neighbors.size();
+			for(std::size_t k = 0; k < inner_neigh_count; ++k)
+			{
+				if(cneighbor.neighbors[k].first == i)
+				{
+					found = true;
+					break;
+				}
+			}
+
+			assert(found);
+		}
+	}
+	return true;
+}
+}
+
+
 }
 
 #endif // REGION_DESCRIPTOR_ALGORITHMS_H

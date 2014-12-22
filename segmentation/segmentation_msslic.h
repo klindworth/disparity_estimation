@@ -3,6 +3,8 @@
 
 #include "segmentation.h"
 
+class fusion_work_data;
+
 class mssuperpixel_segmentation : public segmentation_algorithm {
 public:
 	mssuperpixel_segmentation(const segmentation_settings& psettings) : settings(psettings) {}

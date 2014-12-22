@@ -53,7 +53,7 @@ int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& l
 		}
 	}
 
-	region_descriptors::checkLabelsIntervalsInvariant(regions.begin(), regions.end(), labels);
+	region_descriptors::invariants::check_labels_Intervals(regions.begin(), regions.end(), labels);
 
 	cv::Mat slic_image = lab_to_bgr(slic_image_lab);
 	cv::Mat msResult;

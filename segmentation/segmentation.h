@@ -31,8 +31,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region_descriptor_algorithms.h"
 #include "segmentation_refinement.h"
 
-class fusion_work_data;
-
 class segmentation_settings
 {
 public:
@@ -90,28 +88,6 @@ public:
 };
 
 std::shared_ptr<segmentation_algorithm> create_segmentation_instance(const segmentation_settings& settings);
-
-class fusion_work_data
-{
-public:
-	fusion_work_data(std::size_t size) :
-		visited(std::vector<unsigned char>(size, 0)),
-		active(std::vector<unsigned char>(size, 1)),
-		fused(std::vector<std::vector<std::size_t>>(size)),
-		fused_with(std::vector<std::size_t>(size, 0))
-	{
-	}
-
-	void visit_reset()
-	{
-		std::fill(visited.begin(), visited.end(), 0);
-	}
-
-	std::vector<unsigned char> visited;
-	std::vector<unsigned char> active;
-	std::vector<std::vector<std::size_t> > fused;
-	std::vector<std::size_t> fused_with;
-};
 
 cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Mat_<int>& labels, int labelcount);
 
