@@ -184,27 +184,4 @@ void getRegionDisparityInternal(std::vector<region_interval>& actual_region, cos
 	cregion.disparity = minD;
 }
 
-/**
- * @brief getRegionDisparity
- * @param cost_map the costmap that will be filled. Memory must be allocated before calling this function!
- * @param base Image
- * @param match Image
- * @param pixel_idx Vector of all pixel indices of a region
- * @param dispMin
- * @param dispMax
- */
-template<typename cost_type>
-void getRegionDisparity(cost_type& cost_agg, typename cost_type::thread_type& thread, disparity_region& cregion, const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax)
-{
-	int dilate = cregion.dilation;
-	if(dilate == cregion.old_dilation)
-		return;
-
-	std::vector<region_interval> actual_pixel_idx = dilated_region(cregion, dilate, base);
-
-	getRegionDisparityInternal(actual_pixel_idx, cost_agg, thread, cregion, base, match, dispMin, dispMax);
-
-	cregion.old_dilation = dilate;
-}
-
 #endif // REGION_METRICS_H

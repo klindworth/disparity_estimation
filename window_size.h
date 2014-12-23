@@ -78,16 +78,16 @@ inline float compareLabels(const cv::Mat_<float>&, const cv::Mat& plabel_window,
 	assert(label_window.isContinuous());
 	int cdisparity = regions[clabel].disparity;
 	const int* csubwindow_ptr = label_window.ptr<int>(0);
-	int totalpixel = label_window.cols*label_window.rows;
+	const unsigned short totalpixel = label_window.cols*label_window.rows;
 
 	const int trunc = 3;
 	std::array<int, trunc+1> label_counter;
 	std::fill(label_counter.begin(), label_counter.end(), 0);
 
-	for(int i = 0; i < totalpixel; ++i)
+	for(unsigned short i = 0; i < totalpixel; ++i)
 	{
 		int current_label = *csubwindow_ptr++;
-		int disp_dev = std::min(std::abs(regions[current_label].disparity - cdisparity), trunc);
+		unsigned char disp_dev = std::min(std::abs(regions[current_label].disparity - cdisparity), trunc);
 
 		assert(disp_dev >= 0 && disp_dev <= trunc);
 		++(label_counter[disp_dev]);

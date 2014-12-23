@@ -44,10 +44,24 @@ inline cv::Mat subwindow(const cv::Mat& image, int x, int y, int windowsize)
 	return cv::Mat(image, cv::Range(y - windowsize/2, y+windowsize/2+1), cv::Range(x-windowsize/2, x+windowsize/2+1));
 }
 
+template<typename T>
+inline cv::Mat_<T> subwindow(const cv::Mat_<T>& image, int x, int y, int windowsize)
+{
+	assert(x >= windowsize/2 && y >= windowsize/2 && x < image.cols- windowsize/2 && y < image.rows-windowsize/2 && windowsize % 2 == 1);
+	return cv::Mat_<T>(image, cv::Range(y - windowsize/2, y+windowsize/2+1), cv::Range(x-windowsize/2, x+windowsize/2+1));
+}
+
 inline cv::Mat subwindow(const cv::Mat& image, int x, int y, int windowsize_x, int windowsize_y)
 {
 	assert(x >= windowsize_x/2 && y >= windowsize_y/2 && x < image.cols- windowsize_x/2 && y < image.rows-windowsize_y/2 && windowsize_y % 2 == 1 && windowsize_x % 2 == 1 );
 	return cv::Mat(image, cv::Range(y - windowsize_y/2, y+windowsize_y/2+1), cv::Range(x-windowsize_x/2, x+windowsize_x/2+1));
+}
+
+template<typename T>
+inline cv::Mat_<T> subwindow(const cv::Mat_<T>& image, int x, int y, int windowsize_x, int windowsize_y)
+{
+	assert(x >= windowsize_x/2 && y >= windowsize_y/2 && x < image.cols- windowsize_x/2 && y < image.rows-windowsize_y/2 && windowsize_y % 2 == 1 && windowsize_x % 2 == 1 );
+	return cv::Mat_<T>(image, cv::Range(y - windowsize_y/2, y+windowsize_y/2+1), cv::Range(x-windowsize_x/2, x+windowsize_x/2+1));
 }
 
 //rests the border of a matrix (2d/3d) to an given value
@@ -141,8 +155,8 @@ void foreign_threshold(cv::Mat& image, const cv::Mat& thresValues, thres_type th
 	}
 }
 
-template<typename cost_class>
-cv::Mat slidingWindow(const cv::Mat& image, unsigned int windowsize)
+template<typename cost_class, typename T>
+cv::Mat slidingWindow(const cv::Mat_<T>& image, unsigned int windowsize)
 {
 	const int y_min = windowsize/2;
 	const int y_max = image.rows - windowsize/2;
@@ -150,17 +164,17 @@ cv::Mat slidingWindow(const cv::Mat& image, unsigned int windowsize)
 	const int x_min = windowsize/2;
 	const int x_max = image.cols - windowsize/2;
 
-	cv::Mat result = cv::Mat(image.size(), CV_32FC1, cv::Scalar(0));
+	cv::Mat_<float> result = cv::Mat(image.size(), CV_32FC1, cv::Scalar(0));
 	cost_class cost_agg(windowsize);
 	typename cost_class::thread_type thread_data;
 
 	#pragma omp parallel for default(none) shared(image, result, cost_agg, windowsize) private(thread_data)
 	for(int y = y_min; y < y_max; ++y)
 	{
-		cv::Mat_<unsigned char> window = subwindow(image, x_min, y, windowsize, windowsize);
+		cv::Mat_<T> window = subwindow(image, x_min, y, windowsize, windowsize);
 		for(int x = x_min; x < x_max; ++x)
 		{
-			result.at<float>(y,x) = cost_agg.increm(thread_data, window);
+			result(y,x) = cost_agg.increm(thread_data, window);
 			window.adjustROI(0,0,-1,1);
 		}
 	}

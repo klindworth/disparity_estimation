@@ -118,7 +118,16 @@ void calculate_region_disparity_regionwise(single_stereo_task& task, const cv::M
 	{
 		auto range = getSubrange(regions[i].base_disparity, delta, task);
 		regions[i].disparity_offset = range.first;
-		getRegionDisparity<cost_type>(cost_agg, cost_thread, regions[i], base, match, range.first, range.second);
+
+		int dilate = regions[i].dilation;
+		if(dilate == regions[i].old_dilation)
+			continue;
+
+		std::vector<region_interval> actual_pixel_idx = dilated_region(regions[i], dilate, base);
+
+		getRegionDisparityInternal(actual_pixel_idx, cost_agg, cost_thread, regions[i], base, match, range.first, range.second);
+
+		regions[i].old_dilation = dilate;
 	}
 }
 
@@ -175,21 +184,11 @@ void calculate_region_generic(single_stereo_task& task, const cv::Mat& base, con
 			auto range = getSubrange(regions[i].base_disparity, delta, task);
 			if(d>= range.first && d <= range.second)
 			{
-				//std::vector<RegionInterval> filtered = filter_region(regions[i].lineIntervals, std::min(0,d), occ, base.size[1]);
 				std::vector<region_interval> filtered = filtered_region(base.size[1], regions[i].lineIntervals, d);
 				cv::Mat diff_region = region_as_mat(diff, filtered, std::min(0, d));
-				//cv::Mat diff_region = getRegionAsMat(diff, regions[i].lineIntervals, 0);
 				float sum = cv::norm(diff_region, cv::NORM_L1);
-				//float sum = cv::norm(diff_region, cv::NORM_L2);
-
-				/*float sum = 0.0f;
-				foreach_warped_region_point(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end(), base.cols, d, [&](cv::Point pt)
-				{
-					sum += diff(pt)
-				});*/
 
 				if(diff_region.total() > 0)
-					//regions[i].disparity_costs(d-regions[i].disparity_offset) = sum/diff_region.total()/diff_region.channels();
 					regions[i].disparity_costs(d-regions[i].disparity_offset) = sum/diff_region.total()/diff_region.channels();
 				else
 					regions[i].disparity_costs(d-regions[i].disparity_offset) = 1.0f;

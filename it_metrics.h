@@ -64,8 +64,8 @@ costmap_creators::entropy::entropies calculateEntropies(single_stereo_task task,
 	using namespace costmap_creators;
 
 	entropy::entropies result;
-	cv::Mat base  = quantizeImage(task.baseGray, quantizer);
-	cv::Mat match = quantizeImage(task.matchGray, quantizer);
+	cv::Mat_<unsigned char> base  = quantizeImage(task.baseGray, quantizer);
+	cv::Mat_<unsigned char> match = quantizeImage(task.matchGray, quantizer);
 
 	if(!soft)
 	{
@@ -101,18 +101,6 @@ public:
 		return calculator(m_joint_entropy(y, x, d-m_dispMin), m_entropy_x(y,x), m_entropy_y(y,x+d));
 	}
 };
-
-template<typename cost_agg, int quantizer>
-cv::Mat InformationTheoreticDistance(single_stereo_task& task, bool soft, unsigned int windowsize)
-{
-	//long long start = cv::getCPUTickCount();
-	auto entropy = calculateEntropies<quantizer>(task, soft, windowsize);
-
-	//start = cv::getCPUTickCount() - start;
-	//std::cout << "entropy " << start << std::endl;
-
-	return costmap_creators::calculate_pixelwise<entropy_agg<cost_agg>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
-}
 
 template<typename T>
 class mutual_information_calc
@@ -170,26 +158,5 @@ public:
 		return 1;
 	}
 };
-
-template<int windowsize, int quantizer>
-cv::Mat InformationTheoreticDistance(single_stereo_task task, IT_Metric metric, bool soft)
-{
-	auto entropy = calculateEntropies<windowsize, quantizer>(task, soft);
-
-	switch(metric)
-	{
-	case IT_Metric::MutualInformation:
-		return costmap_creators::calculate_pixelwise<entropy_agg<mutual_information_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
-	case IT_Metric::VariationOfInformation:
-		return costmap_creators::calculate_pixelwise<entropy_agg<variation_of_information_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
-	case IT_Metric::NormalizedVariationOfInformation:
-		return costmap_creators::calculate_pixelwise<entropy_agg<normalized_variation_of_information_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
-	case IT_Metric::NormalizedInformationDistance:
-		return costmap_creators::calculate_pixelwise<entropy_agg<normalized_information_distance_calc<float>>, std::pair<cv::Mat, cv::Mat> >(entropy.XY, std::make_pair(entropy.X, entropy.Y), task.dispMin, task.dispMax);
-	}
-
-	assert(false);
-	return cv::Mat();
-}
 
 #endif // IT_METRICS_H
