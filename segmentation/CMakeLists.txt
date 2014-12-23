@@ -24,8 +24,8 @@ set(HEADERS
     segmentation_refinement.h
 )
 
-set(ENABLE_SLIC ON)
-set(ENABLE_MEANSHIFT ON)
+option(ENABLE_SLIC "Enables SLIC. Forces you to use the GPL as license" ON)
+option(ENABLE_MEANSHIFT "Enables the original meanshift implementation of the EDISON library" ON)
 
 if(ENABLE_SLIC)
     set(SOURCES ${SOURCES}
@@ -43,6 +43,8 @@ if(ENABLE_SLIC)
     add_definitions(-DUSE_SLIC)
     message("Remember: With the use of SLIC, this software is licensed under the conditions of the GPL")
 endif()
+
+add_subdirectory(meanshift_cv)
 
 if(ENABLE_MEANSHIFT)
     set(SOURCES ${SOURCES}

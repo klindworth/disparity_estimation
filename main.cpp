@@ -44,6 +44,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparity_utils.h"
 #include "refinement.h"
 
+#include "ml_region_optimizer.h"
+#include "manual_region_optimizer.h"
+
 #include <opencv2/highgui/highgui.hpp>
 
 
@@ -207,8 +210,23 @@ int main(int argc, char *argv[])
 		std::cout << "warning: verbose activated" << std::endl;
 
 	//loggedRun(testset, config, refconfig);
-	initial_disparity_algo algo(config, refconfig);
-	algo.train(testset.tasks);
+	std::shared_ptr<region_optimizer> optimizer;
+	if(config.optimizer.optimizer_type == "manual")
+		optimizer = std::make_shared<manual_region_optimizer>();
+	else
+		optimizer = std::make_shared<ml_region_optimizer>();
+	initial_disparity_algo algo(config, refconfig, optimizer);
+
+	bool training = true;
+	if(training)
+	{
+		algo.train(testset.tasks);
+	}
+	else
+	{
+		for(stereo_task& ctask : testset.tasks)
+			algo(ctask);
+	}
 
 	ImageStore imviewer;
 	imviewer.refreshList(matstore);

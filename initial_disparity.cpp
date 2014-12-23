@@ -27,8 +27,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <iterator>
 #include <iostream>
-#include <fstream>
-#include <memory>
 #include <omp.h>
 
 #include "debugmatstore.h"
@@ -52,8 +50,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "disparitywise_calculator.h"
 #include "sncc_disparitywise_calculator.h"
-#include "manual_region_optimizer.h"
-#include "ml_region_optimizer.h"
 #include "disparity_region_algorithms.h"
 
 class sliding_sad_threaddata
@@ -616,30 +612,24 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 
 
 
-initial_disparity_algo::initial_disparity_algo(initial_disparity_config &config, RefinementConfig &refconfig) : m_config(config), m_refconfig(refconfig)
+initial_disparity_algo::initial_disparity_algo(initial_disparity_config &config, RefinementConfig &refconfig, std::shared_ptr<region_optimizer>& optimizer) :  m_optimizer(optimizer), m_config(config), m_refconfig(refconfig)
 {
 }
 
 std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(stereo_task& task)
 {
+	std::cout << "task: " << task.name << std::endl;
 	int subsampling = 1; //TODO avoid this
 	matstore.startNewTask(task.name, task);
-	manual_region_optimizer optimizer;
-	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling, optimizer);
+	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling, *m_optimizer);
 }
 
 void initial_disparity_algo::train(std::vector<stereo_task>& tasks)
 {
-	int subsampling = 1; //TODO avoid this
-	ml_region_optimizer optimizer;
-	//optimizer.set_training_mode(true);
+	m_optimizer->set_training_mode(true);
 	for(stereo_task& ctask : tasks)
-	{
-		std::cout << "task: " << ctask.name << std::endl;
-		matstore.startNewTask(ctask.name, ctask);
-		segment_based_disparity_it(ctask, m_config, m_refconfig, subsampling, optimizer);
-	}
-	//optimizer.training();
+		operator ()(ctask);
+	m_optimizer->training();
 }
 
 void initial_disparity_algo::writeConfig(cv::FileStorage &fs)

@@ -314,6 +314,7 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const optimizer_settings& c
 {
 	stream << "optimization_rounds" << config.rounds;
 	stream << "enable_damping" << config.enable_damping;
+	stream << "optimizer_type" << config.optimizer_type;
 
 	stream << "base_eval" << config.base_eval;
 	stream << "base_eval2" << config.base_eval2;
@@ -331,6 +332,7 @@ const cv::FileNode& operator>>(const cv::FileNode& stream, optimizer_settings& c
 		//*it >> config.base;
 	stream["base_eval"] >> config.base_eval;
 	stream["base_eval2"] >> config.base_eval2;
+	stream["optimizer_type"] >> config.optimizer_type;
 
 	return stream;
 }

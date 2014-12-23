@@ -89,6 +89,7 @@ class optimizer_settings
 public:
 	int rounds;
 	bool enable_damping;
+	std::string optimizer_type;
 
 	std::function<float(const disparity_region&, const region_container&, const region_container&, int)> prop_eval, prop_eval2, prop_eval_refine;
 	disparity_hypothesis_weight_vector base_eval, base_eval2, base_eval_refine;

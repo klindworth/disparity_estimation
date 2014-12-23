@@ -158,9 +158,16 @@ void loggedRun(task_collection& testset, disparity_estimator_algo& disparity_est
 
 void loggedRun(task_collection& testset, initial_disparity_config& config, RefinementConfig& refconfig)
 {
+	//FIXME
+	assert(false);
+	/*if(config.optimizer.optimizer_type == "manual")
+		m_optimizer = std::make_shared<manual_region_optimizer>();
+	else
+		m_optimizer = std::make_shared<ml_region_optimizer>();
+
 	initial_disparity_algo algo(config, refconfig);
 
-	loggedRun(testset, algo);
+	loggedRun(testset, algo);*/
 }
 
 template<int quantizer>
