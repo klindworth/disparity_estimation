@@ -99,6 +99,4 @@ void labelLRCheck(region_container& base, const region_container& match, int del
 void refreshWarpedIdx(region_container& container);
 std::vector<region_interval> filtered_region(int width, const std::vector<region_interval> &pixel_idx, int d);
 
-bool checkLabelsIntervalsInvariant(const std::vector<disparity_region>& regions, const cv::Mat_<int>& labels, int segcount);
-
 #endif // REGION_H

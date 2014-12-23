@@ -81,7 +81,10 @@ void MiniPlot::paintEvent(QPaintEvent *)
 		QPainter painter(this);
 
 		QPalette pal = QPalette(foregroundRole());
-		QColor penColor(pal.color(QPalette::WindowText));
+		QColor penColor(pal.color(QPalette::Text));
+		QPen pen;
+		pen.setColor(penColor);
+		painter.setPen(pen);
 
 		float min = m_analysis->min;
 		float max = m_analysis->max;
@@ -137,7 +140,6 @@ void MiniPlot::paintEvent(QPaintEvent *)
 		}
 
 		//draw mean/std
-		QPen pen;
 		pen.setStyle(Qt::DashLine);
 		pen.setColor(penColor);
 		painter.setPen(pen);

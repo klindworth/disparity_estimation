@@ -210,6 +210,9 @@ void ml_region_optimizer::optimize_ml(region_container& base, const region_conta
 	std::vector<double> stddev_normalization_vector(normalizer_size, 0.0f);
 	std::ifstream istream(filename);
 
+	if(!istream.is_open())
+		throw std::runtime_error("file not found: " + filename);
+
 	for(auto& cval : mean_normalization_vector)
 		istream >> cval;
 	for(auto& cval : stddev_normalization_vector)
