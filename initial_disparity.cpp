@@ -603,7 +603,11 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 	}
 
 	if(config.verbose)
+	{
 		matstore.setRegionContainer(left, right);
+		matstore.addMat(disparity_left, "disp_left");
+		matstore.addMat(disparity_right, "disp_right");
+	}
 
 	return std::make_pair(disparity_left, disparity_right);
 }

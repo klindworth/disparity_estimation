@@ -326,12 +326,12 @@ void ml_region_optimizer::reset_internal()
 	samples_left.clear();
 	samples_right.clear();
 
-	const int crange = 192;
+	const int crange = 164;
 	int dims = crange * vector_size_per_disp*2+vector_size;
 	nnet = std::unique_ptr<neural_network<double>>(new neural_network<double>(dims));
 	nnet->emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
 	nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<vector_connected_layer>(3, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	nnet->emplace_layer<vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
 	nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<fully_connected_layer>(crange);
 	nnet->emplace_layer<relu_layer>();
@@ -378,7 +378,7 @@ void gather_normalizers(std::vector<std::vector<T>>& data, std::vector<T>& mean_
 
 void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename)
 {
-	int crange = 192;
+	int crange = 164;
 
 	std::cout << "start actual training" << std::endl;
 
@@ -417,8 +417,8 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	//neural_network<double> net (dims, crange, {dims, dims});
 	assert(dims == (ml_region_optimizer::vector_size_per_disp*2*crange)+ml_region_optimizer::vector_size);
 	neural_network<double> net(dims);
-	//net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	net.emplace_layer<relu_layer>();
 	net.emplace_layer<vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
@@ -426,7 +426,7 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 
-	net.training(samples, samples_gt, 64, 20, 4);
+	net.training(samples, samples_gt, 64, 61, 4);
 
 	std::ofstream ostream(filename);
 	ostream.precision(17);

@@ -45,6 +45,7 @@ public:
 	cv::Mat X, Y, XY;
 };
 
+//TODO: check bins boundaries in non-soft case: likely to be broken
 
 template<typename result_type, typename counter_type, typename entropytable_type>
 inline result_type calculate_joint_entropy_unnormalized(counter_type& counter, const entropytable_type& entropy_table, int bins)

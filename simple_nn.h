@@ -761,12 +761,12 @@ std::istream& operator>>(std::istream& stream, neural_network<T>& net)
 }
 
 template<typename T>
-class vector_connected_layer : public layer_base<T>
+class transpose_vector_connected_layer : public layer_base<T>
 {
 public:
-	vector_connected_layer(bool propagate_down, int in_dim, int out_dim, int vectorsize, int passthrough) :
+	transpose_vector_connected_layer(bool propagate_down, int in_dim, int out_dim, int vectorsize, int passthrough) :
 		layer_base<T>(propagate_down, in_dim, (in_dim - passthrough)/vectorsize*out_dim + passthrough, vectorsize*out_dim, out_dim), channels_out(out_dim), vectorsize(vectorsize), passthrough(passthrough)
-	{std::cout << "vector connected layer" << std::endl;}
+	{std::cout << "transpose vector connected layer" << std::endl;}
 
 	void forward_propagation(const T* bottom_data) override
 	{
@@ -821,6 +821,79 @@ protected:
 	{
 		for(int i = 0; i < channels_out; ++i)
 			this->abs_renorm(this->weights.begin() + i*vectorsize, this->weights.begin() + (i+1)*vectorsize, 1.0/vectorsize);
+	}
+
+	int channels_out, vectorsize, passthrough;
+};
+
+template<typename T>
+class vector_connected_layer : public layer_base<T>
+{
+public:
+	vector_connected_layer(bool propagate_down, int in_dim, int out_dim, int vectorsize, int passthrough) :
+		layer_base<T>(propagate_down, in_dim, (in_dim - passthrough)/vectorsize*out_dim + passthrough, vectorsize*out_dim, out_dim), channels_out(out_dim), vectorsize(vectorsize), passthrough(passthrough)
+	{std::cout << "vector connected layer" << std::endl;}
+
+	void forward_propagation(const T* bottom_data) override
+	{
+		layer_thread_data<T>& cdata = this->thread_data();
+
+		int channels_in = (this->in_dim - passthrough)/vectorsize;
+
+		//blas_gemm(cdata.output_data.data(), this->weights.data(), false, channels_out, vectorsize, bottom_data, true, channels_in, vectorsize);
+		blas_gemm(cdata.output_data.data(), bottom_data, false, channels_in, vectorsize, this->weights.data(), false, vectorsize, channels_out);
+		T* coutdata = cdata.output_data.data();// + channels_out*channels_in;
+		for(int i = 0; i < channels_in; ++i)
+		{
+			for(int j = 0; j < channels_out; ++j)
+				*coutdata++ += this->bias[j];
+		}
+
+		const T* in_data = &(bottom_data[channels_in*vectorsize]);
+		std::copy(in_data, in_data + passthrough, coutdata);
+		//std::copy(this->output_data.begin(), this->output_data.end(), std::ostream_iterator<T>(std::cout, ", "));
+		//std::cout << std::endl;
+	}
+
+	void backward_propagation(const T* bottom_data, const T* top_gradient) override
+	{
+		layer_thread_data<T>& cdata = this->thread_data();
+
+		int channels_in = (this->in_dim - passthrough)/vectorsize;
+
+		if(this->propagate_down)
+			//blas_gemm(cdata.gradient_data.data(), top_gradient, true, channels_out, channels_in, this->weights.data(), false, channels_out, vectorsize);
+			blas_gemm(cdata.gradient_data.data(), top_gradient, false, channels_in, channels_out, this->weights.data(), true, vectorsize, channels_out);
+		//blas_gemm(cdata.dW.data(), top_gradient, false, channels_out, channels_in, bottom_data, false, channels_in, vectorsize, 1.0, 1.0);
+		blas_gemm(cdata.dW.data(), bottom_data, true, channels_in, vectorsize, top_gradient, false, channels_in, channels_out, 1.0, 1.0);
+
+		/*const T* cgradient = top_gradient;
+		for(int i = 0; i < this->channels_out; ++i)
+		{
+			T sum = 0;
+			for(int j = 0; j < channels_in; ++j)
+				sum += *cgradient++;
+			cdata.dB[i] += sum;
+		}*/
+
+		const T* cgradient = top_gradient;
+		for(int j = 0; j < channels_in; ++j)
+		{
+			for(int i = 0; i < this->channels_out; ++i)
+				cdata.dB[i] += *cgradient++;
+		}
+	}
+
+protected:
+	int in_connectivity() override
+	{
+		return vectorsize;
+	}
+
+	void regularize_weights() override
+	{
+		//for(int i = 0; i < channels_out; ++i)
+			//this->abs_renorm(this->weights.begin() + i*vectorsize, this->weights.begin() + (i+1)*vectorsize, 1.0/vectorsize);
 	}
 
 	int channels_out, vectorsize, passthrough;

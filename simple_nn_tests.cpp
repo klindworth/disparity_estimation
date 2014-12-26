@@ -187,13 +187,36 @@ TEST(SimpleNN, GradientDoubleVectorLayer2)
 }
 
 //void vector_connected_layer_test()
+TEST(SimpleNN, TransposeVectorLayer1)
+{
+	transpose_vector_connected_layer<double> test(true, 7,2,2,1);
+
+	std::vector<double> test_input {1,2,3,4,5,6,7};
+	std::vector<double> expected {3,7,11, 6, 14, 22, 7};
+	std::vector<double> weights {1,1,2,2};
+
+	std::cout << test.get_bias().size() << std::endl;
+	assert(test.get_bias().size() == 2);
+	std::fill(test.get_bias().begin(), test.get_bias().end(), 0.0);
+
+	assert(test.get_weights().size() == weights.size());
+	std::copy(weights.begin(), weights.end(), test.get_weights().begin());
+	test.forward_propagation(test_input.data());
+
+
+	for(std::size_t i = 0; i < expected.size(); ++i)
+		ASSERT_EQ(expected[i], test.output()[i]);
+	std::copy(test.output(), test.output() + 7, std::ostream_iterator<double>(std::cout, ", "));
+	std::cout << std::endl;
+}
+
 TEST(SimpleNN, VectorLayer1)
 {
 	vector_connected_layer<double> test(true, 7,2,2,1);
 
 	std::vector<double> test_input {1,2,3,4,5,6,7};
-	std::vector<double> expected {3,7,11, 6, 14, 22, 7};
-	std::vector<double> weights {1,1,2,2};
+	std::vector<double> expected {3,6,7, 14, 11, 22, 7};
+	std::vector<double> weights {1,2,1,2};
 
 	std::cout << test.get_bias().size() << std::endl;
 	assert(test.get_bias().size() == 2);

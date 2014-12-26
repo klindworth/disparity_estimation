@@ -39,7 +39,10 @@ class region_descriptor
 {
 public:
 	std::vector<region_interval> lineIntervals;
+	neighbor_vector neighbors;
+	cv::Vec3d average_color;
 	cv::Rect bounding_box;
+	cv::Point avg_point;
 
 	//! Returns a cv::Mat with a binary image of the region. The image can be made bigger than actually nedded by setting a margin > 0
 	cv::Mat mask(int margin) const;
@@ -51,10 +54,6 @@ public:
 	int size() const;
 
 	int m_size;
-
-	neighbor_vector neighbors;
-
-	cv::Vec3d average_color;
 };
 
 /**

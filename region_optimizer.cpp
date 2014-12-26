@@ -89,15 +89,16 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	}
 }
 
-disparity_hypothesis_vector::disparity_hypothesis_vector(const std::vector<disparity_region>& base_regions, const std::vector<disparity_region>& match_regions) : base_disparities_cache(base_regions.size()), match_disparities_cache(match_regions.size()), color_cache(base_regions.size())
+disparity_hypothesis_vector::disparity_hypothesis_vector(const std::vector<disparity_region>& base_regions, const std::vector<disparity_region>& match_regions) : base_disparities_cache(base_regions.size()), match_disparities_cache(match_regions.size()), color_cache(base_regions.size()), base_avg_cache(base_regions.size())
 {
 	for(std::size_t i = 0; i < match_regions.size(); ++i)
 		match_disparities_cache[i] = match_regions[i].disparity;
 	for(std::size_t i = 0; i < base_regions.size(); ++i)
+	{
 		base_disparities_cache[i] = base_regions[i].disparity;
-
-	for(std::size_t i = 0; i < base_regions.size(); ++i)
 		color_cache[i] = base_regions[i].average_color;
+		base_avg_cache[i] = base_regions[i].avg_point;
+	}
 }
 
 void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector)
@@ -112,6 +113,36 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	lr_pot_values.resize(range);
 	cost_values.resize(range);
 	rel_cost_values.resize(range);
+
+	std::size_t cidx_left = -1;
+	std::size_t cidx_right = -1;
+	//extract neighbors
+	{
+		assert(baseRegion.neighbors.size() > 0);
+
+		int y_diff_left = std::numeric_limits<int>::max();
+
+		int y_diff_right = std::numeric_limits<int>::max();
+
+		for(const std::pair<std::size_t, std::size_t>& cneigh : baseRegion.neighbors)
+		{
+			int cy_diff = std::abs(baseRegion.avg_point.y - base_avg_cache[cneigh.first].y);
+			if( (baseRegion.avg_point.x > base_avg_cache[cneigh.first].x) && (cy_diff < y_diff_left) )
+			{
+				y_diff_left = cy_diff;
+				cidx_left = cneigh.first;
+			}
+			else if( (baseRegion.avg_point.x < base_avg_cache[cneigh.first].x) && (cy_diff < y_diff_right) )
+			{
+				y_diff_right = cy_diff;
+				cidx_right = cneigh.first;
+			}
+		}
+	}
+	assert(cidx_left >= 0);
+	assert(cidx_right >= 0);
+	short left_neighbor_disp = base_disparities_cache[cidx_left];
+	short right_neighbor_disp = base_disparities_cache[cidx_right];
 
 	//assert(dispRange == range);
 	//occ_avg
@@ -198,9 +229,11 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		*result_ptr++ = neighbor_pot_values[i];
 		*result_ptr++ = lr_pot_values[i];
 		*result_ptr++ = neighbor_color_pot_values[i];
-		//*result_ptr++ = org_size - occ_temp[i].first;
 		*result_ptr++ = (float)occ_temp[i].first / org_size;
-		*result_ptr++ = rel_cost_values[i];
+		//*result_ptr++ = rel_cost_values[i];
+		int hyp_disp = dispMin + i;
+		*result_ptr++ = left_neighbor_disp - hyp_disp;
+		*result_ptr++ = right_neighbor_disp - hyp_disp;
 	}
 	*result_ptr = baseRegion.disparity;
 }

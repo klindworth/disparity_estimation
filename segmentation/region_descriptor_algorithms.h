@@ -122,6 +122,14 @@ cv::Mat_<int> generate_label_matrix(cv::Size size, const std::vector<reg_type>& 
 	return result;
 }
 
+inline cv::Point bounding_middle_point(const cv::Rect& rect)
+{
+	cv::Point res;
+	res.x = rect.width / 2 + rect.x;
+	res.y = rect.height /2 + rect.y;
+	return res;
+}
+
 /**
  * @brief Updates all bounding boxes of region_descriptors in a container
  * @param begin begin Iterator of the container with region_descriptors in it
@@ -158,6 +166,7 @@ void refresh_bounding_boxes(Iterator begin, Iterator end, const cv::Mat_<label_t
 	parallel_region(begin, end, [&](region_descriptor& region){
 		region.bounding_box.width  -= region.bounding_box.x - 1;
 		region.bounding_box.height -= region.bounding_box.y - 1;
+		region.avg_point = bounding_middle_point(region.bounding_box);
 	});
 }
 
