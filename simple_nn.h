@@ -329,48 +329,11 @@ public:
 		{
 			cdata.output_data[i] += this->bias[i];
 		}
-
-		/*const T* cweight = this->weights.data();
-		for(int i = 0; i < this->out_dim; ++i)
-		{
-			T sum = 0;
-			for(int j = 0; j < this->in_dim; ++j)
-				sum += bottom_data[j]* *cweight++;//this->weights[weight_idx++];
-			cdata.output_data[i] = sum + this->bias[i];
-		}*/
-		//std::copy(this->output_data.begin(), this->output_data.end(), std::ostream_iterator<T>(std::cout, ", "));
-		//std::cout << std::endl;
 	}
 
 	void backward_propagation(const T* bottom_data, const T* top_gradient) override
 	{
 		layer_thread_data<T>& cdata = this->thread_data();
-		/*std::cout << "top: ";
-		std::copy(top_gradient, top_gradient + this->out_dim, std::ostream_iterator<T>(std::cout, ", "));
-		std::cout << std::endl;
-		std::cout << "bottom: ";
-		std::copy(bottom_data, bottom_data + this->in_dim, std::ostream_iterator<T>(std::cout, ", "));
-		std::cout << std::endl;*/
-		/*for(int i = 0; i < this->in_dim; ++i)
-		{
-			const T* cweights = &(this->weights[i]);
-			T sum = 0;
-			for(int j = 0; j < this->out_dim; ++j)
-			{
-				sum += *cweights * top_gradient[j];
-				cweights += this->in_dim;
-			}
-			cdata.gradient_data[i] = sum;
-		}*/
-
-		/*const T* cweight = this->weights_transposed.data();
-		for(int i = 0; i < this->in_dim; ++i)
-		{
-			T sum = 0;
-			for(int j = 0; j < this->out_dim; ++j)
-				sum += *cweight++ * top_gradient[j];
-			cdata.gradient_data[i] = sum;
-		}*/
 
 		//propagate down
 		if(this->propagate_down)
@@ -379,21 +342,10 @@ public:
 			blas_gemv(cdata.gradient_data.data(), this->weights_transposed.data(), false, this->in_dim, this->out_dim, top_gradient);
 		}
 
-		/*T* cdw = cdata.dW.data();
-		for(int j = 0; j < this->out_dim; ++j)
-		{
-			T cgradient = top_gradient[j];
-			for(int i = 0; i < this->in_dim; ++i)
-				*cdw++ += cgradient * bottom_data[i];
-		}*/
-
 		blas_ger(cdata.dW.data(), top_gradient, this->out_dim, bottom_data, this->in_dim);
 
 		for(int i = 0; i < this->out_dim; ++i)
 			cdata.dB[i] += top_gradient[i];
-
-		//std::copy(this->gradient_data.begin(), this->gradient_data.end(), std::ostream_iterator<T>(std::cout, ", "));
-		//std::cout << std::endl;
 	}
 };
 
@@ -408,9 +360,6 @@ public:
 	void forward_propagation(const T *bottom_data) override
 	{
 		layer_thread_data<T>& cdata = this->thread_data();
-		/*std::cout << "bottom: ";
-		std::copy(bottom_data, bottom_data + this->in_dim, std::ostream_iterator<T>(std::cout, ", "));
-		std::cout << std::endl;*/
 
 		for(int i = 0; i < this->in_dim; ++i)
 			cdata.output_data[i] = std::max(bottom_data[i], static_cast<T>(0));
@@ -866,15 +815,6 @@ public:
 			blas_gemm(cdata.gradient_data.data(), top_gradient, false, channels_in, channels_out, this->weights.data(), true, vectorsize, channels_out);
 		//blas_gemm(cdata.dW.data(), top_gradient, false, channels_out, channels_in, bottom_data, false, channels_in, vectorsize, 1.0, 1.0);
 		blas_gemm(cdata.dW.data(), bottom_data, true, channels_in, vectorsize, top_gradient, false, channels_in, channels_out, 1.0, 1.0);
-
-		/*const T* cgradient = top_gradient;
-		for(int i = 0; i < this->channels_out; ++i)
-		{
-			T sum = 0;
-			for(int j = 0; j < channels_in; ++j)
-				sum += *cgradient++;
-			cdata.dB[i] += sum;
-		}*/
 
 		const T* cgradient = top_gradient;
 		for(int j = 0; j < channels_in; ++j)
