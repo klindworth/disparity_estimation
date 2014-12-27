@@ -37,6 +37,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/lexical_cast.hpp>
 #include "simple_nn.h"
 
+#include "debugmatstore.h"
+
 void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& optimization_vectors, const region_container& base, const region_container& match, int delta)
 {
 	cv::Mat disp = disparity_by_segments(base);
@@ -307,14 +309,20 @@ void ml_region_optimizer::run(region_container& left, region_container& right, c
 		region_ground_truth(left.regions, left.task.groundTruth, std::back_inserter(gt));
 
 		result_eps_calculator diff_calc;
+		cv::Mat_<unsigned char> diff_image(left.image_size, 0);
 		for(std::size_t i = 0; i < left.regions.size(); ++i)
 		{
 			if(gt[i] != 0)
 			{
 				diff_calc(gt[i], left.regions[i].disparity);
 				total_diff_calc(gt[i], left.regions[i].disparity);
+
+				intervals::set_region_value<unsigned char>(diff_image, left.regions[i].lineIntervals, std::abs(std::abs(gt[i]) - std::abs(left.regions[i].disparity)));
 			}
 		}
+
+		matstore.addMat(diff_image, "gt_diff");
+
 
 		std::cout << diff_calc << std::endl;
 		std::cout << total_diff_calc << std::endl;
@@ -331,7 +339,9 @@ void ml_region_optimizer::reset_internal()
 	nnet = std::unique_ptr<neural_network<double>>(new neural_network<double>(dims));
 	nnet->emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
 	nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	nnet->emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	nnet->emplace_layer<relu_layer>();
+	nnet->emplace_layer<transpose_vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
 	nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<fully_connected_layer>(crange);
 	nnet->emplace_layer<relu_layer>();
@@ -344,7 +354,7 @@ ml_region_optimizer::ml_region_optimizer()
 	nnet = nullptr;
 
 	reset_internal();
-	training_iteration = 0;
+	training_iteration = 3;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
 }
@@ -419,7 +429,9 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	neural_network<double> net(dims);
 	net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
 	net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<transpose_vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<relu_layer>();

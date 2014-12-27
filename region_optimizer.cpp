@@ -144,6 +144,9 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	short left_neighbor_disp = base_disparities_cache[cidx_left];
 	short right_neighbor_disp = base_disparities_cache[cidx_right];
 
+	if(dispMin < 0)
+		std::swap(left_neighbor_disp, right_neighbor_disp);
+
 	//assert(dispRange == range);
 	//occ_avg
 	segment_boxfilter(occ_temp, occmap, baseRegion.lineIntervals, dispStart, dispEnd);
