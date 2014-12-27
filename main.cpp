@@ -142,8 +142,8 @@ int main(int argc, char *argv[])
 	//RGB tasks
 	//StereoTask testset("tasks/im2rgb");
 	//folder_testset testset("tasks/kitti-training_small");
-	folder_testset testset("tasks/kitti-training_small-valid");
-	//folder_testset testset("tasks/kitti-training_debug");
+	//folder_testset testset("tasks/kitti-training_small-valid");
+	folder_testset testset("tasks/kitti-training_debug");
 	//StereoTask testset("tasks/kit3"); //5, 3 neuer problemfall?
 
 	//simulated (hard) tasks
@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
 		optimizer = std::make_shared<ml_region_optimizer>();
 	initial_disparity_algo algo(config, refconfig, optimizer);
 
-	bool training = false;
+	bool training = true;
 	if(training)
 	{
 		algo.train(testset.tasks);

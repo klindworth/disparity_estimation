@@ -89,7 +89,7 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	}
 }
 
-disparity_hypothesis_vector::disparity_hypothesis_vector(const std::vector<disparity_region>& base_regions, const std::vector<disparity_region>& match_regions) : base_disparities_cache(base_regions.size()), match_disparities_cache(match_regions.size()), color_cache(base_regions.size()), base_avg_cache(base_regions.size())
+disparity_hypothesis_vector::disparity_hypothesis_vector(const std::vector<disparity_region>& base_regions, const std::vector<disparity_region>& match_regions) : base_avg_cache(base_regions.size()), base_disparities_cache(base_regions.size()), match_disparities_cache(match_regions.size()), color_cache(base_regions.size())
 {
 	for(std::size_t i = 0; i < match_regions.size(); ++i)
 		match_disparities_cache[i] = match_regions[i].disparity;
@@ -114,8 +114,8 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	cost_values.resize(range);
 	rel_cost_values.resize(range);
 
-	std::size_t cidx_left = -1;
-	std::size_t cidx_right = -1;
+	int cidx_left = -1;
+	int cidx_right = -1;
 	//extract neighbors
 	{
 		assert(baseRegion.neighbors.size() > 0);
@@ -139,10 +139,9 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 			}
 		}
 	}
-	assert(cidx_left >= 0);
-	assert(cidx_right >= 0);
-	short left_neighbor_disp = base_disparities_cache[cidx_left];
-	short right_neighbor_disp = base_disparities_cache[cidx_right];
+
+	short left_neighbor_disp  = cidx_left >= 0 ? base_disparities_cache[cidx_left] : baseRegion.disparity;
+	short right_neighbor_disp = cidx_right >= 0 ? base_disparities_cache[cidx_right] : baseRegion.disparity;
 
 	if(dispMin < 0)
 		std::swap(left_neighbor_disp, right_neighbor_disp);

@@ -839,4 +839,79 @@ protected:
 	int channels_out, vectorsize, passthrough;
 };
 
+template<typename T>
+class row_connected_layer : public layer_base<T>
+{
+public:
+	row_connected_layer(bool propagate_down, int in_dim, int out_dim, int vectorsize, int passthrough) :
+		layer_base<T>(propagate_down, in_dim, (in_dim - passthrough)/vectorsize*out_dim + passthrough, (in_dim - passthrough)*out_dim, (in_dim - passthrough)/vectorsize*out_dim), vectorsize(vectorsize), passthrough(passthrough), per_row_output(out_dim)
+	{std::cout << "row connected layer" << std::endl;}
+
+	void forward_propagation(const T* bottom_data) override
+	{
+		layer_thread_data<T>& cdata = this->thread_data();
+
+		const int row_count = (this->in_dim - passthrough)/vectorsize;
+		const int regular_output = per_row_output * row_count;
+
+		for(int i = 0; i < row_count; ++i)
+		{
+			int offset = i*vectorsize;
+			blas_gemv(cdata.output_data.data() + i*per_row_output, this->weights.data() + offset*per_row_output, false, per_row_output, vectorsize, bottom_data+offset);
+		}
+
+
+		for(int i = 0; i < regular_output; ++i)
+		{
+			cdata.output_data[i] += this->bias[i];
+		}
+
+		const T* in_data = &(bottom_data[regular_output]);
+		std::copy(in_data, in_data + passthrough, cdata.output_data.data() + regular_output);
+		//std::copy(this->output_data.begin(), this->output_data.end(), std::ostream_iterator<T>(std::cout, ", "));
+		//std::cout << std::endl;
+	}
+
+	void backward_propagation(const T* bottom_data, const T* top_gradient) override
+	{
+		layer_thread_data<T>& cdata = this->thread_data();
+
+		const int row_count = (this->in_dim - passthrough)/vectorsize;
+		const int regular_output = per_row_output * row_count;
+
+		//propagate down
+		if(this->propagate_down)
+		{
+			for(int i = 0; i < row_count; ++i)
+			{
+				int offset = i * vectorsize;
+				blas_gemv(cdata.gradient_data.data()+offset, this->weights.data()+offset*per_row_output, true, per_row_output, vectorsize, top_gradient + i*per_row_output);
+			}
+		}
+
+		for(int i = 0; i < row_count; ++i)
+		{
+			int offset = i * vectorsize;
+			blas_ger(cdata.dW.data() + offset*per_row_output, top_gradient+i*per_row_output, per_row_output, bottom_data + offset, vectorsize);
+		}
+
+		for(int i = 0; i < regular_output; ++i)
+			cdata.dB[i] += top_gradient[i];
+	}
+
+protected:
+	int in_connectivity() override
+	{
+		return vectorsize;
+	}
+
+	void regularize_weights() override
+	{
+		//for(int i = 0; i < channels_out; ++i)
+			//this->abs_renorm(this->weights.begin() + i*vectorsize, this->weights.begin() + (i+1)*vectorsize, 1.0/vectorsize);
+	}
+
+	int vectorsize, passthrough, per_row_output;
+};
+
 #endif // SIMPLE_NN_H
