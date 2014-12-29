@@ -518,7 +518,7 @@ public:
 		layers.back()->init_weights();
 	}
 
-	void test(const std::vector<std::vector<T>>& data, const std::vector<short>& gt)
+	float test(const std::vector<std::vector<T>>& data, const std::vector<short>& gt)
 	{
 		assert(data.size() == gt.size());
 
@@ -540,6 +540,7 @@ public:
 		}
 
 		std::cout << "result: " << (float)correct/data.size() << ", approx5: " << (float)approx_correct/data.size() << ", approx10: " << (float)approx_correct2/data.size() << std::endl;
+		return (float)correct/data.size();
 	}
 
 	std::vector<T> output(const T* data)
@@ -630,9 +631,10 @@ public:
 			clayer->set_phase(layer_base<T>::phase::Testing);
 	}
 
-	void training(const std::vector<std::vector<T>>& data, const std::vector<short>& gt, std::size_t batch_size, std::size_t epochs, std::size_t training_error_calculation)
+	void training(const std::vector<std::vector<T>>& data, const std::vector<short>& gt, std::size_t batch_size, std::size_t epochs, std::size_t training_error_calculation, bool reset_weights = true)
 	{
-		this->reset_weights();
+		if(reset_weights)
+			this->reset_weights();
 		for(std::size_t i = 0; i < epochs; ++i)
 		{
 			std::cout << "epoch: " << i << std::endl;
@@ -640,7 +642,14 @@ public:
 			if(training_error_calculation != 0)
 			{
 				if(i % training_error_calculation == 0)
-					test(data, gt);
+				{
+					float res = test(data, gt);
+					if(i > 7 && res < 0.10)
+					{
+						this->reset_weights();
+						i = 0;
+					}
+				}
 			}
 		}
 	}
@@ -912,6 +921,41 @@ protected:
 	}
 
 	int vectorsize, passthrough, per_row_output;
+};
+
+template<typename T>
+class vector_extension_layer : public layer_base<T>
+{
+public:
+	vector_extension_layer(bool propagate_down, int in_dim, int old_vectorsize, int vec_extension) :
+		layer_base<T>(propagate_down, in_dim, (in_dim - vec_extension)/old_vectorsize*(old_vectorsize+vec_extension), 0, 0), old_vectorsize(old_vectorsize), vector_extension(vec_extension)
+	{std::cout << "vector extension layer" << std::endl; assert(!propagate_down);}
+
+	void forward_propagation(const T* bottom_data) override
+	{
+		layer_thread_data<T>& cdata = this->thread_data();
+
+		int vector_count = (this->in_dim - vector_extension)/old_vectorsize;
+		const T* extension_data = bottom_data + vector_count*old_vectorsize;
+		const T* old_data = bottom_data;
+		T* new_data = cdata.output_data.data();
+
+		for(int i = 0; i < vector_count; ++i)
+		{
+			std::copy(old_data, old_data + old_vectorsize, new_data);
+			new_data += old_vectorsize;
+			std::copy(extension_data, extension_data + vector_extension, new_data);
+			new_data += vector_extension;
+			old_data += old_vectorsize;
+		}
+	}
+
+	void backward_propagation(const T*, const T*) override
+	{
+	}
+
+protected:
+	int old_vectorsize, vector_extension;
 };
 
 #endif // SIMPLE_NN_H

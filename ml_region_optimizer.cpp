@@ -336,17 +336,30 @@ void ml_region_optimizer::reset_internal()
 
 	const int crange = 164;
 	int dims = crange * vector_size_per_disp*2+vector_size;
+	int nvector = ml_region_optimizer::vector_size_per_disp + ml_region_optimizer::vector_size;
 	nnet = std::unique_ptr<neural_network<double>>(new neural_network<double>(dims));
-	nnet->emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	nnet->emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	nnet->emplace_layer<vector_connected_layer>(nvector, nvector, 0);
+	nnet->emplace_layer<relu_layer>();
+	nnet->emplace_layer<vector_connected_layer>(nvector*2, nvector*2, 0);
+	nnet->emplace_layer<relu_layer>();
+	nnet->emplace_layer<transpose_vector_connected_layer>(4, nvector*2, 0);
+	nnet->emplace_layer<relu_layer>();
+	nnet->emplace_layer<fully_connected_layer>(crange);
+	nnet->emplace_layer<softmax_output_layer>();
+
+	/*nnet->emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
 	nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
 	nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<transpose_vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
 	nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<fully_connected_layer>(crange);
+	nnet->emplace_layer<row_connected_layer>(crange, crange, ml_region_optimizer::vector_size);
 	nnet->emplace_layer<relu_layer>();
+	//nnet->emplace_layer<fully_connected_layer>(crange);
+	//nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<fully_connected_layer>(crange);
-	nnet->emplace_layer<softmax_output_layer>();
+	nnet->emplace_layer<softmax_output_layer>();*/
 }
 
 ml_region_optimizer::ml_region_optimizer()
@@ -386,7 +399,7 @@ void gather_normalizers(std::vector<std::vector<T>>& data, std::vector<T>& mean_
 		val = 1.0 / std::sqrt(val);
 }
 
-void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename)
+void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename, int iteration)
 {
 	int crange = 164;
 
@@ -427,16 +440,33 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	//neural_network<double> net (dims, crange, {dims, dims});
 	assert(dims == (ml_region_optimizer::vector_size_per_disp*2*crange)+ml_region_optimizer::vector_size);
 	neural_network<double> net(dims);
-	net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+
+	/*if(iteration > 0)
+	{
+		//load old weights as init?
+		std::ifstream istream(filename);
+
+		/*if(!istream.is_open())
+			throw std::runtime_error("file not found: " + filename);
+
+		for(auto& cval : mean_normalization_vector)
+			istream >> cval;
+		for(auto& cval : stddev_normalization_vector)
+			istream >> cval;
+	}*/
+
+	int nvector = ml_region_optimizer::vector_size_per_disp + ml_region_optimizer::vector_size;
+	net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	net.emplace_layer<vector_connected_layer>(nvector, nvector, 0);
 	net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, 0);
 	net.emplace_layer<relu_layer>();
-	net.emplace_layer<transpose_vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
+	net.emplace_layer<transpose_vector_connected_layer>(4, nvector*2, 0);
 	net.emplace_layer<relu_layer>();
-	net.emplace_layer<row_connected_layer>(crange, crange, ml_region_optimizer::vector_size);
+	net.emplace_layer<row_connected_layer>(crange, crange, 0);
 	net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(crange);
-	net.emplace_layer<relu_layer>();
+	//net.emplace_layer<fully_connected_layer>(crange);
+	//net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 
@@ -455,6 +485,6 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 
 void ml_region_optimizer::training()
 {
-	training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + ".txt");
-	training_internal(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + ".txt");
+	training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + ".txt", training_iteration);
+	training_internal(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + ".txt", training_iteration);
 }
