@@ -31,6 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "slidingEntropy.h"
 #include "costmap_creators.h"
 #include "stereotask.h"
+#include "disparity_region.h"
 
 #include "debugmatstore.h"
 
@@ -62,34 +63,21 @@ typedef std::function<cv::Mat(cv::Mat& initial_disparity, single_stereo_task& ta
 
 
 template<typename cost_func, int quantizer>
-cv::Mat refineInitialDisparity(cv::Mat& initial_disparity, single_stereo_task& task, cv::Mat base_quant, cv::Mat match_quant, region_container& container, const RefinementConfig& config)
+cv::Mat refine_initial_disparity(cv::Mat& initial_disparity, single_stereo_task& task, cv::Mat base, cv::Mat match, region_container& container, const RefinementConfig& config)
 {
 	std::cout << "windows" << std::endl;
 
-	float entropy_threshold = 0.99f; //0.93f;
-	//cv::Mat sizes  = findWindowSizeEntropy(base_quant, container.labels, entropy_threshold, config.min_windowsize, config.max_windowsize, container.regions, compareEntropies<quantizer>); //0.93
-	cv::Mat sizes  = findWindowSizeEntropy(base_quant, container.labels, entropy_threshold, config.min_windowsize, config.max_windowsize, container.regions, compareLabels); //0.93
-
-	//cv::Mat sizes = findWindowSize(labels, 0.75f, 7,71);
-	//cv::Mat sizes = findWindowSize(labels, 0.75f, 7,71, regions, countLabels2);
-	//cv::Mat sizes = findWindowSize(labels, 0.75f, 7,71, regions, countLabelsDisp);
+	cv::Mat_<cv::Vec2b> sizes  = adaptive_window_size(base, container.labels, config.entropy_threshold, config.min_windowsize, config.max_windowsize, container.regions);
 
 	std::cout << "windows finished" << std::endl;
 
 	showWindowSizes(sizes);
 
 	long long start = cv::getCPUTickCount();
-	//cv::Mat test = slidingParametricJointWindow<slidingSoftJointEntropyInternalFlex<61,8>>(left_quant, right_quant, dispMin, dispMax, sizes);
-	//cv::Mat test  = slidingParametricJointWindowFlex<slidingSoftJointEntropyInternalFlex<max_windowsize,quantizer>>(left_quant, right_quant, sizes,  initial_disp_left,  deltaDisp, task.forward.dispMin,  task.forward.dispMax);
-	//cv::Mat test2 = slidingParametricJointWindowFlex<slidingSoftJointEntropyInternalFlex<max_windowsize,quantizer>>(right_quant, left_quant, sizes2, initial_disp_right, deltaDisp, task.backward.dispMin, task.backward.dispMax);
-	cv::Mat costmap  = costmap_creators::slidingParametricJointWindowFlex<cost_func>(base_quant, match_quant, sizes, initial_disparity, config.deltaDisp, task.dispMin, task.dispMax, config.min_windowsize, config.max_windowsize);
+	cv::Mat costmap  = costmap_creators::slidingParametricJointWindowFlex<cost_func>(base, match, sizes, initial_disparity, config.deltaDisp, task.dispMin, task.dispMax, config.min_windowsize, config.max_windowsize);
 	//cv::Mat costmap = scaleDisparity<cost_func,quantizer>(task, task.baseGray, task.matchGray, config, sizes, initial_disparity);
 	start = cv::getCPUTickCount() - start;
 	std::cout << "varwindow: " << start << std::endl;
-	matstore.addMat(task,  costmap,  "parawindow",  11, sizes, initial_disparity);
-
-	//return std::make_pair(baseCostmap, matchCostmap);
-	//return std::make_pair(cv::Mat(), cv::Mat());
 	return costmap;
 }
 

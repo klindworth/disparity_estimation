@@ -25,9 +25,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "window_size.h"
 
-#include "slidingEntropy.h"
 #include "genericfunctions.h"
 #include "debugmatstore.h"
+#include "disparity_region.h"
 
 void showWindowSizes(cv::Mat& sizes)
 {
@@ -73,48 +73,49 @@ inline float countLabelsDisp(cv::Mat window, int clabel, const std::vector<dispa
 	return std::max(1.0f-disp_error/(float)total, 0.0f);
 }
 
-inline float compareEntropies_old(cv::Mat_<float>& log_table, cv::Mat label_window, int clabel, const std::vector<disparity_region>& regions, cv::Mat img_window)
+inline float compare_disparity(const cv::Mat& plabel_window, int clabel, const std::vector<disparity_region>& regions, const cv::Mat&)
 {
-	assert(label_window.total() == img_window.total());
-	fast_array<unsigned short, 34> counter_own, counter_foreign;
-
+	cv::Mat label_window = plabel_window.clone();
+	assert(label_window.isContinuous());
 	int cdisparity = regions[clabel].disparity;
-	int* csubwindow_ptr = label_window.ptr<int>(0);
-	unsigned char* cimg_window_ptr = img_window.data;
+	const int* csubwindow_ptr = label_window.ptr<int>(0);
+	const unsigned short totalpixel = label_window.cols*label_window.rows;
 
-	for(int i = 0; i < label_window.cols*label_window.rows; ++i)
+	const int trunc = 3;
+	std::array<int, trunc+1> label_counter;
+	std::fill(label_counter.begin(), label_counter.end(), 0);
+
+	for(unsigned short i = 0; i < totalpixel; ++i)
 	{
 		int current_label = *csubwindow_ptr++;
-		unsigned char current_pixel = 1 + *cimg_window_ptr++;
+		unsigned char disp_dev = std::min(std::abs(regions[current_label].disparity - cdisparity), trunc);
 
-		if(std::abs(regions[current_label].disparity - cdisparity) > 2)
-			counter_foreign(current_pixel)++;
-		else
-			counter_own(current_pixel)++;
+		assert(disp_dev >= 0 && disp_dev <= trunc);
+		++(label_counter[disp_dev]);
 	}
-
-	float entropy_own = std::max(costmap_creators::entropy::calculate_entropy_unnormalized<float>(counter_own, log_table, 32), std::numeric_limits<float>::min());
-	float entropy_foreign = std::max(costmap_creators::entropy::calculate_entropy_unnormalized<float>(counter_foreign, log_table, 32), std::numeric_limits<float>::min());
-
-	return entropy_own/entropy_foreign;
+	int pos_labels = 3*label_counter[0]+2*label_counter[1]+label_counter[2];
+	int total = pos_labels+3*label_counter[3];
+	return pos_labels/(float)total;
 }
 
-cv::Mat findWindowSizeEntropy(const cv::Mat& image, const cv::Mat& labels, const float& threshold, const int& minsize, const int& maxsize, const std::vector<disparity_region>& regions, std::function<float(cv::Mat_<float>&, cv::Mat, int, const std::vector<disparity_region>&, cv::Mat)> func)
-{
-	cv::Mat_<float> log_table;
-	costmap_creators::entropy::fill_entropytable_unnormalized(log_table, maxsize*maxsize);
 
-	cv::Mat result = cv::Mat::zeros(labels.size(), CV_8UC2);
+template<typename lambda_type>
+cv::Mat_<cv::Vec2b> adaptive_window_size(const cv::Mat& image, const cv::Mat_<int>& labels, float threshold, int minsize, int maxsize, const std::vector<disparity_region>& regions, lambda_type func)
+{
+	assert(minsize > 0);
+	assert(maxsize > 0);
+
+	cv::Mat_<cv::Vec2b> result = cv::Mat::zeros(labels.size(), CV_8UC2);
 	const int onesidesizeMin = (minsize-1)/2;
 	const int onesidesizeMax = (maxsize-1)/2;
-    #pragma omp parallel for default(none) shared(labels, image, result, regions, threshold, log_table, func, minsize, maxsize)
+	#pragma omp parallel for default(none) shared(labels, image, result, regions, threshold, func, minsize, maxsize)
 	for(int y = onesidesizeMin; y < labels.rows - onesidesizeMin; ++y)
 	{
 		int lastWindowSize = onesidesizeMin*2+1;
 
 		for(int x = onesidesizeMin; x < labels.cols - onesidesizeMin; ++x)
 		{
-			int clabel = labels.at<int>(y,x);
+			int clabel = labels(y,x);
 			int maxposs = std::min( std::min(labels.cols - x-1, labels.rows - y-1), onesidesizeMax );
 			maxposs = std::min( maxposs, std::min( std::min(y-1, x-1), onesidesizeMax ) );
 
@@ -127,14 +128,14 @@ cv::Mat findWindowSizeEntropy(const cv::Mat& image, const cv::Mat& labels, const
 
 			while(true)
 			{
-				float measured = func(log_table, subwindow(labels, x,y, windowsizeX, windowsizeY), clabel, regions, subwindow(image, x,y, windowsizeX, windowsizeY));
+				float measured = func(subwindow(labels, x,y, windowsizeX, windowsizeY), clabel, regions, subwindow(image, x,y, windowsizeX, windowsizeY));
 				if(grow)
 				{
 					if(measured < threshold)
 					{
 						//shrink each direction seperatly
-						float measured_altY = func(log_table, subwindow(labels, x,y, windowsizeX, windowsizeY-2), clabel, regions, subwindow(image, x,y, windowsizeX, windowsizeY-2));
-						float measured_altX = func(log_table, subwindow(labels, x,y, windowsizeX-2, windowsizeY), clabel, regions, subwindow(image, x,y, windowsizeX-2, windowsizeY));
+						float measured_altY = func(subwindow(labels, x,y, windowsizeX, windowsizeY-2), clabel, regions, subwindow(image, x,y, windowsizeX, windowsizeY-2));
+						float measured_altX = func(subwindow(labels, x,y, windowsizeX-2, windowsizeY), clabel, regions, subwindow(image, x,y, windowsizeX-2, windowsizeY));
 
 						if(measured_altY > threshold)
 							windowsizeY -= 2;
@@ -166,56 +167,14 @@ cv::Mat findWindowSizeEntropy(const cv::Mat& image, const cv::Mat& labels, const
 				}
 			}
 			lastWindowSize = std::min(windowsizeX, windowsizeY);
-			result.at<cv::Vec2b>(y,x) = cv::Vec2b(std::max(windowsizeY, minsize), std::max(windowsizeX, minsize));
+			result(y,x) = cv::Vec2b(std::max(windowsizeY, minsize), std::max(windowsizeX, minsize));
 		}
 	}
 
 	return result;
 }
 
-cv::Mat findWindowSize(cv::Mat& labels, const float& threshold, const int& minsize, const int& maxsize, const std::vector<disparity_region>& regions, std::function<float(cv::Mat, int, const std::vector<disparity_region>& regions)> func)
+cv::Mat_<cv::Vec2b> adaptive_window_size(const cv::Mat& image, const cv::Mat_<int>& labels, float threshold, int minsize, int maxsize, const std::vector<disparity_region>& regions)
 {
-	cv::Mat result = cv::Mat::zeros(labels.size(), CV_8UC2);
-	const int onesidesizeMin = (minsize-1)/2;
-	const int onesidesizeMax = (maxsize-1)/2;
-	for(int y = onesidesizeMin; y < labels.rows - onesidesizeMin; ++y)
-	{
-		for(int x = onesidesizeMin; x < labels.cols - onesidesizeMin; ++x)
-		{
-			int windowsizeX = onesidesizeMin*2+1;
-			int windowsizeY = onesidesizeMin*2+1;
-			int clabel = labels.at<int>(y,x);
-			int maxposs = std::min( std::min(labels.cols - x-1, labels.rows - y-1), onesidesizeMax );
-			maxposs = std::min( maxposs, std::min( std::min(y-1, x-1), onesidesizeMax ) );
-
-			for(int i = onesidesizeMin; i <= maxposs; ++i)
-			{
-				float labelcount = func(subwindow(labels, x,y, windowsizeX, windowsizeY).clone(), clabel, regions);
-				if(labelcount < threshold)
-				{
-					//shrink each direction seperatly
-					labelcount = func(subwindow(labels, x,y, windowsizeX, windowsizeY-2).clone(), clabel, regions);
-					float labelcount2 = func(subwindow(labels, x,y, windowsizeX-2, windowsizeY).clone(), clabel, regions);
-
-					if(labelcount > threshold)
-						windowsizeY -= 2;
-					else if(labelcount2 > threshold)
-						windowsizeX -= 2;
-					else {
-						windowsizeX -= 2;
-						windowsizeY -= 2;
-						break;
-					}
-				}
-				if(i != maxposs)
-				{
-					windowsizeX += 2;
-					windowsizeY += 2;
-				}
-			}
-			result.at<cv::Vec2b>(y,x) = cv::Vec2b(std::max(windowsizeY, minsize), std::max(windowsizeX, minsize));
-		}
-	}
-	return result;
+	return adaptive_window_size(image, labels, threshold, minsize, maxsize, regions, compare_disparity);
 }
-

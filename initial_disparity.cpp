@@ -515,7 +515,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 		//disparity_function = calculate_relaxed_region_generic<sad_disparitywise_calculator>;
 		task.algoLeft = task.left;
 		task.algoRight = task.right;
-		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
+		ref_func = refine_initial_disparity<refinement_metric, quantizer>;
 	}
 	else if(config.metric_type == "sncc")
 	{
@@ -524,7 +524,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 		disparity_function = calculate_relaxed_region_generic<sncc_disparitywise_calculator>;
 		task.algoLeft = task.leftGray;
 		task.algoRight = task.rightGray;
-		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
+		ref_func = refine_initial_disparity<refinement_metric, quantizer>;
 	}
 	else
 	{
@@ -539,7 +539,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 		disparity_function = calculate_region_disparity_regionwise<disparity_metric>;
 		task.algoLeft  = quantizeImage(task.leftGray, quantizer);
 		task.algoRight = quantizeImage(task.rightGray, quantizer);
-		ref_func = refineInitialDisparity<refinement_metric, quantizer>;
+		ref_func = refine_initial_disparity<refinement_metric, quantizer>;
 	}
 
 	std::shared_ptr<region_container> left  = std::make_shared<region_container>();
