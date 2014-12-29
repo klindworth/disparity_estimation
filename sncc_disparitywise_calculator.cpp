@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 sncc_disparitywise_calculator::sncc_disparitywise_calculator(const cv::Mat& pbase, const cv::Mat& pmatch)
 {
-	long long start = cv::getCPUTickCount();
+	//long long start = cv::getCPUTickCount();
 	cv::Size box_size(3,3);
 
 	cv::Mat_<float> base_float_org;
@@ -64,7 +64,7 @@ sncc_disparitywise_calculator::sncc_disparitywise_calculator(const cv::Mat& pbas
 
 	cache = std::vector<sncc_task_cache>(omp_get_max_threads(), sncc_task_cache(pbase.cols));
 
-	std::cout << "init: " << cv::getCPUTickCount() - start << std::endl;
+	//std::cout << "init: " << cv::getCPUTickCount() - start << std::endl;
 }
 
 inline void prepare_line(float *temp, const float* base, const float* match, int cols)

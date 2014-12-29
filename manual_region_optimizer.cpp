@@ -109,17 +109,17 @@ void manual_region_optimizer::run(region_container &left, region_container &righ
 	{
 		std::cout << "optimization round" << std::endl;
 		optimize(damping_history_left, optimization_vectors_left, optimization_vectors_right, left, right, config.base_eval, config.prop_eval, refinement);
-		refreshWarpedIdx(left);
+		refresh_warped_regions(left);
 		optimize(damping_history_right, optimization_vectors_right, optimization_vectors_left, right, left, config.base_eval, config.prop_eval, refinement);
-		refreshWarpedIdx(right);
+		refresh_warped_regions(right);
 	}
 	for(int i = 0; i < config.rounds; ++i)
 	{
 		std::cout << "optimization round2" << std::endl;
 		optimize(damping_history_left, optimization_vectors_left, optimization_vectors_right, left, right, config.base_eval2, config.prop_eval2, refinement);
-		refreshWarpedIdx(left);
+		refresh_warped_regions(left);
 		optimize(damping_history_right, optimization_vectors_right, optimization_vectors_left, right, left, config.base_eval2, config.prop_eval2, refinement);
-		refreshWarpedIdx(right);
+		refresh_warped_regions(right);
 	}
 	if(config.rounds == 0)
 	{

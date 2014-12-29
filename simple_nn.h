@@ -592,6 +592,8 @@ public:
 	void training_sample(const T* data, short gt_idx)
 	{
 		assert(gt_idx >= 0 && gt_idx < out_dim);
+		if(gt_idx < 0 || gt_idx >= out_dim)
+			throw std::runtime_error("invalid ground truth value");
 		std::vector<T> gt(out_dim, 0.0);
 		gt[gt_idx] = 1.0;
 

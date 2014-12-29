@@ -31,9 +31,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace costmap_creators
 {
-
+namespace sliding_window
+{
 template<typename cost_class>
-cv::Mat sliding_joint_fixed_windowsize(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, unsigned int windowsize)
+cv::Mat joint_fixed_size(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, unsigned int windowsize)
 {
 	int disparityRange = dispMax - dispMin + 1;
 
@@ -79,7 +80,7 @@ cv::Mat sliding_joint_fixed_windowsize(const cv::Mat& base, const cv::Mat& match
 }
 
 template<typename cost_class>
-cv::Mat sliding_joint_flexible_windowsize(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, const cv::Mat& windowsizes)
+cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, const cv::Mat& windowsizes)
 {
 	int min_windowsize = 7;
 	int disparityRange = dispMax - dispMin + 1;
@@ -133,7 +134,7 @@ cv::Mat sliding_joint_flexible_windowsize(const cv::Mat& base, const cv::Mat& ma
 
 //berechnet fuer subranges die disparitaet. disp*_comp gibt den gesamten Bereich an, rangeCenter-/+dispRange/2 den Teilbereich
 template<typename cost_class>
-cv::Mat slidingParametricJointWindowFlex(const cv::Mat& base, const cv::Mat& match, const cv::Mat& windowsizes, const cv::Mat& rangeCenter, int disparityRange, int dispMin_comp, int dispMax_comp, unsigned int min_windowsize, unsigned int max_windowsize)
+cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat& match, const cv::Mat& windowsizes, const cv::Mat& rangeCenter, int disparityRange, int dispMin_comp, int dispMax_comp, unsigned int min_windowsize, unsigned int max_windowsize)
 {
 	typedef float prob_table_type;
 	int sz[] = {base.rows, base.cols, disparityRange};
@@ -194,74 +195,7 @@ cv::Mat slidingParametricJointWindowFlex(const cv::Mat& base, const cv::Mat& mat
 
 	return cost_map;
 }
-
-/*//berechnet fuer subranges die disparitaet
-template<typename cost_class>
-cv::Mat slidingParametricJointWindowDispFlex(const cv::Mat& base, const cv::Mat& match, const cv::Mat& windowsizes, const cv::Mat& ranges, int disparityRange)
-{
-	int min_windowsize = 7;
-	long long start = cv::getCPUTickCount();
-
-	typedef float prob_table_type;
-	int sz[] = {base.rows, base.cols, disparityRange};
-	cv::Mat cost_map(3, sz, CV_32FC1, cv::Scalar(8));
-
-	const int y_min = min_windowsize/2;
-	const int y_max = base.rows - min_windowsize/2;
-
-	const int x_min = min_windowsize/2;
-	const int x_max = base.cols - min_windowsize/2;
-
-	cost_class cost_agg(match);
-	typename cost_class::thread_type thread_data;
-
-	#pragma omp parallel for default(none) shared(base,match,disparityRange, ranges, cost_agg, cost_map, windowsizes, dispMin_comp, dispMax_comp) private(thread_data)
-	for(int y = y_min; y < y_max; ++y)
-	{
-		cost_agg.prepareRow(thread_data, match, y);
-
-		for(int x = x_min; x < x_max; ++x)
-		{
-			cv::Vec2b cwindowsize = windowsizes.at<cv::Vec2b>(y,x);
-
-			int dispMin = ranges.at<cv::Vec2s>(y,x)[0];
-			int dispMax = ranges.at<cv::Vec2s>(y,x)[1];
-
-			//int dispMin = std::max(rangeCenter.at<short>(y,x) - disparityRange/2+1, dispMin_comp);
-			//int dispMax = std::min(rangeCenter.at<short>(y,x) + disparityRange/2, dispMax_comp);
-
-			int cx_min = cwindowsize[1]/2;
-			int cx_max = base.cols - cwindowsize[1]/2;
-			int disp_start = std::min(std::max(x+dispMin, cx_min), cx_max-1) - x;
-			int disp_end   = std::max(std::min(x+dispMax, cx_max-1), cx_min) - x;
-
-			if(cwindowsize[0] > 0 && cwindowsize[1] > 0 && disp_end > disp_start)
-			{
-				cv::Mat windowBase = subwindow(base, x, y, cwindowsize[1], cwindowsize[0] );
-				cost_agg.prepareWindow(thread_data, windowBase, cwindowsize[1], cwindowsize[0] );
-
-				assert(disp_start-dispMin >= 0);
-				assert(disp_start-dispMin < dispMax - dispMin + 1);
-				assert(disp_end-disp_start < dispMax - dispMin + 1);
-				assert(disp_end-disp_start >= 0);
-
-				prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, disp_start-dispMin);
-				for(int d = disp_start; d <= disp_end; ++d)
-				{
-					*result_ptr++ = cost_agg.increm(thread_data, x+d);
-				}
-			}
-		}
-		//if(y%10 == 0)
-//			std::cout << y << std::endl;
-	}
-
-	start = cv::getCPUTickCount() - start;
-	std::cout << start << std::endl;
-
-	return cost_map;
-}*/
-
+}
 //! Calculates pointwise (no window involved) the disparity. cost aggregator must be passed as a function object, returns a cost map
 template<typename cost_class, typename data_type>
 cv::Mat calculate_pixelwise(cv::Mat base, data_type data, int dispMin, int dispMax)
@@ -321,6 +255,7 @@ cv::Mat flexBoxFilter(cv::Mat src, cv::Mat windowsizes)
 }*/
 
 }
+
 
 template<typename cost_type, typename window_type>
 cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv::Mat base, int dispMin, int dispMax)

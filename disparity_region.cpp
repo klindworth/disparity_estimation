@@ -57,7 +57,7 @@ std::vector<region_interval> filtered_region(int width, const std::vector<region
 	return filtered;
 }
 
-void labelLRCheck(const cv::Mat_<int>& labelsMatch, disparity_region& region, const short dispMin, const short dispMax)
+void determine_corresponding_regions(const cv::Mat_<int>& labelsMatch, disparity_region& region, const short dispMin, const short dispMax)
 {
 	const int dispRange = dispMax-dispMin + 1;
 	region.corresponding_regions = std::vector<std::vector<corresponding_region>>(dispRange);
@@ -81,7 +81,7 @@ void labelLRCheck(const cv::Mat_<int>& labelsMatch, disparity_region& region, co
 	}
 }
 
-void checkLabelLRCheck(const region_container& base, const region_container& match)
+void check_corresponding_regions(const region_container& base, const region_container& match)
 {
 	for(const disparity_region& cregion : base.regions)
 	{
@@ -95,7 +95,7 @@ void checkLabelLRCheck(const region_container& base, const region_container& mat
 	}
 }
 
-void labelLRCheck(region_container& base, const region_container& match, int delta)
+void determine_corresponding_regions(region_container& base, const region_container& match, int delta)
 {
 	const std::size_t regions_count = base.regions.size();
 	#pragma omp parallel for default(none) shared(base, match, delta)
@@ -106,7 +106,7 @@ void labelLRCheck(region_container& base, const region_container& match, int del
 			range = std::make_pair(base.task.dispMin, base.task.dispMax);
 		else
 			range = getSubrange(base.regions[j].base_disparity, delta, base.task);
-		labelLRCheck(match.labels, base.regions[j], range.first, range.second);
+		determine_corresponding_regions(match.labels, base.regions[j], range.first, range.second);
 	}
 }
 
@@ -169,7 +169,7 @@ cv::Mat disparity_by_segments(const region_container& container)
 	//return regionWiseSet<short>(container.task.base.size(), container.regions, [](const DisparityRegion& cregion){return cregion.disparity;});
 }
 
-void refreshWarpedIdx(region_container& container)
+void refresh_warped_regions(region_container& container)
 {
 	const std::size_t regions_count = container.regions.size();
 	#pragma omp parallel for default(none) shared(container)

@@ -74,7 +74,7 @@ cv::Mat refine_initial_disparity(cv::Mat& initial_disparity, single_stereo_task&
 	showWindowSizes(sizes);
 
 	long long start = cv::getCPUTickCount();
-	cv::Mat costmap  = costmap_creators::slidingParametricJointWindowFlex<cost_func>(base, match, sizes, initial_disparity, config.deltaDisp, task.dispMin, task.dispMax, config.min_windowsize, config.max_windowsize);
+	cv::Mat costmap  = costmap_creators::sliding_window::flexible_size_flexible_disparityrange<cost_func>(base, match, sizes, initial_disparity, config.deltaDisp, task.dispMin, task.dispMax, config.min_windowsize, config.max_windowsize);
 	//cv::Mat costmap = scaleDisparity<cost_func,quantizer>(task, task.baseGray, task.matchGray, config, sizes, initial_disparity);
 	start = cv::getCPUTickCount() - start;
 	std::cout << "varwindow: " << start << std::endl;

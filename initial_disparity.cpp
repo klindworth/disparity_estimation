@@ -231,7 +231,7 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 
 	calculator calc(base,match);
 
-	std::cout << "allocate" << std::endl;
+	//std::cout << "allocate" << std::endl;
 	//allocate in a loop
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
@@ -382,8 +382,8 @@ cv::Mat convertToFullDisparityCostMap(const cv::Mat& cost_map, const cv::Mat& ra
 void generate_region_information(region_container& left, region_container& right)
 {
 	std::cout << "warped_idx" << std::endl;
-	refreshWarpedIdx(left);
-	refreshWarpedIdx(right);
+	refresh_warped_regions(left);
+	refresh_warped_regions(right);
 }
 
 std::vector<region_interval> exposureVector(const cv::Mat& occlusionMap)
@@ -424,9 +424,9 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 	region_descriptors::calculate_all_average_colors(task.forward.base, left.regions.begin(), left.regions.end());
 	region_descriptors::calculate_all_average_colors(task.backward.base, right.regions.begin(), right.regions.end());
 
-	std::cout << "lr-check" << std::endl;
-	labelLRCheck(left, right, 0);
-	labelLRCheck(right, left, 0);
+	std::cout << "corresponding regions" << std::endl;
+	determine_corresponding_regions(left, right, 0);
+	determine_corresponding_regions(right, left, 0);
 
 	std::cout << "init disp" << std::endl;
 
@@ -446,10 +446,9 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 	{
 		std::cout << i << std::endl;
 		disparity_calculator(task.forward,  task.algoLeft,  task.algoRight, left.regions, refinement);
-		std::cout << i << ",back" << std::endl;
 		disparity_calculator(task.backward, task.algoRight, task.algoLeft, right.regions, refinement);
 
-		std::cout << "dilateLR" << std::endl;
+		std::cout << "dilation" << std::endl;
 		dilateLR(task.forward,  left.regions,  config.dilate_step, refinement);
 		dilateLR(task.backward, right.regions, config.dilate_step, refinement);
 	}

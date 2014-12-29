@@ -95,8 +95,8 @@ void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t o
 void generate_stats(std::vector<disparity_region>& regions, const single_stereo_task& task, const int delta);
 void generate_stats(disparity_region& region, const single_stereo_task& task, int delta);
 
-void labelLRCheck(region_container& base, const region_container& match, int delta);
-void refreshWarpedIdx(region_container& container);
+void determine_corresponding_regions(region_container& base, const region_container& match, int delta);
+void refresh_warped_regions(region_container& container);
 std::vector<region_interval> filtered_region(int width, const std::vector<region_interval> &pixel_idx, int d);
 
 #endif // REGION_H

@@ -237,7 +237,7 @@ void ml_region_optimizer::optimize_ml(region_container& base, const region_conta
 		base.regions[j].disparity = nnet->predict(region_optimization_vector.data()) * sign;
 	}
 
-	refreshWarpedIdx(base);
+	refresh_warped_regions(base);
 	std::cout << "end optimize" << std::endl;
 }
 
