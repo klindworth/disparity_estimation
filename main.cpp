@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
 		return 1;
 	}*/
 
-	ClassicSearchConfig clas_config;
+	classic_search_config clas_config;
 	clas_config.windowsize = 11;
 	clas_config.soft = false;
 	clas_config.quantizer = 8;
@@ -205,7 +205,7 @@ int main(int argc, char *argv[])
 	//config.optimization_rounds = 3;
 	//config.verbose = true;
 
-	RefinementConfig refconfig;
+	refinement_config refconfig;
 	fs >> refconfig;
 
 	if(config.verbose)

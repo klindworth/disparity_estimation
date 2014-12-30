@@ -23,7 +23,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "slidingGradient.h"
+#include "sliding_gradient.h"
 
 #include "genericfunctions.h"
 #include "stereotask.h"

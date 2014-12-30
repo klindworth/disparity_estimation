@@ -26,13 +26,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef REGION_METRICS_H
 #define REGION_METRICS_H
 
-#include "slidingEntropy.h"
+#include "sliding_entropy.h"
 #include <segmentation/intervals.h>
 #include "costmap_creators.h"
 
 
 template<int quantizer>
-class RegionInfoThread
+class region_info_thread
 {
 public:
 	static const int bins = 256/quantizer;
@@ -60,66 +60,11 @@ std::tuple<T, T, T> entropies_calculator(joint_counter& counter_joint, counter& 
 	return std::make_tuple(joint_entropy, base_entropy, match_entropy);
 }
 
-/*class NormalMetricDisparityWiseCalculator
-{
-public:
-
-	cv::Mat operator()(const cv::Mat& base, const cv::Mat& match, d)
-	{
-		cv::Mat pbase = prepare_base(base, d);
-		cv::Mat pmatch = prepare_match(match, d);
-
-		return cv::absdiff(pbase, pmatch, CV_L1);
-	}
-};
-
-class RegionDisparityWiseCalculator
-{
-public:
-
-	cv::Mat m_base, m_match;
-
-	RegionDisparityWiseCalculator(const cv::Mat& base, const cv::Mat& match, int) : m_base(base), m_match(match)
-	{
-		auto window_sum = [](const cv::Mat& input) { return input; };
-		disparitywise_calculator()
-	}
-};
-
-template<typename cost_type, typename window_type>
-cv::Mat region_disparitywise_calculator(cost_type cost_func, window_type window_sum, cv::Mat base, int dispMin, int dispMax)
-{
-	int sz[] = {base.rows, base.cols, dispMax - dispMin + 1};
-	cv::Mat_<float> result = cv::Mat(3, sz, CV_32FC1, cv::Scalar(-std::numeric_limits<float>::max()));
-
-	#pragma omp parallel for
-	for(int d = dispMin; d <= dispMax; ++d)
-	{
-		cv::Mat temp_result = cost_func(d);
-
-		for(int y = 0; y < base.rows; ++y)
-		{
-			if(d < 0)
-			{
-				for(int x = -d; x < base.cols; ++x)
-					result(y,x,d-dispMin) = temp_result.at<float>(y, x+d);
-			}
-			else
-			{
-				int max_x = base.cols - d;
-				for(int x = 0; x < max_x; ++x)
-					result(y,x,d-dispMin) = temp_result.at<float>(y, x);
-			}
-		}
-	}
-	return result;
-}*/
-
 template<typename cost_calc, int quantizer>
-class RegionInfoDisparity
+class region_info_disparity
 {
 public:
-	typedef RegionInfoThread<quantizer> thread_type;
+	typedef region_info_thread<quantizer> thread_type;
 	static const int bins = 256/quantizer;
 
 	cv::Mat_<float> entropy_table;
@@ -127,12 +72,12 @@ public:
 	cost_calc calculator;
 	cv::Mat m_base, m_match;
 
-	RegionInfoDisparity(const cv::Mat& base, const cv::Mat& match, int size) : m_base(base), m_match(match)
+	region_info_disparity(const cv::Mat& base, const cv::Mat& match, int size) : m_base(base), m_match(match)
 	{
 		costmap_creators::entropy::fill_entropytable_unnormalized(entropy_table, size*9);
 	}
 
-	static float normalizationValue()
+	static float normalization_value()
 	{
 		return cost_calc::upper_bound();
 	}
@@ -151,12 +96,12 @@ public:
 };
 
 template<typename cost_type>
-void getRegionDisparityInternal(std::vector<region_interval>& actual_region, cost_type& cost_agg, typename cost_type::thread_type& thread, disparity_region& cregion, const cv::Mat&, const cv::Mat& match, int dispMin, int dispMax)
+void region_disparity_internal(std::vector<region_interval>& actual_region, cost_type& cost_agg, typename cost_type::thread_type& thread, disparity_region& cregion, const cv::Mat&, const cv::Mat& match, int dispMin, int dispMax)
 {
 	int length = size_of_region(actual_region);
 
 	//cregion.confidence = cv::Mat(dispMax-dispMin+1, 1, CV_32FC1, cv::Scalar(0));
-	cregion.disparity_costs = cv::Mat(dispMax-dispMin+1, 1, CV_32FC1, cv::Scalar(cost_agg.normalizationValue()));
+	cregion.disparity_costs = cv::Mat(dispMax-dispMin+1, 1, CV_32FC1, cv::Scalar(cost_agg.normalization_value()));
 
 	float minCost = std::numeric_limits<float>::max();
 	short minD = cregion.base_disparity;

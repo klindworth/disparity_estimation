@@ -22,7 +22,7 @@ set(SOURCES main.cpp
     region_optimizer.cpp
     configrun.cpp
     taskanalysis.cpp
-    slidingGradient.cpp
+    sliding_gradient.cpp
     refinement.cpp
     sncc_disparitywise_calculator.cpp
     manual_region_optimizer.cpp
@@ -37,10 +37,10 @@ set(SOURCES main.cpp
 set(HEADERS
     genericfunctions.h
     fast_array.h
-    slidingGradient.h
+    sliding_gradient.h
     slidinghimigradient.h
     debugmatstore.h
-    slidingEntropy.h
+    sliding_entropy.h
     costmap_creators.h
     it_metrics.h
     costmap_utils.h

@@ -119,7 +119,7 @@ std::pair<cv::Mat, cv::Mat> singleLoggedRun(stereo_task& task, disparity_estimat
 	return disparity;
 }
 
-void loggedRun(stereo_task& task, initial_disparity_config& config, RefinementConfig& refconfig)
+void loggedRun(stereo_task& task, initial_disparity_config& config, refinement_config& refconfig)
 {
 	TaskTestSet testset;
 	testset.name = task.name;
@@ -156,7 +156,7 @@ void loggedRun(task_collection& testset, disparity_estimator_algo& disparity_est
 	//fs << refconfig;
 }
 
-void loggedRun(task_collection& testset, initial_disparity_config& config, RefinementConfig& refconfig)
+void loggedRun(task_collection& testset, initial_disparity_config& config, refinement_config& refconfig)
 {
 	//FIXME
 	assert(false);
@@ -175,7 +175,7 @@ std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(single_stereo_task&
 {
 	typedef std::pair<cv::Mat, cv::Mat> data_type;
 	long long start = cv::getCPUTickCount();
-	auto entropy = calculateEntropies<quantizer>(task, soft, windowsize);
+	auto entropy = calculate_entropies<quantizer>(task, soft, windowsize);
 
 	start = cv::getCPUTickCount() - start;
 	std::cout << "entropy " << start << std::endl;
@@ -188,7 +188,7 @@ std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(single_stereo_task&
 										disparity::wta_disparity<entropy_agg<normalized_information_distance_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax)};
 }
 
-void singleClassicRun(stereo_task& task, ClassicSearchConfig& config, std::string filename, std::vector<cv::FileStorage*>& fs)
+void singleClassicRun(stereo_task& task, classic_search_config& config, std::string filename, std::vector<cv::FileStorage*>& fs)
 {
 	std::vector<cv::Mat_<short> > resultLeft, resultRight;
 
@@ -263,7 +263,7 @@ void singleClassicRun(stereo_task& task, ClassicSearchConfig& config, std::strin
 	}
 }
 
-void classicLoggedRun(task_collection& taskset, ClassicSearchConfig& config)
+void classicLoggedRun(task_collection& taskset, classic_search_config& config)
 {
 	std::vector<std::string> names {"_mi", "_vi", "_nvi", "_ndi"};
 

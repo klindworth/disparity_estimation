@@ -27,10 +27,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define IT_METRICS_H
 
 #include "stereotask.h"
-#include "slidingEntropy.h"
+#include "sliding_entropy.h"
 #include "costmap_creators.h"
 
-inline cv::Mat quantizeImage(const cv::Mat& input, int quantizer)
+inline cv::Mat quantize_image(const cv::Mat& input, int quantizer)
 {
 	//return input/quantizer;
 	assert(input.isContinuous());
@@ -45,7 +45,7 @@ inline cv::Mat quantizeImage(const cv::Mat& input, int quantizer)
 	return result;
 }
 
-class ClassicSearchConfig
+class classic_search_config
 {
 public:
 	int windowsize;
@@ -55,13 +55,13 @@ public:
 };
 
 template<int quantizer>
-costmap_creators::entropy::entropies calculateEntropies(single_stereo_task task, bool soft, unsigned int windowsize)
+costmap_creators::entropy::entropies calculate_entropies(single_stereo_task task, bool soft, unsigned int windowsize)
 {
 	using namespace costmap_creators;
 
 	entropy::entropies result;
-	cv::Mat_<unsigned char> base  = quantizeImage(task.baseGray, quantizer);
-	cv::Mat_<unsigned char> match = quantizeImage(task.matchGray, quantizer);
+	cv::Mat_<unsigned char> base  = quantize_image(task.baseGray, quantizer);
+	cv::Mat_<unsigned char> match = quantize_image(task.matchGray, quantizer);
 
 	if(!soft)
 	{

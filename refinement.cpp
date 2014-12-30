@@ -25,13 +25,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "refinement.h"
 
-cv::FileStorage& operator<<(cv::FileStorage& stream, const RefinementConfig& config)
+cv::FileStorage& operator<<(cv::FileStorage& stream, const refinement_config& config)
 {
 	stream << "min_windowsize" << config.min_windowsize << "max_windowsize" << config.max_windowsize << "deltaDisp" << config.deltaDisp << "entropy_threshold" << config.entropy_threshold << "subsampling" << config.subsampling;
 	return stream;
 }
 
-cv::FileStorage& operator>>(cv::FileStorage& stream, RefinementConfig& config)
+cv::FileStorage& operator>>(cv::FileStorage& stream, refinement_config& config)
 {
 	stream["min_windowsize"] >> config.min_windowsize;
 	stream["max_windowsize"] >> config.max_windowsize;

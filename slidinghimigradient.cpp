@@ -25,7 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "slidinghimigradient.h"
 
-#include "slidingGradient.h"
+#include "sliding_gradient.h"
 #include "it_metrics.h"
 #include "debugmatstore.h"
 #include "stereotask.h"

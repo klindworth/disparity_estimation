@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include "window_size.h"
-#include "slidingEntropy.h"
+#include "sliding_entropy.h"
 #include "costmap_creators.h"
 #include "stereotask.h"
 #include "disparity_region.h"
@@ -37,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <iostream>
 
-class RefinementConfig
+class refinement_config
 {
 public:
 	int min_windowsize;
@@ -50,20 +50,20 @@ public:
 };
 
 template<typename charT, typename traits>
-inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const RefinementConfig& config)
+inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const refinement_config& config)
 {
 	stream << "min_windowsize: " << config.min_windowsize << "\nmax_windowsize: " << config.max_windowsize << "\ndeltaDisp: " << config.deltaDisp;
 	return stream;
 }
 
-cv::FileStorage& operator<<(cv::FileStorage& stream, const RefinementConfig& config);
-cv::FileStorage& operator>>(cv::FileStorage& stream, RefinementConfig& config);
+cv::FileStorage& operator<<(cv::FileStorage& stream, const refinement_config& config);
+cv::FileStorage& operator>>(cv::FileStorage& stream, refinement_config& config);
 
-typedef std::function<cv::Mat(cv::Mat& initial_disparity, single_stereo_task& task, cv::Mat base_quant, cv::Mat match_quant, region_container& container, const RefinementConfig& config)> refinement_func_type;
+typedef std::function<cv::Mat(cv::Mat& initial_disparity, single_stereo_task& task, cv::Mat base_quant, cv::Mat match_quant, region_container& container, const refinement_config& config)> refinement_func_type;
 
 
 template<typename cost_func, int quantizer>
-cv::Mat refine_initial_disparity(cv::Mat& initial_disparity, single_stereo_task& task, cv::Mat base, cv::Mat match, region_container& container, const RefinementConfig& config)
+cv::Mat refine_initial_disparity(cv::Mat& initial_disparity, single_stereo_task& task, cv::Mat base, cv::Mat match, region_container& container, const refinement_config& config)
 {
 	std::cout << "windows" << std::endl;
 

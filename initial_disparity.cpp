@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "debugmatstore.h"
 
 #include "disparity_region.h"
-#include "slidingEntropy.h"
+#include "sliding_entropy.h"
 #include "it_metrics.h"
 #include "costmap_creators.h"
 #include "disparity_utils.h"
@@ -125,7 +125,7 @@ void calculate_region_disparity_regionwise(single_stereo_task& task, const cv::M
 
 		std::vector<region_interval> actual_pixel_idx = dilated_region(regions[i], dilate, base);
 
-		getRegionDisparityInternal(actual_pixel_idx, cost_agg, cost_thread, regions[i], base, match, range.first, range.second);
+		region_disparity_internal(actual_pixel_idx, cost_agg, cost_thread, regions[i], base, match, range.first, range.second);
 
 		regions[i].old_dilation = dilate;
 	}
@@ -495,12 +495,12 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 	}
 }
 
-cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, const RefinementConfig& refconfig, int subsampling = 1)
+cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, const refinement_config& refconfig, int subsampling = 1)
 {
 	return convertDisparityFromPartialCostmap(disparity::create_from_costmap(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
 }
 
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const initial_disparity_config& config , const RefinementConfig& refconfig, int subsampling, region_optimizer& optimizer)
+std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const initial_disparity_config& config , const refinement_config& refconfig, int subsampling, region_optimizer& optimizer)
 {
 	const int quantizer = 4;
 
@@ -531,13 +531,13 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 		//typedef normalized_variation_of_information_calc<float> it_metric;
 		//typedef variation_of_information_calc<float> it_metric;
 
-		typedef RegionInfoDisparity<it_metric, quantizer> disparity_metric;
+		typedef region_info_disparity<it_metric, quantizer> disparity_metric;
 
 		//IT
 		typedef costmap_creators::entropy::flexible_windowsize<it_metric, quantizer> refinement_metric;
 		disparity_function = calculate_region_disparity_regionwise<disparity_metric>;
-		task.algoLeft  = quantizeImage(task.leftGray, quantizer);
-		task.algoRight = quantizeImage(task.rightGray, quantizer);
+		task.algoLeft  = quantize_image(task.leftGray, quantizer);
+		task.algoRight = quantize_image(task.rightGray, quantizer);
 		ref_func = refine_initial_disparity<refinement_metric, quantizer>;
 	}
 
@@ -613,7 +613,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 
 
 
-initial_disparity_algo::initial_disparity_algo(initial_disparity_config &config, RefinementConfig &refconfig, std::shared_ptr<region_optimizer>& optimizer) :  m_optimizer(optimizer), m_config(config), m_refconfig(refconfig)
+initial_disparity_algo::initial_disparity_algo(initial_disparity_config &config, refinement_config &refconfig, std::shared_ptr<region_optimizer>& optimizer) :  m_optimizer(optimizer), m_config(config), m_refconfig(refconfig)
 {
 }
 

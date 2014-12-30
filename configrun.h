@@ -36,8 +36,8 @@ class stereo_task;
 class disparity_region;
 class region_container;
 class TaskTestSet;
-class ClassicSearchConfig;
-class RefinementConfig;
+class classic_search_config;
+class refinement_config;
 class task_collection;
 
 class disparity_estimator_algo
@@ -53,8 +53,8 @@ cv::FileStorage& operator<<(cv::FileStorage& stream, const initial_disparity_con
 cv::FileStorage& operator>>(cv::FileStorage& stream, initial_disparity_config& config);
 
 std::pair<cv::Mat, cv::Mat> singleLoggedRun(stereo_task& task, disparity_estimator_algo &disparity_estimator, cv::FileStorage& fs, const std::string& filename);
-void loggedRun(stereo_task& task, initial_disparity_config& config, RefinementConfig& refconfig);
-void loggedRun(task_collection& testset, initial_disparity_config& config, RefinementConfig& refconfig);
-void classicLoggedRun(task_collection& taskset, ClassicSearchConfig& config);
+void loggedRun(stereo_task& task, initial_disparity_config& config, refinement_config& refconfig);
+void loggedRun(task_collection& testset, initial_disparity_config& config, refinement_config& refconfig);
+void classicLoggedRun(task_collection& taskset, classic_search_config& config);
 
 #endif // CONFIGRUN_H
