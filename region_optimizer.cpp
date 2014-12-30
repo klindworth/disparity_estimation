@@ -245,30 +245,30 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	create_min_version(cost_values.begin(), cost_values.end(), rel_cost_values.begin());
 
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
-	result_vector.resize(range*vector_size+5);
+	result_vector.resize(range*vector_size+3);
 	float org_size = baseRegion.size();
 	float *result_ptr = result_vector.data();
 	for(int i = 0; i < range; ++i)
 	{
-		//*result_ptr++ = cost_values[i];
+		*result_ptr++ = cost_values[i];
 		*result_ptr++ = occ_avg_values[i];
-		//*result_ptr++ = neighbor_pot_values[i];
+		*result_ptr++ = neighbor_pot_values[i];
 		*result_ptr++ = lr_pot_values[i];
 		*result_ptr++ = neighbor_color_pot_values[i];
 		*result_ptr++ = (float)occ_temp[i].first / org_size;
-		*result_ptr++ = rel_cost_values[i];
+		//*result_ptr++ = rel_cost_values[i];
 		int hyp_disp = dispMin + i;
 		*result_ptr++ = left_neighbor_disp - hyp_disp;
 		*result_ptr++ = right_neighbor_disp - hyp_disp;
-		*result_ptr++ = top_neighbor_disp - hyp_disp;
-		*result_ptr++ = bottom_neighbor_disp - hyp_disp;
+		//*result_ptr++ = top_neighbor_disp - hyp_disp;
+		//*result_ptr++ = bottom_neighbor_disp - hyp_disp;
 	}
 	//*result_ptr = baseRegion.disparity;
 	*result_ptr++ = min_cost; //*std::min_element(cost_values.begin(), cost_values.end());
 	*result_ptr++ = left_color_dev;
 	*result_ptr++ = right_color_dev;
-	*result_ptr++ = top_color_dev;
-	*result_ptr++ = bottom_color_dev;
+	//*result_ptr++ = top_color_dev;
+	//*result_ptr++ = bottom_color_dev;
 }
 
 disparity_hypothesis::disparity_hypothesis(const std::vector<float>& optimization_vector, int dispIdx)

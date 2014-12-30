@@ -15,34 +15,58 @@
 #include <omp.h>
 #include <cblas.h>
 
-inline void blas_gemm(double* Y, const double* A, bool transposeA, int rowsA, int colsA, const double* B, bool transposeB, int rowsB, int colsB, double alpha = 1.0, double beta = 0.0)
+namespace blas {
+
+
+inline void gemm(double* Y, const double* A, bool transposeA, int rowsA, int colsA, const double* B, bool transposeB, int rowsB, int colsB, double alpha = 1.0, double beta = 0.0)
 {
 	cblas_dgemm(CblasRowMajor, transposeA ? CblasTrans : CblasNoTrans, transposeB ? CblasTrans : CblasNoTrans, transposeA ? colsA : rowsA, transposeB ? rowsB : colsB, transposeB ? colsB : rowsB, alpha, A, colsA, B, colsB, beta, Y, transposeB ? rowsB : colsB);
 }
 
-inline void blas_gemm(float* Y, const float* A, bool transposeA, int rowsA, int colsA, const float* B, bool transposeB, int rowsB, int colsB, float alpha = 1.0f, float beta = 0.0f)
+inline void gemm(float* Y, const float* A, bool transposeA, int rowsA, int colsA, const float* B, bool transposeB, int rowsB, int colsB, float alpha = 1.0f, float beta = 0.0f)
 {
 	cblas_sgemm(CblasRowMajor, transposeA ? CblasTrans : CblasNoTrans, transposeB ? CblasTrans : CblasNoTrans, transposeA ? colsA : rowsA, transposeB ? rowsB : colsB, transposeB ? colsB : rowsB, alpha, A, colsA, B, colsB, beta, Y, transposeB ? rowsB : colsB);
 }
 
-inline void blas_gemv(double* Y, const double* A, bool transposeA, int rowsA, int colsA, const double* x, double alpha = 1.0, double beta = 0.0)
+inline void gemv(double* Y, const double* A, bool transposeA, int rowsA, int colsA, const double* x, double alpha = 1.0, double beta = 0.0)
 {
 	cblas_dgemv(CblasRowMajor, transposeA ? CblasTrans : CblasNoTrans, rowsA, colsA, alpha, A, colsA, x, 1, beta, Y, 1);
 }
 
-inline void blas_gemv(float* Y, const float* A, bool transposeA, int rowsA, int colsA, const float* x, float alpha = 1.0, float beta = 0.0)
+inline void gemv(float* Y, const float* A, bool transposeA, int rowsA, int colsA, const float* x, float alpha = 1.0, float beta = 0.0)
 {
 	cblas_sgemv(CblasRowMajor, transposeA ? CblasTrans : CblasNoTrans, rowsA, colsA, alpha, A, colsA, x, 1, beta, Y, 1);
 }
 
-inline void blas_ger(double* Y, const double * A, int rowsA, const double* X, int rowsX, double alpha = 1.0)
+inline void ger(double* Y, const double * A, int rowsA, const double* X, int rowsX, double alpha = 1.0)
 {
 	cblas_dger(CblasRowMajor, rowsA, rowsX, alpha, A, 1, X, 1, Y, rowsX);
 }
 
-inline void blas_ger(float* Y, const float * A, int rowsA, const float* X, int rowsX, float alpha = 1.0)
+inline void ger(float* Y, const float * A, int rowsA, const float* X, int rowsX, float alpha = 1.0)
 {
 	cblas_sger(CblasRowMajor, rowsA, rowsX, alpha, A, 1, X, 1, Y, rowsX);
+}
+
+inline double norm2(double* X, int n, int stride = 1)
+{
+	return cblas_dnrm2(n, X, stride);
+}
+
+inline float norm2(float* X, int n, int stride = 1)
+{
+	return cblas_snrm2(n, X, stride);
+}
+
+inline void scale(float alpha, float* X, int n, int stride = 1)
+{
+	return cblas_sscal(n, alpha, X, stride);
+}
+
+inline void scale(double alpha, double* X, int n, int stride = 1)
+{
+	return cblas_dscal(n, alpha, X, stride);
+}
 }
 
 template<typename Iterator>
@@ -289,7 +313,7 @@ protected:
 	{
 		T current = 0;
 		for(auto it = start; it != end; ++it)
-			current = std::max(std::abs(+it), current);
+			current = std::max(std::abs(it), current);
 
 		if(allowed > current)
 			mul_range(start, end, allowed/current);
@@ -324,7 +348,7 @@ public:
 	{
 		layer_thread_data<T>& cdata = this->thread_data();
 
-		blas_gemv(cdata.output_data.data(), this->weights.data(), false, this->out_dim, this->in_dim, bottom_data);
+		blas::gemv(cdata.output_data.data(), this->weights.data(), false, this->out_dim, this->in_dim, bottom_data);
 		for(int i = 0; i < this->out_dim; ++i)
 		{
 			cdata.output_data[i] += this->bias[i];
@@ -339,10 +363,10 @@ public:
 		if(this->propagate_down)
 		{
 			//blas_gemv(cdata.gradient_data.data(), this->weights.data(), true, this->out_dim, this->in_dim, top_gradient);
-			blas_gemv(cdata.gradient_data.data(), this->weights_transposed.data(), false, this->in_dim, this->out_dim, top_gradient);
+			blas::gemv(cdata.gradient_data.data(), this->weights_transposed.data(), false, this->in_dim, this->out_dim, top_gradient);
 		}
 
-		blas_ger(cdata.dW.data(), top_gradient, this->out_dim, bottom_data, this->in_dim);
+		blas::ger(cdata.dW.data(), top_gradient, this->out_dim, bottom_data, this->in_dim);
 
 		for(int i = 0; i < this->out_dim; ++i)
 			cdata.dB[i] += top_gradient[i];
@@ -734,7 +758,7 @@ public:
 
 		int channels_in = (this->in_dim - passthrough)/vectorsize;
 
-		blas_gemm(cdata.output_data.data(), this->weights.data(), false, channels_out, vectorsize, bottom_data, true, channels_in, vectorsize);
+		blas::gemm(cdata.output_data.data(), this->weights.data(), false, channels_out, vectorsize, bottom_data, true, channels_in, vectorsize);
 		T* coutdata = cdata.output_data.data();// + channels_out*channels_in;
 		for(int j = 0; j < channels_out; ++j)
 		{
@@ -758,8 +782,8 @@ public:
 		int channels_in = (this->in_dim - passthrough)/vectorsize;
 
 		if(this->propagate_down)
-			blas_gemm(cdata.gradient_data.data(), top_gradient, true, channels_out, channels_in, this->weights.data(), false, channels_out, vectorsize);
-		blas_gemm(cdata.dW.data(), top_gradient, false, channels_out, channels_in, bottom_data, false, channels_in, vectorsize, 1.0, 1.0);
+			blas::gemm(cdata.gradient_data.data(), top_gradient, true, channels_out, channels_in, this->weights.data(), false, channels_out, vectorsize);
+		blas::gemm(cdata.dW.data(), top_gradient, false, channels_out, channels_in, bottom_data, false, channels_in, vectorsize, 1.0, 1.0);
 
 		const T* cgradient = top_gradient;
 		for(int i = 0; i < this->channels_out; ++i)
@@ -801,7 +825,7 @@ public:
 		int channels_in = (this->in_dim - passthrough)/vectorsize;
 
 		//blas_gemm(cdata.output_data.data(), this->weights.data(), false, channels_out, vectorsize, bottom_data, true, channels_in, vectorsize);
-		blas_gemm(cdata.output_data.data(), bottom_data, false, channels_in, vectorsize, this->weights.data(), false, vectorsize, channels_out);
+		blas::gemm(cdata.output_data.data(), bottom_data, false, channels_in, vectorsize, this->weights.data(), false, vectorsize, channels_out);
 		T* coutdata = cdata.output_data.data();// + channels_out*channels_in;
 		for(int i = 0; i < channels_in; ++i)
 		{
@@ -823,9 +847,9 @@ public:
 
 		if(this->propagate_down)
 			//blas_gemm(cdata.gradient_data.data(), top_gradient, true, channels_out, channels_in, this->weights.data(), false, channels_out, vectorsize);
-			blas_gemm(cdata.gradient_data.data(), top_gradient, false, channels_in, channels_out, this->weights.data(), true, vectorsize, channels_out);
+			blas::gemm(cdata.gradient_data.data(), top_gradient, false, channels_in, channels_out, this->weights.data(), true, vectorsize, channels_out);
 		//blas_gemm(cdata.dW.data(), top_gradient, false, channels_out, channels_in, bottom_data, false, channels_in, vectorsize, 1.0, 1.0);
-		blas_gemm(cdata.dW.data(), bottom_data, true, channels_in, vectorsize, top_gradient, false, channels_in, channels_out, 1.0, 1.0);
+		blas::gemm(cdata.dW.data(), bottom_data, true, channels_in, vectorsize, top_gradient, false, channels_in, channels_out, 1.0, 1.0);
 
 		const T* cgradient = top_gradient;
 		for(int j = 0; j < channels_in; ++j)
@@ -868,7 +892,7 @@ public:
 		for(int i = 0; i < row_count; ++i)
 		{
 			int offset = i*vectorsize;
-			blas_gemv(cdata.output_data.data() + i*per_row_output, this->weights.data() + offset*per_row_output, false, per_row_output, vectorsize, bottom_data+offset);
+			blas::gemv(cdata.output_data.data() + i*per_row_output, this->weights.data() + offset*per_row_output, false, per_row_output, vectorsize, bottom_data+offset);
 		}
 
 
@@ -896,14 +920,14 @@ public:
 			for(int i = 0; i < row_count; ++i)
 			{
 				int offset = i * vectorsize;
-				blas_gemv(cdata.gradient_data.data()+offset, this->weights.data()+offset*per_row_output, true, per_row_output, vectorsize, top_gradient + i*per_row_output);
+				blas::gemv(cdata.gradient_data.data()+offset, this->weights.data()+offset*per_row_output, true, per_row_output, vectorsize, top_gradient + i*per_row_output);
 			}
 		}
 
 		for(int i = 0; i < row_count; ++i)
 		{
 			int offset = i * vectorsize;
-			blas_ger(cdata.dW.data() + offset*per_row_output, top_gradient+i*per_row_output, per_row_output, bottom_data + offset, vectorsize);
+			blas::ger(cdata.dW.data() + offset*per_row_output, top_gradient+i*per_row_output, per_row_output, bottom_data + offset, vectorsize);
 		}
 
 		for(int i = 0; i < regular_output; ++i)

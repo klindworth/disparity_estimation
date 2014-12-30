@@ -249,33 +249,33 @@ TEST(SimpleNNBlas, GEMM)
 	std::vector<double> Y(6,-1);
 	std::vector<double> A {1,2,3,4,5,6};
 	std::vector<double> B {7,8,9,10,11,12};
-	blas_gemm(Y.data(), A.data(), false, 2, 3, B.data(), false, 3, 2);
+	blas::gemm(Y.data(), A.data(), false, 2, 3, B.data(), false, 3, 2);
 	std::vector<double> Y_desired {58,64,139,154, -1, -1};
 	compare_double_vector(Y, Y_desired);
 
 	//B'*A'
 	std::vector<double> Y2(6,-1);
-	blas_gemm(Y2.data(), B.data(), true, 3, 2, A.data(), true, 2, 3);
+	blas::gemm(Y2.data(), B.data(), true, 3, 2, A.data(), true, 2, 3);
 	std::vector<double> Y2_desired {58,139,64,154, -1, -1};
 	compare_double_vector(Y2, Y2_desired);
 
 	//A'*B'
 	std::vector<double> Y3(11,-1);
-	blas_gemm(Y3.data(), A.data(), true, 2, 3, B.data(), true, 3, 2);
+	blas::gemm(Y3.data(), A.data(), true, 2, 3, B.data(), true, 3, 2);
 	std::vector<double> Y3_desired {39, 49, 59, 54, 68, 82, 69, 87, 105,-1,-1};
 	compare_double_vector(Y3, Y3_desired);
 
 	//A2'*B (A2'=A)
 	std::vector<double> Y4(6,-1);
 	std::vector<double> A2 {1, 4, 2, 5, 3, 6};
-	blas_gemm(Y4.data(), A2.data(), true, 3, 2, B.data(), false, 3, 2);
+	blas::gemm(Y4.data(), A2.data(), true, 3, 2, B.data(), false, 3, 2);
 	std::vector<double> Y4_desired = Y_desired;
 	compare_double_vector(Y4, Y4_desired);
 
 	//A*B2' (B2'=B)
 	std::vector<double> Y5(6,-1);
 	std::vector<double> B2 {7,9,11,8,10,12};
-	blas_gemm(Y5.data(), A.data(), false, 2, 3, B2.data(), true, 2, 3);
+	blas::gemm(Y5.data(), A.data(), false, 2, 3, B2.data(), true, 2, 3);
 	std::vector<double> Y5_desired = Y_desired;
 	compare_double_vector(Y5, Y5_desired);
 
@@ -283,25 +283,25 @@ TEST(SimpleNNBlas, GEMM)
 	std::vector<double> Y6(14,-1);
 	std::vector<double> A3 {1,2,3,4,5,6,7,8};
 	std::vector<double> B3 {9,10,11,12,13,14};
-	blas_gemm(Y6.data(), A3.data(), false, 4, 2, B3.data(), false, 2, 3);
+	blas::gemm(Y6.data(), A3.data(), false, 4, 2, B3.data(), false, 2, 3);
 	std::vector<double> Y6_desired {33, 36, 39, 75, 82, 89, 117, 128, 139, 159, 174, 189,-1,-1};
 	compare_double_vector(Y6, Y6_desired);
 
 	//A4'*B3 (A4'=A3)
 	std::vector<double> A4 {1,3,5,7,2,4,6,8};
 	std::vector<double> Y7(14,-1);
-	blas_gemm(Y7.data(), A4.data(), true, 2, 4, B3.data(), false, 2, 3);
+	blas::gemm(Y7.data(), A4.data(), true, 2, 4, B3.data(), false, 2, 3);
 	compare_double_vector(Y7, Y6_desired);
 
 	//A3*B4' (B4'=B3)
 	std::vector<double> B4 {9,12,10,13,11,14};
 	std::vector<double> Y8(14,-1);
-	blas_gemm(Y8.data(), A3.data(), false, 4, 2, B4.data(), true, 3, 2);
+	blas::gemm(Y8.data(), A3.data(), false, 4, 2, B4.data(), true, 3, 2);
 	compare_double_vector(Y8, Y6_desired);
 
 	//A4'*B4'
 	std::vector<double> Y9(14,-1);
-	blas_gemm(Y9.data(), A4.data(), true, 2, 4, B4.data(), true, 3, 2);
+	blas::gemm(Y9.data(), A4.data(), true, 2, 4, B4.data(), true, 3, 2);
 	compare_double_vector(Y9, Y6_desired);
 
 
@@ -313,13 +313,13 @@ TEST(SimpleNNBlas, GEMV)
 	std::vector<double> Y10(5, -1);
 	std::vector<double> A5 {1,2,3,4,5,6};
 	std::vector<double> X5 {7,8};
-	blas_gemv(Y10.data(), A5.data(), false, 3,2, X5.data());
+	blas::gemv(Y10.data(), A5.data(), false, 3,2, X5.data());
 	std::vector<double> Y10_desired {23, 53, 83,-1,-1};
 	compare_double_vector(Y10, Y10_desired);
 
 	std::vector<double> Y11(5,-1);
 	std::vector<double> A6 {1,3,5,2,4,6};
-	blas_gemv(Y11.data(), A6.data(), true, 2,3, X5.data());
+	blas::gemv(Y11.data(), A6.data(), true, 2,3, X5.data());
 	std::vector<double> Y11_desired = Y10_desired;
 	compare_double_vector(Y11, Y11_desired);
 }
