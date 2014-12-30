@@ -11,7 +11,6 @@ find_package(OpenMP)
 
 set(SOURCES main.cpp
     genericfunctions.cpp
-    slidinghimigradient.cpp
     debugmatstore.cpp
     costmap_utils.cpp
     disparity_region.cpp
@@ -38,7 +37,6 @@ set(HEADERS
     genericfunctions.h
     fast_array.h
     sliding_gradient.h
-    slidinghimigradient.h
     debugmatstore.h
     sliding_entropy.h
     costmap_creators.h
