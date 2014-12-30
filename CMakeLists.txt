@@ -19,14 +19,14 @@ set(SOURCES main.cpp
     stereotask.cpp
     window_size.cpp
     disparity_utils.cpp
-    region_optimizer.cpp
+    optimizer/region_optimizer.cpp
     configrun.cpp
     taskanalysis.cpp
     sliding_gradient.cpp
     refinement.cpp
     sncc_disparitywise_calculator.cpp
-    manual_region_optimizer.cpp
-    ml_region_optimizer.cpp
+    optimizer/manual_region_optimizer.cpp
+    optimizer/ml_region_optimizer.cpp
 
     gui/miniplot.cpp    
     gui/regionwidget.cpp
@@ -56,9 +56,9 @@ set(HEADERS
     window_size.h
     disparity_utils.h
 
-    region_optimizer.h
-    manual_region_optimizer.h
-    ml_region_optimizer.h
+    optimizer/region_optimizer.h
+    optimizer/manual_region_optimizer.h
+    optimizer/ml_region_optimizer.h
     configrun.h
     taskanalysis.h
     
@@ -88,7 +88,7 @@ set(FORMS
 qt5_wrap_cpp(HEADERS_MOC ${QTHEADERS})
 qt5_wrap_ui(FORMS_HEADERS ${FORMS})
 
-include_directories(. gui neural_network loganalyzer ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(. gui neural_network loganalyzer optimizer ${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(${QT_DEFINITIONS})
 
 add_executable(${PROJECT_NAME}

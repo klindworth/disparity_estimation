@@ -72,7 +72,7 @@ cv::Mat_<cv::Vec3b> getWrongColorSegmentationImage(cv::Mat_<int>& labels, int la
 	for(std::size_t i = 0; i < labels.total(); ++i)
 	{
 		int label = *src_ptr++;
-		assert(label < colors.size());
+		assert(label < (int)colors.size());
 		*dst_ptr++ = colors[label];
 	}
 	return result;

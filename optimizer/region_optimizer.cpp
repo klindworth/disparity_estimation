@@ -219,7 +219,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	}
 
 	//lr_pot
-	assert(baseRegion.corresponding_regions.size() >= range);
+	assert((int)baseRegion.corresponding_regions.size() >= range);
 	for(short cdisp = dispStart; cdisp <= dispEnd; ++cdisp)
 	{
 		lr_pot_values[cdisp - dispStart] = corresponding_regions_average_by_index(baseRegion.corresponding_regions[cdisp-dispMin], [&](std::size_t idx){

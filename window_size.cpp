@@ -90,7 +90,7 @@ inline float compare_disparity(const cv::Mat& plabel_window, int clabel, const s
 		int current_label = *csubwindow_ptr++;
 		unsigned char disp_dev = std::min(std::abs(regions[current_label].disparity - cdisparity), trunc);
 
-		assert(disp_dev >= 0 && disp_dev <= trunc);
+		assert(disp_dev <= trunc); //disp_dev >= 0
 		++(label_counter[disp_dev]);
 	}
 	int pos_labels = 3*label_counter[0]+2*label_counter[1]+label_counter[2];

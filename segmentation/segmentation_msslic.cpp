@@ -79,7 +79,7 @@ int mssuperpixel_segmentation::operator()(const cv::Mat& image, cv::Mat_<int>& l
 				while(!data->active[fusion_idx])
 					fusion_idx = data->fused_with[fusion_idx];
 
-				assert(fusion_idx >= 0 && fusion_idx < regions.size());
+				assert(fusion_idx >= 0 && fusion_idx < (int)regions.size());
 				data->fused_with[idx] = fusion_idx;
 				if(! data->active[fusion_idx])
 					std::cout << "master of master: " << data->fused_with[fusion_idx] << std::endl;
