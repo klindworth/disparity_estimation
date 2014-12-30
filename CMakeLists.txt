@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.0)
 project(disparity_estimation)
 
 find_package(Qt5Widgets)
-find_package(OpenCV REQUIRED)
+find_package(OpenCV REQUIRED core imgproc highgui)
 find_package(Boost REQUIRED filesystem system)
 find_package(OpenMP)
 #include(${QT_USE_FILE})

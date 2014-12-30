@@ -44,7 +44,7 @@ T calc_numeric_gradient(network<T>& net, const std::vector<std::vector<T> >& in,
 template<typename T>
 bool gradient_check(network<T>& net, const std::vector<std::vector<T>>& in, const std::vector<short>& t, float_t eps, T delta)
 {
-	std::vector<std::vector<T> > v(t.size(), std::vector<T>(net.out_dim, 0.0));
+	std::vector<std::vector<T> > v(t.size(), std::vector<T>(net.output_dimension(), 0.0));
 	for(std::size_t i = 0; i < t.size(); ++i)
 		v[i][t[i]] = 1.0f;
 
@@ -208,8 +208,8 @@ TEST(SimpleNN, TransposeVectorLayer1)
 
 	for(std::size_t i = 0; i < expected.size(); ++i)
 		ASSERT_EQ(expected[i], test.output()[i]);
-	std::copy(test.output(), test.output() + 7, std::ostream_iterator<double>(std::cout, ", "));
-	std::cout << std::endl;
+	//std::copy(test.output(), test.output() + 7, std::ostream_iterator<double>(std::cout, ", "));
+	//std::cout << std::endl;
 }
 
 TEST(SimpleNN, VectorLayer1)
@@ -231,8 +231,8 @@ TEST(SimpleNN, VectorLayer1)
 
 	for(std::size_t i = 0; i < expected.size(); ++i)
 		ASSERT_EQ(expected[i], test.output()[i]);
-	std::copy(test.output(), test.output() + 7, std::ostream_iterator<double>(std::cout, ", "));
-	std::cout << std::endl;
+	//std::copy(test.output(), test.output() + 7, std::ostream_iterator<double>(std::cout, ", "));
+	//std::cout << std::endl;
 }
 
 TEST(SimpleNN, VectorExtension)

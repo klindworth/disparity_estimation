@@ -177,6 +177,11 @@ public:
 	virtual void forward_propagation(const T* bottom_data) = 0;
 	virtual void backward_propagation(const T* bottom_data, const T* top_gradient) = 0;
 
+	virtual bool trainable() const
+	{
+		return true;
+	}
+
 
 protected:
 
@@ -337,6 +342,11 @@ public:
 				cdata.gradient_data[i] = bottom_data[i] > 0 ? top_gradient[i] : 0;
 		}
 	}
+
+	bool trainable() const override
+	{
+		return false;
+	}
 };
 
 template<typename T>
@@ -393,6 +403,11 @@ public:
 		}
 	}
 
+	bool trainable() const override
+	{
+		return false;
+	}
+
 protected:
 	T dropout_rate;
 	std::vector<std::vector<unsigned char>> mask;
@@ -444,6 +459,12 @@ public:
 		//std::cout << std::endl;
 	}
 
+	bool trainable() const override
+	{
+		return false;
+	}
+
+private:
 	std::vector<std::vector<T>> temp;
 };
 
@@ -513,6 +534,9 @@ protected:
 	int channels_out, vectorsize, passthrough;
 };
 
+/**
+ * Splts the input values into vectors oof size vectorsize. Each vector will have out_dim neurons. The weights of the neurons will be shared between the different vectors
+ */
 template<typename T>
 class vector_connected_layer : public layer_base<T>
 {
@@ -577,25 +601,29 @@ protected:
 	int channels_out, vectorsize, passthrough;
 };
 
+/**
+ * Splits the input values into rows. You can specifiy the number of output values per row. Each of those neurons only connects to the input values of a row. The total output dimension is: neurons per row * rows
+ * E.g input: 100, rowsize: 20, neurons per row: 10, means that there are five rows, each of them has ten neurons
+ */
 template<typename T>
 class row_connected_layer : public layer_base<T>
 {
 public:
-	row_connected_layer(bool propagate_down, int in_dim, int out_dim, int vectorsize, int passthrough) :
-		layer_base<T>(propagate_down, in_dim, (in_dim - passthrough)/vectorsize*out_dim + passthrough, (in_dim - passthrough)*out_dim, (in_dim - passthrough)/vectorsize*out_dim), vectorsize(vectorsize), passthrough(passthrough), per_row_output(out_dim)
+	row_connected_layer(bool propagate_down, int in_dim, int neurons_per_row, int rowsize, int passthrough) :
+		layer_base<T>(propagate_down, in_dim, (in_dim - passthrough)/rowsize*neurons_per_row + passthrough, (in_dim - passthrough)*neurons_per_row, (in_dim - passthrough)/rowsize*neurons_per_row), rowsize(rowsize), passthrough(passthrough), per_row_output(neurons_per_row)
 	{std::cout << "row connected layer" << std::endl;}
 
 	void forward_propagation(const T* bottom_data) override
 	{
 		layer_thread_data<T>& cdata = this->thread_data();
 
-		const int row_count = (this->in_dim - passthrough)/vectorsize;
+		const int row_count = (this->in_dim - passthrough)/rowsize;
 		const int regular_output = per_row_output * row_count;
 
 		for(int i = 0; i < row_count; ++i)
 		{
-			int offset = i*vectorsize;
-			blas::gemv(cdata.output_data.data() + i*per_row_output, this->weights.data() + offset*per_row_output, false, per_row_output, vectorsize, bottom_data+offset);
+			int offset = i*rowsize;
+			blas::gemv(cdata.output_data.data() + i*per_row_output, this->weights.data() + offset*per_row_output, false, per_row_output, rowsize, bottom_data+offset);
 		}
 
 
@@ -614,7 +642,7 @@ public:
 	{
 		layer_thread_data<T>& cdata = this->thread_data();
 
-		const int row_count = (this->in_dim - passthrough)/vectorsize;
+		const int row_count = (this->in_dim - passthrough)/rowsize;
 		const int regular_output = per_row_output * row_count;
 
 		//propagate down
@@ -622,15 +650,15 @@ public:
 		{
 			for(int i = 0; i < row_count; ++i)
 			{
-				int offset = i * vectorsize;
-				blas::gemv(cdata.gradient_data.data()+offset, this->weights.data()+offset*per_row_output, true, per_row_output, vectorsize, top_gradient + i*per_row_output);
+				int offset = i * rowsize;
+				blas::gemv(cdata.gradient_data.data()+offset, this->weights.data()+offset*per_row_output, true, per_row_output, rowsize, top_gradient + i*per_row_output);
 			}
 		}
 
 		for(int i = 0; i < row_count; ++i)
 		{
-			int offset = i * vectorsize;
-			blas::ger(cdata.dW.data() + offset*per_row_output, top_gradient+i*per_row_output, per_row_output, bottom_data + offset, vectorsize);
+			int offset = i * rowsize;
+			blas::ger(cdata.dW.data() + offset*per_row_output, top_gradient+i*per_row_output, per_row_output, bottom_data + offset, rowsize);
 		}
 
 		for(int i = 0; i < regular_output; ++i)
@@ -640,16 +668,18 @@ public:
 protected:
 	int in_connectivity() override
 	{
-		return vectorsize;
+		return rowsize;
 	}
 
 	void regularize_weights() override
 	{
-		//for(int i = 0; i < channels_out; ++i)
-			//this->abs_renorm(this->weights.begin() + i*vectorsize, this->weights.begin() + (i+1)*vectorsize, 1.0/vectorsize);
+		const int row_count = (this->in_dim - passthrough)/rowsize;
+		const int neurons = per_row_output * row_count;
+		for(int i = 0; i < neurons; ++i)
+			this->abs_renorm(this->weights.begin() + i*rowsize, this->weights.begin() + (i+1)*rowsize, 1.0/rowsize);
 	}
 
-	int vectorsize, passthrough, per_row_output;
+	int rowsize, passthrough, per_row_output;
 };
 
 template<typename T>
@@ -681,6 +711,11 @@ public:
 
 	void backward_propagation(const T*, const T*) override
 	{
+	}
+
+	bool trainable() const override
+	{
+		return false;
 	}
 
 protected:

@@ -22,10 +22,11 @@ template<typename T>
 class network
 {
 public:
-	network(int in_dim) : in_dim(in_dim), out_dim(in_dim)
-	{}
+	network(int in_dim) : in_dim(in_dim), out_dim(in_dim), is_trainable(false)
+	{
+	}
 
-	network(int in_dim, int out_dim, const std::initializer_list<int>& list) : in_dim(in_dim), out_dim(in_dim)
+	network(int in_dim, int out_dim, const std::initializer_list<int>& list) : in_dim(in_dim), out_dim(in_dim), is_trainable(false)
 	{
 		bool dropout = false;
 		for(int csize : list)
@@ -49,11 +50,11 @@ public:
 	template<template<typename Ti> class layer_type, typename... args_type>
 	void emplace_layer(args_type... args)
 	{
-		bool propagate = layers.size() > 0 ? true : false;
-		layers.push_back(std::make_shared<layer_type<T>>(propagate, out_dim, args...));
+		layers.push_back(std::make_shared<layer_type<T>>(is_trainable, out_dim, args...));
 		out_dim = layers.back()->output_dimension();
 
 		layers.back()->init_weights();
+		is_trainable |= layers.back()->trainable();
 	}
 
 	/**
@@ -251,8 +252,21 @@ public:
 			clayer->init_weights();
 	}
 
+	int output_dimension() const
+	{
+		return out_dim;
+	}
+
+	int input_dimension() const
+	{
+		return in_dim;
+	}
+
 	std::vector<std::shared_ptr<layer_base<T>>> layers;
+
+private:
 	int in_dim, out_dim;
+	bool is_trainable;
 };
 }
 
