@@ -28,8 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QWidget>
 
-class DebugMatStore;
-class TaskStore;
+class debug_store;
+class debug_task_store;
 
 namespace Ui {
 class ImageStore;
@@ -41,8 +41,8 @@ class ImageStore : public QWidget
 	
 public:
 	explicit ImageStore(QWidget *parent = 0);
-	void refreshList(DebugMatStore &store);
-	void refreshList(TaskStore& store);
+	void refreshList(debug_store &store);
+	void refreshList(debug_task_store& store);
 	~ImageStore();
 	
 private slots:
@@ -51,8 +51,8 @@ private slots:
 	void on_pbClone_clicked();
 
 private:
-	DebugMatStore *m_store;
-	TaskStore *m_taskStore;
+	debug_store *m_store;
+	debug_task_store *m_taskStore;
 	Ui::ImageStore *ui;
 };
 

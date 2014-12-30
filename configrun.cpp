@@ -80,7 +80,7 @@ std::pair<cv::Mat, cv::Mat> singleLoggedRun(stereo_task& task, disparity_estimat
 	std::cout << "runtime: " << total_runtime << std::endl;
 	std::cout << "finished" << std::endl;
 
-	TaskAnalysis analysis(task, disparity.first, disparity.second, subsampling);
+	task_analysis analysis(task, disparity.first, disparity.second, subsampling);
 	cv::Mat disp_left  = disparity::create_image(disparity.first);
 	cv::Mat disp_right = disparity::create_image(disparity.second);
 	if(logging)
@@ -97,23 +97,23 @@ std::pair<cv::Mat, cv::Mat> singleLoggedRun(stereo_task& task, disparity_estimat
 		cv::imwrite(filename + "-right.png", disp_right);
 	}
 
-	matstore.addMat(disp_left,  "disp_left");
-	matstore.addMat(disp_right, "disp_right");
+	matstore.add_mat(disp_left,  "disp_left");
+	matstore.add_mat(disp_right, "disp_right");
 
 	if(task.groundLeft.data)
 	{
 		cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_left);
 		if(logging)
 			cv::imwrite(filename + "_error-left.png", err_image);
-		matstore.addMat(err_image, "ground-diff-left");
-		matstore.addMat(task.groundLeft, "groundLeft");
+		matstore.add_mat(err_image, "ground-diff-left");
+		matstore.add_mat(task.groundLeft, "groundLeft");
 	}
 	if(task.groundRight.data)
 	{
 		cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_right);
 		if(logging)
 			cv::imwrite(filename + "_error-right.png", err_image);
-		matstore.addMat(err_image, "ground-diff-right");
+		matstore.add_mat(err_image, "ground-diff-right");
 	}
 
 	return disparity;
@@ -237,7 +237,7 @@ void singleClassicRun(stereo_task& task, classic_search_config& config, std::str
 	for(std::size_t i = 0; i < resultLeft.size(); ++i)
 	{
 		std::string fullfilename = filename + names[i] + "_" + task.name;
-		TaskAnalysis analysis(task, resultLeft[i], resultRight[i], 1, config.windowsize/2);
+		task_analysis analysis(task, resultLeft[i], resultRight[i], 1, config.windowsize/2);
 
 		*(fs[i]) << "taskname" << task.name;
 		*(fs[i]) << "total_runtime" << total_runtime;
@@ -252,13 +252,13 @@ void singleClassicRun(stereo_task& task, classic_search_config& config, std::str
 		{
 			cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_left);
 			cv::imwrite(fullfilename + "_error-left.png", err_image);
-			matstore.addMat(err_image, "ground-diff-left");
+			matstore.add_mat(err_image, "ground-diff-left");
 		}
 		if(task.groundRight.data)
 		{
 			cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_right);
 			cv::imwrite(fullfilename + "_error-right.png", err_image);
-			matstore.addMat(err_image, "ground-diff-right");
+			matstore.add_mat(err_image, "ground-diff-right");
 		}
 	}
 }
@@ -285,7 +285,7 @@ void classicLoggedRun(task_collection& taskset, classic_search_config& config)
 			return;
 		}
 
-		matstore.startNewTask(ctask.name, ctask);
+		matstore.start_new_task(ctask.name, ctask);
 		for(cv::FileStorage *cfs : fs)
 			*cfs << "{:";
 		singleClassicRun(ctask, config, filename, fs);

@@ -54,7 +54,7 @@ void ImageStore::showTask(int idx)
 	refreshList(m_store->tasks.at(idx));
 }
 
-void ImageStore::refreshList(DebugMatStore &store)
+void ImageStore::refreshList(debug_store &store)
 {
 	m_store = &store;
 	for(auto it = store.tasks.begin(); it != store.tasks.end(); ++it)
@@ -64,7 +64,7 @@ void ImageStore::refreshList(DebugMatStore &store)
 	}
 }
 
-void ImageStore::refreshList(TaskStore &store)
+void ImageStore::refreshList(debug_task_store &store)
 {
 	qDebug("settask");
 	m_taskStore = &store;

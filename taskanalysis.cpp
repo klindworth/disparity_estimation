@@ -77,13 +77,13 @@ cv::Mat createFixedDisparity(const cv::Mat& disparity, float scale)
 	return disparity_image;
 }
 
-TaskAnalysis::TaskAnalysis()
+task_analysis::task_analysis()
 {
 	std::fill(error_hist_left.begin(), error_hist_left.end(), 0);
 	std::fill(error_hist_right.begin(), error_hist_right.end(), 0);
 }
 
-void TaskAnalysis::createInternal(const single_stereo_task& task, const cv::Mat& disparity, cv::Mat& error_mat, std::array<int, maxdiff>& hist, int subsamplingDisparity, unsigned int ignore_border)
+void task_analysis::create_internal(const single_stereo_task& task, const cv::Mat& disparity, cv::Mat& error_mat, std::array<int, maxdiff>& hist, int subsamplingDisparity, unsigned int ignore_border)
 {
 	if(task.groundTruth.data)
 	{
@@ -130,13 +130,13 @@ void TaskAnalysis::createInternal(const single_stereo_task& task, const cv::Mat&
 		std::clog << "no ground truth data" << std::endl;
 }
 
-TaskAnalysis::TaskAnalysis(const stereo_task& task, const cv::Mat& disparity_left, const cv::Mat& disparity_right, int subsampling, int ignore_border)
+task_analysis::task_analysis(const stereo_task& task, const cv::Mat& disparity_left, const cv::Mat& disparity_right, int subsampling, int ignore_border)
 {
 	std::fill(error_hist_left.begin(), error_hist_left.end(), 0);
 	std::fill(error_hist_right.begin(), error_hist_right.end(), 0);
 
-	createInternal(task.forward, disparity_left, this->diff_mat_left, this->error_hist_left, subsampling, ignore_border);
-	createInternal(task.backward, disparity_right, this->diff_mat_right, this->error_hist_right, subsampling, ignore_border);
+	create_internal(task.forward, disparity_left, this->diff_mat_left, this->error_hist_left, subsampling, ignore_border);
+	create_internal(task.backward, disparity_right, this->diff_mat_right, this->error_hist_right, subsampling, ignore_border);
 }
 
 /*void TaskAnalysis::write(cv::FileNode& node) const
@@ -152,7 +152,7 @@ TaskAnalysis::TaskAnalysis(const stereo_task& task, const cv::Mat& disparity_lef
 	node << "]";
 }*/
 
-cv::FileStorage& operator<<(cv::FileStorage& stream, const TaskAnalysis& analysis)
+cv::FileStorage& operator<<(cv::FileStorage& stream, const task_analysis& analysis)
 {
 	stream << "error_hist" << "[:";
 	for(int count : analysis.error_hist_left)

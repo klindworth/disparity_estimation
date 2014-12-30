@@ -323,7 +323,7 @@ void ml_region_optimizer::run(region_container& left, region_container& right, c
 			}
 		}
 
-		matstore.addMat(diff_image, "gt_diff");
+		matstore.add_mat(diff_image, "gt_diff");
 
 
 		std::cout << diff_calc << std::endl;

@@ -322,7 +322,7 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 			cv::Mat disp_left = file_to_mat(abs_prefix + "-left.cvmat");
 			cv::Mat disp_right = file_to_mat(abs_prefix + "-right.cvmat");
 
-			TaskAnalysis analysis(task, disp_left, disp_right, subsampling, windowsize/2);
+			task_analysis analysis(task, disp_left, disp_right, subsampling, windowsize/2);
 
 			cv::Mat warpedLeft  = warpImageAdvanced<cv::Vec3b, short>(task.left, disp_left, 1.0f/subsampling);
 			cv::Mat warpedRight = warpImageAdvanced<cv::Vec3b, short>(task.right, disp_right, 1.0f/subsampling);
@@ -533,7 +533,7 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 				cv::Mat disp_left = file_to_mat(abs_prefix + "-left.cvmat");
 				cv::Mat disp_right = file_to_mat(abs_prefix + "-right.cvmat");
 
-				TaskAnalysis analysis(task, disp_left, disp_right, subsampling, windowsize/2);
+				task_analysis analysis(task, disp_left, disp_right, subsampling, windowsize/2);
 				hist_left = std::vector<int>(analysis.error_hist_left.begin(), analysis.error_hist_left.end());
 				hist_right = std::vector<int>(analysis.error_hist_right.begin(), analysis.error_hist_right.end());
 

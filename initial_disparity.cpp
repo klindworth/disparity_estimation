@@ -398,7 +398,7 @@ std::vector<region_interval> exposureVector(const cv::Mat& occlusionMap)
 	exposure.clear();
 
 	cv::erode(temp, temp, cv::Mat(3,3, CV_8UC1, cv::Scalar(1)));
-	matstore.addMat(temp, "exposure");
+	matstore.add_mat(temp, "exposure");
 
 	intervals::turn_value_into_intervals(temp, std::back_inserter(exposure), (unsigned char)255);
 
@@ -459,8 +459,8 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 		cv::Mat initial_disp_left  = disparity_by_segments(left);
 		cv::Mat initial_disp_right = disparity_by_segments(right);
 
-		matstore.addMat(disparity::create_image(initial_disp_left), "init_left");
-		matstore.addMat(disparity::create_image(initial_disp_right), "right_left");
+		matstore.add_mat(disparity::create_image(initial_disp_left), "init_left");
+		matstore.add_mat(disparity::create_image(initial_disp_right), "right_left");
 	}
 
 	generate_region_information(left, right);
@@ -478,12 +478,12 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 
 	if(config.verbose)
 	{
-		matstore.addMat(regionWiseImage<float>(left, [](const disparity_region& region){return region.stats.stddev;}), "stddev-left");
-		matstore.addMat(regionWiseImage<float>(right, [](const disparity_region& region){return region.stats.stddev;}), "stddev-right");
-		matstore.addMat(regionWiseImage<float>(left, [](const disparity_region& region){return region.stats.mean;}), "mean-left");
-		matstore.addMat(regionWiseImage<float>(left ,[](const disparity_region& region){return region.stats.confidence2;}), "confidence2-left");
-		matstore.addMat(regionWiseImage<float>(right ,[](const disparity_region& region){return region.stats.confidence2;}), "confidence2-right");
-		matstore.addMat(regionWiseImage<float>(left, [](const disparity_region& region){return region.stats.stddev/region.stats.mean;}), "stddev-norm");
+		matstore.add_mat(regionWiseImage<float>(left, [](const disparity_region& region){return region.stats.stddev;}), "stddev-left");
+		matstore.add_mat(regionWiseImage<float>(right, [](const disparity_region& region){return region.stats.stddev;}), "stddev-right");
+		matstore.add_mat(regionWiseImage<float>(left, [](const disparity_region& region){return region.stats.mean;}), "mean-left");
+		matstore.add_mat(regionWiseImage<float>(left ,[](const disparity_region& region){return region.stats.confidence2;}), "confidence2-left");
+		matstore.add_mat(regionWiseImage<float>(right ,[](const disparity_region& region){return region.stats.confidence2;}), "confidence2-right");
+		matstore.add_mat(regionWiseImage<float>(left, [](const disparity_region& region){return region.stats.stddev/region.stats.mean;}), "stddev-norm");
 		//matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [&](const SegRegion& region){return region.disparity_costs(region.disparity-task.forward.dispMin);}), "opt-left");
 		//matstore.addMat(regionWiseImage<float>(task.backward, right.regions, [&](const SegRegion& region){return region.disparity_costs(region.disparity-task.backward.dispMin);}), "opt-right");
 		//matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [&](const SegRegion& region){return region.confidence(region.disparity-task.forward.dispMin);}), "mi-conf-left");
@@ -491,7 +491,7 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 
 		cv::Mat warped = disparity::warp_disparity<short>(opt_disp_left);
 		cv::Mat occ_mat = disparity::occlusion_map<short>(opt_disp_left, warped);
-		matstore.addMat(value_scaled_image<unsigned char, unsigned char>(occ_mat), "occ");
+		matstore.add_mat(value_scaled_image<unsigned char, unsigned char>(occ_mat), "occ");
 	}
 }
 
@@ -603,9 +603,9 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 
 	if(config.verbose)
 	{
-		matstore.setRegionContainer(left, right);
-		matstore.addMat(disparity_left, "disp_left");
-		matstore.addMat(disparity_right, "disp_right");
+		matstore.set_region_container(left, right);
+		matstore.add_mat(disparity_left, "disp_left");
+		matstore.add_mat(disparity_right, "disp_right");
 	}
 
 	return std::make_pair(disparity_left, disparity_right);
@@ -621,7 +621,7 @@ std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(stereo_task& tas
 {
 	std::cout << "task: " << task.name << std::endl;
 	int subsampling = 1; //TODO avoid this
-	matstore.startNewTask(task.name, task);
+	matstore.start_new_task(task.name, task);
 	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling, *m_optimizer);
 }
 

@@ -27,17 +27,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "stereotask.h"
 
-DebugMatStore matstore;
+debug_store matstore;
 
-DebugMatStore::DebugMatStore()
+debug_store::debug_store()
 {
 }
 
-void DebugMatStore::startNewTask(const std::string& name, stereo_task &task)
+void debug_store::start_new_task(const std::string& name, stereo_task &task)
 {
-	tasks.push_back(TaskStore(name, &task));
+	tasks.push_back(debug_task_store(name, &task));
 }
-void DebugMatStore::setRegionContainer(std::shared_ptr<region_container>& left, std::shared_ptr<region_container>& right)
+void debug_store::set_region_container(std::shared_ptr<region_container>& left, std::shared_ptr<region_container>& right)
 {
 	assert(!tasks.empty());
 
@@ -45,33 +45,15 @@ void DebugMatStore::setRegionContainer(std::shared_ptr<region_container>& left, 
 	tasks.back().right = right;
 }
 
-void DebugMatStore::addMat(const cv::Mat& mat, const char* name)
+void debug_store::add_mat(const cv::Mat& mat, const char* name)
 {
 	assert(!tasks.empty());
 
 	tasks.back().simpleMatrices.push_back(std::make_pair(mat, std::string(name)));
 }
 
-void DebugMatStore::addMat(const cv::Mat& left, const cv::Mat& right, cv::Mat &cost, const char* name, int windowsize, bool forward, cv::Mat windows, cv::Mat offset)
+void debug_store::add_mat(const char *name, const cv::Mat &mat)
 {
-	assert(!tasks.empty());
-
-	viewerMat temp;
-	temp.left = left;
-	temp.right = right;
-	temp.cost_map = cost;
-	temp.name = std::string(name);
-	temp.windowsize = windowsize;
-	temp.forward = forward;
-	temp.windows = windows;
-	temp.offset = offset;
-
-	tasks.back().costmaps.push_back(temp);
+	add_mat(mat, name);
 }
-
-void DebugMatStore::addMat(const single_stereo_task& task, cv::Mat& cost, const char* name, int windowsize, cv::Mat windows, cv::Mat offset)
-{
-	addMat(task.base, task.match, cost, name, windowsize, task.dispMin < 0, windows, offset);
-}
-
 

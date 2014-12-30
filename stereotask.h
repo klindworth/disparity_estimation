@@ -27,8 +27,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define STEREOTASK_H
 
 #include <opencv2/core/core.hpp>
-#include <array>
-#include <iterator>
 #include <string>
 
 class single_stereo_task
@@ -42,7 +40,7 @@ public:
 	inline int range_size() const { return dispMax - dispMin + 1; }
 };
 
-/// Class for saving a StereoTask, forward and backward
+/// Class for saving a specific stereo processing task. It can be loaded from a yaml file, or you construct one by passing all the image paths
 class stereo_task
 {
 public:
@@ -91,7 +89,7 @@ public:
 	std::vector<stereo_task> tasks;
 };
 
-/// Container for StereoTasks. It can read a testset file, which contain the filenames for the single StereoTasks
+/// Container for stereo_tasks. It can read a testset file, which contain the filenames for the single stereo_tasks
 class TaskTestSet : public task_collection
 {
 public:
@@ -101,6 +99,7 @@ public:
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const TaskTestSet& testset);
 
+///constructs a task_collection by reading a directory full of image files, so you don't have to create a yaml file per image.
 class folder_testset : public task_collection
 {
 public:

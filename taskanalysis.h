@@ -31,24 +31,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class stereo_task;
 class single_stereo_task;
 
-class TaskAnalysis
+class task_analysis
 {
 public:
-	TaskAnalysis();
-	TaskAnalysis(const stereo_task& task, const cv::Mat& disparity_left, const cv::Mat& disparity_right, int subsampling, int ignore_border = 0);
+	task_analysis();
+	task_analysis(const stereo_task& task, const cv::Mat& disparity_left, const cv::Mat& disparity_right, int subsampling, int ignore_border = 0);
 	//void write(cv::FileNode& node) const;
 	static const int maxdiff = 15;
-	//StereoSingleTask task;
 	std::array<int, maxdiff> error_hist_left, error_hist_right;
 	cv::Mat diff_mat_left, diff_mat_right;
 private:
-	void createInternal(const single_stereo_task& task, const cv::Mat& disparity, cv::Mat& error_mat, std::array<int, maxdiff>& hist,  int subsamplingDisparity, unsigned int ignore_border = 0);
+	void create_internal(const single_stereo_task& task, const cv::Mat& disparity, cv::Mat& error_mat, std::array<int, maxdiff>& hist,  int subsamplingDisparity, unsigned int ignore_border = 0);
 };
 
-cv::FileStorage& operator<<(cv::FileStorage& stream, const TaskAnalysis& analysis);
+cv::FileStorage& operator<<(cv::FileStorage& stream, const task_analysis& analysis);
 
 template<typename charT, typename traits>
-inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const TaskAnalysis& analysis)
+inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const task_analysis& analysis)
 {
 	//std::copy(analysis.error_hist.begin(), analysis.error_hist.end(), std::ostream_iterator<int>(stream, ","));
 	int sum = std::accumulate(analysis.error_hist_left.begin(), analysis.error_hist_left.end(), 0);

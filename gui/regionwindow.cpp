@@ -102,12 +102,12 @@ void RegionWindow::setData(std::shared_ptr<region_container>& left, std::shared_
 	}
 }
 
-void RegionWindow::setStore(DebugMatStore* store, initial_disparity_config *config)
+void RegionWindow::setStore(debug_store* store, initial_disparity_config *config)
 {
 	m_config = config;
 	m_store = store;
 	ui->cbTask->clear();
-	for(TaskStore& ctask : m_store->tasks)
+	for(debug_task_store& ctask : m_store->tasks)
 	{
 		ui->cbTask->addItem(ctask.name.c_str());
 	}

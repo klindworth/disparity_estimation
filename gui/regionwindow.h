@@ -33,7 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class region_container;
 class disparity_region;
-class DebugMatStore;
+class debug_store;
 class initial_disparity_config;
 class disparity_hypothesis_weight_vector;
 class manual_region_optimizer;
@@ -50,7 +50,7 @@ public:
 	explicit RegionWindow(QWidget *parent = 0);
 	~RegionWindow();
 	void setData(std::shared_ptr<region_container>& left, std::shared_ptr<region_container>& right);
-	void setStore(DebugMatStore* store, initial_disparity_config* config);
+	void setStore(debug_store* store, initial_disparity_config* config);
 
 private slots:
 	void on_treeSegments_itemDoubleClicked(QTreeWidgetItem *item, int column);
@@ -75,7 +75,7 @@ private:
 	void fillTree(int index, disparity_region& baseRegion, std::vector<disparity_region>& other_regions , QTreeWidget *tree);
 	Ui::RegionWindow *ui;
 	std::shared_ptr<region_container> m_left, m_right;
-	DebugMatStore *m_store;
+	debug_store *m_store;
 	initial_disparity_config *m_config;
 
 	manual_region_optimizer *optimizer;
