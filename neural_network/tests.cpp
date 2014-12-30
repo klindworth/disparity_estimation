@@ -1,4 +1,4 @@
-#include "simple_nn.h"
+#include <neural_network/network.h>
 
 #include <gtest/gtest.h>
 

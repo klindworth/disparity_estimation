@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <fstream>
 #include <boost/lexical_cast.hpp>
-#include "simple_nn.h"
+#include <neural_network/network.h>
 
 #include "debugmatstore.h"
 

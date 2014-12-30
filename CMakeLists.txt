@@ -67,7 +67,9 @@ set(HEADERS
     region_metrics.h
     refinement.h
 
-    simple_nn.h
+    neural_network/network.h
+    neural_network/blas_wrapper.h
+    neural_network/layer.h
 )
 
 set(QTHEADERS
@@ -86,7 +88,7 @@ set(FORMS
 qt5_wrap_cpp(HEADERS_MOC ${QTHEADERS})
 qt5_wrap_ui(FORMS_HEADERS ${FORMS})
 
-include_directories(. gui loganalyzer ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(. gui neural_network loganalyzer ${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(${QT_DEFINITIONS})
 
 add_executable(${PROJECT_NAME}
@@ -107,7 +109,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -Wal
 enable_testing()
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
-add_executable(${PROJECT_NAME}_tests simple_nn_tests.cpp simple_nn.h)
+add_executable(${PROJECT_NAME}_tests neural_network/tests.cpp neural_network/network.h)
 target_link_libraries(${PROJECT_NAME}_tests ${OpenCV_LIBS} ${GTEST_BOTH_LIBRARIES} openblas)
 
 add_subdirectory(segmentation)
