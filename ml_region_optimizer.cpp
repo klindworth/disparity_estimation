@@ -28,8 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <omp.h>
 #include "disparity_region.h"
 #include "disparity_region_algorithms.h"
-#include "segmentation/intervals.h"
-#include "segmentation/intervals_algorithms.h"
+#include <segmentation/intervals.h>
+#include <segmentation/intervals_algorithms.h>
 #include "disparity_utils.h"
 #include "genericfunctions.h"
 
@@ -38,6 +38,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <neural_network/network.h>
 
 #include "debugmatstore.h"
+
+using namespace neural_network;
 
 void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& optimization_vectors, const region_container& base, const region_container& match, int delta)
 {
@@ -339,7 +341,7 @@ void ml_region_optimizer::reset_internal()
 	//int nvector = ml_region_optimizer::vector_size_per_disp + ml_region_optimizer::vector_size;
 	int nvector = ml_region_optimizer::vector_size_per_disp;
 	int pass = ml_region_optimizer::vector_size;
-	nnet = std::unique_ptr<neural_network<double>>(new neural_network<double>(dims));
+	nnet = std::unique_ptr<network<double>>(new network<double>(dims));
 	//nnet->emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
 	nnet->emplace_layer<vector_connected_layer>(nvector, nvector, pass);
 	nnet->emplace_layer<relu_layer>();
@@ -441,7 +443,7 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	std::cout << "ann" << std::endl;
 	//neural_network<double> net (dims, crange, {dims, dims});
 	assert(dims == (ml_region_optimizer::vector_size_per_disp*2*crange)+ml_region_optimizer::vector_size);
-	neural_network<double> net(dims);
+	network<double> net(dims);
 
 	/*if(iteration > 0)
 	{

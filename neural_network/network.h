@@ -16,15 +16,16 @@
 #include <neural_network/blas_wrapper.h>
 #include <neural_network/layer.h>
 
-
+namespace neural_network
+{
 template<typename T>
-class neural_network
+class network
 {
 public:
-	neural_network(int in_dim) : in_dim(in_dim), out_dim(in_dim)
+	network(int in_dim) : in_dim(in_dim), out_dim(in_dim)
 	{}
 
-	neural_network(int in_dim, int out_dim, const std::initializer_list<int>& list) : in_dim(in_dim), out_dim(in_dim)
+	network(int in_dim, int out_dim, const std::initializer_list<int>& list) : in_dim(in_dim), out_dim(in_dim)
 	{
 		bool dropout = false;
 		for(int csize : list)
@@ -40,6 +41,11 @@ public:
 		//emplace_layer<tanh_entropy_output_layer>();
 	}
 
+	/**
+	 * Creates a new layer and passes the first two parameters of the layer's constructor on it's own (propagate down, input dimension)
+	 * E.g. if your layer has the following constructor layer_type(bool propagate_down, int input_dimension, int output_dimension) you have to call this function
+	 * emplace_layer<layer_type>(output_dimension)
+	 */
 	template<template<typename Ti> class layer_type, typename... args_type>
 	void emplace_layer(args_type... args)
 	{
@@ -50,6 +56,12 @@ public:
 		layers.back()->init_weights();
 	}
 
+	/**
+	 * @brief test Tests the neural network. It measures, how many sample classes will be correctly predicted
+	 * @param data Samples
+	 * @param gt Ground truth label of the samples. Therefore it must have the same size as the data vector
+	 * @return Percentual amount of correctly predicted sample classes
+	 */
 	float test(const std::vector<std::vector<T>>& data, const std::vector<short>& gt)
 	{
 		assert(data.size() == gt.size());
@@ -86,6 +98,11 @@ public:
 		return result;
 	}
 
+	/**
+	 * @brief predict Runs the prediction for one sample and returns it's class label
+	 * @param data Sample
+	 * @return Class label
+	 */
 	int predict(const T* data)
 	{
 		forward_propagation(data);
@@ -237,16 +254,17 @@ public:
 	std::vector<std::shared_ptr<layer_base<T>>> layers;
 	int in_dim, out_dim;
 };
+}
 
 template<typename T>
-std::ostream& operator<<(std::ostream& stream, const neural_network<T>& net)
+std::ostream& operator<<(std::ostream& stream, const neural_network::network<T>& net)
 {
 	net.save_weights(stream);
 	return stream;
 }
 
 template<typename T>
-std::istream& operator>>(std::istream& stream, neural_network<T>& net)
+std::istream& operator>>(std::istream& stream, neural_network::network<T>& net)
 {
 	net.load_weights(stream);
 	return stream;

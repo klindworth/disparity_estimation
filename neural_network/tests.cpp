@@ -2,6 +2,8 @@
 
 #include <gtest/gtest.h>
 
+using namespace neural_network;
+
 template<typename T>
 T get_loss(const std::vector<T>& output, const std::vector<T>& gt)
 {
@@ -17,7 +19,7 @@ T get_loss(const std::vector<T>& output, const std::vector<T>& gt)
 }
 
 template<typename T>
-T calc_numeric_gradient(neural_network<T>& net, const std::vector<std::vector<T> >& in, const std::vector<std::vector<T>>& v, T& w, T delta)
+T calc_numeric_gradient(network<T>& net, const std::vector<std::vector<T> >& in, const std::vector<std::vector<T>>& v, T& w, T delta)
 {
 	auto calc_delta = [&](T temp_w) {
 		std::swap(w, temp_w);
@@ -40,7 +42,7 @@ T calc_numeric_gradient(neural_network<T>& net, const std::vector<std::vector<T>
 }
 
 template<typename T>
-bool gradient_check(neural_network<T>& net, const std::vector<std::vector<T>>& in, const std::vector<short>& t, float_t eps, T delta)
+bool gradient_check(network<T>& net, const std::vector<std::vector<T>>& in, const std::vector<short>& t, float_t eps, T delta)
 {
 	std::vector<std::vector<T> > v(t.size(), std::vector<T>(net.out_dim, 0.0));
 	for(std::size_t i = 0; i < t.size(); ++i)
@@ -88,7 +90,7 @@ bool gradient_check(neural_network<T>& net, const std::vector<std::vector<T>>& i
 template<typename data_type>
 bool test_gradient_check_internal(data_type delta, data_type eps)
 {
-	neural_network<data_type> net(2,2, {12,12});
+	network<data_type> net(2,2, {12,12});
 
 	std::vector<data_type> input1 {-0.8, 0.8};
 	std::vector<data_type> input2 {0.7, -0.7};
@@ -139,7 +141,7 @@ TEST(SimpleNN, GradientDoubleVectorLayer)
 	std::vector<std::vector<data_type>> input {input1, input2, input3, input4, input5, input6};
 	std::vector<short> output {output1, output2, output3, output4, output5, output6};
 
-	neural_network<data_type> net(5);
+	network<data_type> net(5);
 	net.emplace_layer<vector_connected_layer>(2,4,1);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(2);
@@ -175,7 +177,7 @@ TEST(SimpleNN, GradientDoubleVectorLayer2)
 	std::vector<std::vector<data_type>> input {input1, input2, input3, input4, input5, input6};
 	std::vector<short> output {output1, output2, output3, output4, output5, output6};
 
-	neural_network<data_type> net(5);
+	network<data_type> net(5);
 	net.emplace_layer<vector_connected_layer>(2,4,1);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<vector_connected_layer>(1,2,1);

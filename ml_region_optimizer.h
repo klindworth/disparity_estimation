@@ -31,8 +31,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 class single_stereo_task;
 
+namespace neural_network
+{
 template<typename T>
-class neural_network;
+class network;
+}
+
 
 class result_eps_calculator
 {
@@ -97,7 +101,7 @@ private:
 	int training_iteration;
 	std::string filename_left_prefix, filename_right_prefix;
 
-	std::unique_ptr<neural_network<double>> nnet;
+	std::unique_ptr<neural_network::network<double>> nnet;
 	result_eps_calculator total_diff_calc;
 };
 

@@ -4,6 +4,9 @@
 #include <vector>
 #include <neural_network/blas_wrapper.h>
 
+namespace neural_network
+{
+
 template<typename Iterator>
 void uniform_init(Iterator begin, Iterator end, typename Iterator::value_type var)
 {
@@ -683,5 +686,6 @@ public:
 protected:
 	int old_vectorsize, vector_extension;
 };
+}
 
 #endif //NEURAL_NETWORK_LAYER_H
