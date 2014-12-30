@@ -233,6 +233,20 @@ TEST(SimpleNN, VectorLayer1)
 	std::cout << std::endl;
 }
 
+TEST(SimpleNN, VectorExtension)
+{
+	std::vector<double> test_input {1,2,3,4,5};
+	std::vector<double> expected_output {1,2,5,3,4,5};
+	vector_extension_layer<double> vec_layer(false, 5,2,1);
+
+	vec_layer.forward_propagation(test_input.data());
+	const double* output = vec_layer.output();
+	for(std::size_t i = 0; i < expected_output.size(); ++i)
+		ASSERT_EQ(expected_output[i], output[i]);
+
+	ASSERT_EQ(vec_layer.output_dimension(), 6);
+}
+
 void compare_double_vector(const std::vector<double>& actual, const std::vector<double>& desired)
 {
 	ASSERT_EQ(actual.size(), desired.size());
