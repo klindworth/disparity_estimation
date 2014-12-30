@@ -49,17 +49,10 @@ public:
 	int subsampling;
 };
 
-template<typename charT, typename traits>
-inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const refinement_config& config)
-{
-	stream << "min_windowsize: " << config.min_windowsize << "\nmax_windowsize: " << config.max_windowsize << "\ndeltaDisp: " << config.deltaDisp;
-	return stream;
-}
-
 cv::FileStorage& operator<<(cv::FileStorage& stream, const refinement_config& config);
 cv::FileStorage& operator>>(cv::FileStorage& stream, refinement_config& config);
 
-typedef std::function<cv::Mat(cv::Mat& initial_disparity, single_stereo_task& task, cv::Mat base_quant, cv::Mat match_quant, region_container& container, const refinement_config& config)> refinement_func_type;
+typedef std::function<cv::Mat(cv::Mat& initial_disparity, single_stereo_task& task, cv::Mat base, cv::Mat match, region_container& container, const refinement_config& config)> refinement_func_type;
 
 
 template<typename cost_func, int quantizer>

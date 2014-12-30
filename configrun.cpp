@@ -65,22 +65,12 @@ std::string timestampString()
 	return std::string(buffer);
 }
 
-std::pair<cv::Mat, cv::Mat> singleLoggedRun(stereo_task& task, disparity_estimator_algo& disparity_estimator, cv::FileStorage& fs, const std::string& filename)
+void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pair<cv::Mat, cv::Mat>& disparity, const stereo_task& task, int total_runtime, int ignore_border = 0)
 {
 	bool logging = true;
 	int subsampling = 1; //TODO: avoid this
-	std::time_t starttime;
-	std::time(&starttime);
 
-	std::pair<cv::Mat, cv::Mat> disparity = disparity_estimator(task);
-
-	std::time_t endtime;
-	std::time(&endtime);
-	int total_runtime = std::difftime(endtime, starttime);
-	std::cout << "runtime: " << total_runtime << std::endl;
-	std::cout << "finished" << std::endl;
-
-	task_analysis analysis(task, disparity.first, disparity.second, subsampling);
+	task_analysis analysis(task, disparity.first, disparity.second, subsampling, ignore_border);
 	cv::Mat disp_left  = disparity::create_image(disparity.first);
 	cv::Mat disp_right = disparity::create_image(disparity.second);
 	if(logging)
@@ -115,128 +105,10 @@ std::pair<cv::Mat, cv::Mat> singleLoggedRun(stereo_task& task, disparity_estimat
 			cv::imwrite(filename + "_error-right.png", err_image);
 		matstore.add_mat(err_image, "ground-diff-right");
 	}
-
-	return disparity;
 }
 
-void loggedRun(stereo_task& task, initial_disparity_config& config, refinement_config& refconfig)
-{
-	TaskTestSet testset;
-	testset.name = task.name;
-	testset.tasks.push_back(task);
-	loggedRun(testset, config, refconfig);
-}
-
-
-void loggedRun(task_collection& testset, disparity_estimator_algo& disparity_estimator)
-{
-	std::string filename = "results/" + dateString() + "_" + timestampString();
-	cv::FileStorage fs(filename + ".yml", cv::FileStorage::WRITE);
-
-	fs << "testset" << testset.name;
-	fs << "analysis" << "[";
-	for(stereo_task& ctask : testset.tasks)
-	{
-		std::cout << "----------------------\nstart task: " << ctask.name << "\n-------------------" << std::endl;
-		if(!ctask.valid())
-		{
-			std::cerr << "failed to load images: " << ctask.name << std::endl;
-			return;
-		}
-
-		//matstore.startNewTask(ctask.name, ctask);
-		fs << "{:";
-		singleLoggedRun(ctask, disparity_estimator, fs, filename + "_" + ctask.name);
-		fs << "}";
-	}
-	fs << "]";
-
-	disparity_estimator.writeConfig(fs);
-	//fs << config;
-	//fs << refconfig;
-}
-
-void loggedRun(task_collection& testset, initial_disparity_config& config, refinement_config& refconfig)
-{
-	//FIXME
-	assert(false);
-	/*if(config.optimizer.optimizer_type == "manual")
-		m_optimizer = std::make_shared<manual_region_optimizer>();
-	else
-		m_optimizer = std::make_shared<ml_region_optimizer>();
-
-	initial_disparity_algo algo(config, refconfig);
-
-	loggedRun(testset, algo);*/
-}
-
-template<int quantizer>
-std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(single_stereo_task& task, bool soft, unsigned int windowsize)
-{
-	typedef std::pair<cv::Mat, cv::Mat> data_type;
-	long long start = cv::getCPUTickCount();
-	auto entropy = calculate_entropies<quantizer>(task, soft, windowsize);
-
-	start = cv::getCPUTickCount() - start;
-	std::cout << "entropy " << start << std::endl;
-
-	auto data_single = std::make_pair(entropy.X, entropy.Y);
-
-	return std::vector<cv::Mat_<short>> {disparity::wta_disparity<entropy_agg<mutual_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										disparity::wta_disparity<entropy_agg<variation_of_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										disparity::wta_disparity<entropy_agg<normalized_variation_of_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										disparity::wta_disparity<entropy_agg<normalized_information_distance_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax)};
-}
-
-void singleClassicRun(stereo_task& task, classic_search_config& config, std::string filename, std::vector<cv::FileStorage*>& fs)
-{
-	std::vector<cv::Mat_<short> > resultLeft, resultRight;
-
-	std::time_t starttime;
-	std::time(&starttime);
-
-	if(config.quantizer == 1)
-	{
-		resultLeft = AllInformationTheoreticDistance<1>(task.forward, config.soft, config.windowsize);
-		resultRight = AllInformationTheoreticDistance<1>(task.backward, config.soft, config.windowsize);
-	}
-	else if(config.quantizer == 2)
-	{
-		resultLeft = AllInformationTheoreticDistance<2>(task.forward, config.soft, config.windowsize);
-		resultRight = AllInformationTheoreticDistance<2>(task.backward, config.soft, config.windowsize);
-	}
-	else if(config.quantizer == 4)
-	{
-		resultLeft = AllInformationTheoreticDistance<4>(task.forward, config.soft, config.windowsize);
-		resultRight = AllInformationTheoreticDistance<4>(task.backward, config.soft, config.windowsize);
-	}
-	else if(config.quantizer == 8)
-	{
-		resultLeft = AllInformationTheoreticDistance<8>(task.forward, config.soft, config.windowsize);
-		resultRight = AllInformationTheoreticDistance<8>(task.backward, config.soft, config.windowsize);
-	}
-	else if(config.quantizer == 16)
-	{
-		resultLeft = AllInformationTheoreticDistance<16>(task.forward, config.soft, config.windowsize);
-		resultRight = AllInformationTheoreticDistance<16>(task.backward, config.soft, config.windowsize);
-	}
-	else if(config.quantizer == 32)
-	{
-		resultLeft = AllInformationTheoreticDistance<32>(task.forward, config.soft, config.windowsize);
-		resultRight = AllInformationTheoreticDistance<32>(task.backward, config.soft, config.windowsize);
-	}
-	else
-		std::cerr << "invalid quantizer" << std::endl;
-
-	std::time_t endtime;
-	std::time(&endtime);
-	int total_runtime = std::difftime(endtime, starttime);
-
-	std::vector<std::string> names {"_mi", "_vi", "_nvi", "_ndi"};
-
-	for(std::size_t i = 0; i < resultLeft.size(); ++i)
-	{
-		std::string fullfilename = filename + names[i] + "_" + task.name;
+/*
+ * 		std::string fullfilename = filename + names[i] + "_" + task.name;
 		task_analysis analysis(task, resultLeft[i], resultRight[i], 1, config.windowsize/2);
 
 		*(fs[i]) << "taskname" << task.name;
@@ -260,6 +132,135 @@ void singleClassicRun(stereo_task& task, classic_search_config& config, std::str
 			cv::imwrite(fullfilename + "_error-right.png", err_image);
 			matstore.add_mat(err_image, "ground-diff-right");
 		}
+		*/
+
+std::pair<cv::Mat, cv::Mat> single_logged_run(stereo_task& task, disparity_estimator_algo& disparity_estimator, cv::FileStorage& fs, const std::string& filename)
+{
+
+	std::time_t starttime;
+	std::time(&starttime);
+
+	std::pair<cv::Mat, cv::Mat> disparity = disparity_estimator(task);
+
+	std::time_t endtime;
+	std::time(&endtime);
+	int total_runtime = std::difftime(endtime, starttime);
+	std::cout << "runtime: " << total_runtime << std::endl;
+	std::cout << "finished" << std::endl;
+
+	write_logged_data(fs, filename, disparity, task, total_runtime);
+
+	return disparity;
+}
+
+void logged_run(stereo_task& task, initial_disparity_config& config, refinement_config& refconfig)
+{
+	TaskTestSet testset;
+	testset.name = task.name;
+	testset.tasks.push_back(task);
+	logged_run(testset, config, refconfig);
+}
+
+
+void logged_run(task_collection& testset, disparity_estimator_algo& disparity_estimator)
+{
+	std::string filename = "results/" + dateString() + "_" + timestampString();
+	cv::FileStorage fs(filename + ".yml", cv::FileStorage::WRITE);
+
+	fs << "testset" << testset.name;
+	fs << "analysis" << "[";
+	for(stereo_task& ctask : testset.tasks)
+	{
+		std::cout << "----------------------\nstart task: " << ctask.name << "\n-------------------" << std::endl;
+		if(!ctask.valid())
+		{
+			std::cerr << "failed to load images: " << ctask.name << std::endl;
+			return;
+		}
+
+		//matstore.startNewTask(ctask.name, ctask);
+		fs << "{:";
+		single_logged_run(ctask, disparity_estimator, fs, filename + "_" + ctask.name);
+		fs << "}";
+	}
+	fs << "]";
+
+	disparity_estimator.writeConfig(fs);
+	//fs << config;
+	//fs << refconfig;
+}
+
+void logged_run(task_collection& testset, initial_disparity_config& config, refinement_config& refconfig)
+{
+	//FIXME
+	assert(false);
+	/*if(config.optimizer.optimizer_type == "manual")
+		m_optimizer = std::make_shared<manual_region_optimizer>();
+	else
+		m_optimizer = std::make_shared<ml_region_optimizer>();
+
+	initial_disparity_algo algo(config, refconfig);
+
+	loggedRun(testset, algo);*/
+}
+
+template<int quantizer>
+std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(const single_stereo_task& task, bool soft, unsigned int windowsize)
+{
+	typedef std::pair<cv::Mat, cv::Mat> data_type;
+	long long start = cv::getCPUTickCount();
+	auto entropy = calculate_entropies<quantizer>(task, soft, windowsize);
+
+	start = cv::getCPUTickCount() - start;
+	std::cout << "entropy " << start << std::endl;
+
+	auto data_single = std::make_pair(entropy.X, entropy.Y);
+
+	return std::vector<cv::Mat_<short>> {disparity::wta_disparity<entropy_agg<mutual_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
+										disparity::wta_disparity<entropy_agg<variation_of_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
+										disparity::wta_disparity<entropy_agg<normalized_variation_of_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
+										disparity::wta_disparity<entropy_agg<normalized_information_distance_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax)};
+}
+
+template<int quantizer>
+void it_both_sides(std::vector<cv::Mat_<short>>& resultLeft, std::vector<cv::Mat_<short>>& resultRight, const stereo_task& task, const classic_search_config& config)
+{
+	resultLeft = AllInformationTheoreticDistance<quantizer>(task.forward, config.soft, config.windowsize);
+	resultRight = AllInformationTheoreticDistance<quantizer>(task.backward, config.soft, config.windowsize);
+}
+
+void singleClassicRun(const stereo_task& task, const classic_search_config& config, const std::string& filename, std::vector<cv::FileStorage*>& fs)
+{
+	std::vector<cv::Mat_<short> > resultLeft, resultRight;
+
+	std::time_t starttime;
+	std::time(&starttime);
+
+	if(config.quantizer == 1)
+		it_both_sides<1>(resultLeft, resultRight, task, config);
+	else if(config.quantizer == 2)
+		it_both_sides<2>(resultLeft, resultRight, task, config);
+	else if(config.quantizer == 4)
+		it_both_sides<4>(resultLeft, resultRight, task, config);
+	else if(config.quantizer == 8)
+		it_both_sides<8>(resultLeft, resultRight, task, config);
+	else if(config.quantizer == 16)
+		it_both_sides<16>(resultLeft, resultRight, task, config);
+	else
+		std::cerr << "invalid quantizer" << std::endl;
+
+	std::time_t endtime;
+	std::time(&endtime);
+	int total_runtime = std::difftime(endtime, starttime);
+
+	std::vector<std::string> names {"_mi", "_vi", "_nvi", "_ndi"};
+
+	for(std::size_t i = 0; i < resultLeft.size(); ++i)
+	{
+		std::string fullfilename = filename + names[i] + "_" + task.name;
+		std::pair<cv::Mat, cv::Mat> disparity {resultLeft[i], resultRight[i]};
+
+		write_logged_data(*(fs[i]), fullfilename, disparity, task, total_runtime, config.windowsize/2);
 	}
 }
 

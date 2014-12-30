@@ -55,7 +55,7 @@ public:
 };
 
 template<int quantizer>
-costmap_creators::entropy::entropies calculate_entropies(single_stereo_task task, bool soft, unsigned int windowsize)
+costmap_creators::entropy::entropies calculate_entropies(const single_stereo_task& task, bool soft, unsigned int windowsize)
 {
 	using namespace costmap_creators;
 
