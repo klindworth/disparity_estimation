@@ -59,8 +59,6 @@ set(HEADERS
     optimizer/ml_region_optimizer.h
     configrun.h
     taskanalysis.h
-    
-    misc.h
 
     region_metrics.h
     refinement.h

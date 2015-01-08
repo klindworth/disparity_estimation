@@ -1,6 +1,7 @@
 #ifndef NEURAL_NETWORK_LAYER_H
 #define NEURAL_NETWORK_LAYER_H
 
+#include <random>
 #include <vector>
 #include <neural_network/blas_wrapper.h>
 
