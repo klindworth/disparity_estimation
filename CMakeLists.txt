@@ -23,7 +23,7 @@ set(SOURCES main.cpp
     taskanalysis.cpp
     sliding_gradient.cpp
     refinement.cpp
-    sncc_disparitywise_calculator.cpp
+    pixelmetrics/sncc_disparitywise_calculator.cpp
     optimizer/manual_region_optimizer.cpp
     optimizer/ml_region_optimizer.cpp
 
@@ -45,7 +45,9 @@ set(HEADERS
     disparity_region.h
     disparity_region_algorithms.h
     disparitywise_calculator.h
-    sncc_disparitywise_calculator.h
+    pixelmetrics/sncc_disparitywise_calculator.h
+    pixelmetrics/converter_to_region.h
+    pixelmetrics/sad_disparitywise.h
 
     sparse_counter.h
     initial_disparity.h
@@ -84,7 +86,7 @@ set(FORMS
 qt5_wrap_cpp(HEADERS_MOC ${QTHEADERS})
 qt5_wrap_ui(FORMS_HEADERS ${FORMS})
 
-include_directories(. gui neural_network loganalyzer optimizer ${CMAKE_CURRENT_BINARY_DIR})
+include_directories(. gui neural_network loganalyzer optimizer pixelmetrics ${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(${QT_DEFINITIONS})
 
 add_executable(${PROJECT_NAME}
