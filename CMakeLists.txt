@@ -48,6 +48,7 @@ set(HEADERS
     pixelmetrics/sncc_disparitywise_calculator.h
     pixelmetrics/converter_to_region.h
     pixelmetrics/sad_disparitywise.h
+    entropy.h
 
     sparse_counter.h
     initial_disparity.h
