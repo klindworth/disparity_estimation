@@ -90,14 +90,12 @@ void RegionWindow::setData(std::shared_ptr<region_container>& left, std::shared_
 		ui->disparityLeft->setCVMat(disparity::create_image(disparityLeft));
 
 		cv::Mat warpedLeft = disparity::warp_disparity<short>(disparityLeft, 1.0f);
-		//cv::Mat warpedLeft = warpImage<short, short>(disparityLeft, disparityLeft, 1.0f);
 		ui->warpedLeft->setCVMat(disparity::create_image(warpedLeft));
 
 		cv::Mat disparityRight = disparity_by_segments(*m_right);
 		ui->disparityRight->setCVMat(disparity::create_image(disparityRight));
 
 		cv::Mat warpedRight = disparity::warp_disparity<short>(disparityRight, 1.0f);
-		//cv::Mat warpedRight = warpImage<short, short>(disparityRight, disparityRight, 1.0f);
 		ui->warpedRight->setCVMat(disparity::create_image(warpedRight));
 	}
 }

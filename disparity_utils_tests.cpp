@@ -46,6 +46,48 @@ TEST(DisparityUtils, WarpImageSingleRow)
 	ASSERT_TRUE(std::equal(res2.begin(), res2.end(), expected2.begin()));
 }
 
+TEST(DisparityUtils, WarpImageMultiRow)
+{
+	//WarpImage preferes rightmost value
+
+	std::vector<int> input {1, 2,3,4, 5,  6,7,8,9,10};
+	std::vector<short> disp1  {0,-1,0,0,-2,  0,0,-1,0,0};
+	std::vector<short> disp2  {2,0,0,1,0, 0,0,1,0,0};
+
+	std::vector<int> expected1 {2,0,5,4,0,  6,8,0,9,10};
+	std::vector<int> expected2 {0,2,3,0,5,  6,7,0,9,10};
+
+	cv::Mat_<int> input_mat = (cv::Mat_<int>(input)).reshape(1,2);
+	cv::Mat_<short> disp1_mat = (cv::Mat_<short>(disp1)).reshape(1,2);
+	cv::Mat_<short> disp2_mat = (cv::Mat_<short>(disp2)).reshape(1,2);
+
+	cv::Mat_<int> res1 = disparity::warp_image(input_mat, disp1_mat);
+	cv::Mat_<int> res2 = disparity::warp_image(input_mat, disp2_mat);
+
+	ASSERT_TRUE(std::equal(res1.begin(), res1.end(), expected1.begin()));
+	ASSERT_TRUE(std::equal(res2.begin(), res2.end(), expected2.begin()));
+}
+
+TEST(DisparityUtils, OcclusionStat)
+{
+	//WarpImage preferes rightmost value
+
+	std::vector<short> disp1  {0,-1,0,0,-2};
+	std::vector<short> disp2  {2,0,0,1,0};
+	std::vector<unsigned char> expected1 {2,0,2,1,0};
+
+	std::vector<unsigned char> expected2 {0,1,2,0,2};
+
+	cv::Mat_<short> disp1_mat = (cv::Mat_<short>(disp1)).reshape(1,1);
+	cv::Mat_<short> disp2_mat = (cv::Mat_<short>(disp2)).reshape(1,1);
+
+	cv::Mat_<unsigned char> res1 = disparity::occlusion_stat(disp1_mat);
+	cv::Mat_<unsigned char> res2 = disparity::occlusion_stat(disp2_mat);
+
+	ASSERT_TRUE(std::equal(res1.begin(), res1.end(), expected1.begin()));
+	ASSERT_TRUE(std::equal(res2.begin(), res2.end(), expected2.begin()));
+}
+
 TEST(DisparityUtils, WarpDisparity)
 {
 	std::vector<short> disp1  {0,-1,0,0,-2};

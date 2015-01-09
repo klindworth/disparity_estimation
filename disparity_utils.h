@@ -41,12 +41,12 @@ namespace disparity {
  * @param func Function that will be called for every pixel
  */
 template<typename disparity_type, typename T>
-void foreach_warped_pixel(const cv::Mat& disparity, float scaling, T func)
+void foreach_warped_pixel(const cv::Mat_<disparity_type>& disparity, float scaling, T func)
 {
 	#pragma omp parallel for
 	for(int y = 0; y < disparity.rows; ++y)
 	{
-		const disparity_type* disp_ptr = disparity.ptr<disparity_type>(y,0);
+		const disparity_type* disp_ptr = disparity[y];
 
 		for(int j = 0; j < disparity.cols; ++j)
 		{
@@ -80,12 +80,12 @@ cv::Mat occlusion_stat(const cv::Mat_<disparity_type>& disparity, float scaling 
 }
 
 template<typename disparity_type>
-cv::Mat occlusion_map(const cv::Mat& disparity, const cv::Mat& warped, float scaling = 1.0f)
+cv::Mat occlusion_map(const cv::Mat_<disparity_type>& disparity, const cv::Mat_<disparity_type>& warped, float scaling = 1.0f)
 {
 	cv::Mat occ_image(disparity.size(), CV_8UC1, cv::Scalar(0));
 
 	foreach_warped_pixel<disparity_type>(disparity, scaling, [&](cv::Point pos, cv::Point warped_pos, disparity_type disp){
-		if(warped.at<disparity_type>(warped_pos) != disp )
+		if(warped(warped_pos) != disp )
 			occ_image.at<unsigned char>(pos) = 255;
 	});
 
