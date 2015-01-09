@@ -153,6 +153,7 @@ void addSubItem(QStringList& subitem, const cv::FileNode& node)
 }
 
 //warps an image
+//TODO: useless since foreach_warped_pixel_unique?
 template<typename image_type, typename disparity_type>
 cv::Mat warpImageAdvanced(const cv::Mat& image, const cv::Mat& disparity, float scaling = 1.0f)
 {

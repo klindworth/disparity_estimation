@@ -32,9 +32,18 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace disparity {
 
+template<typename T>
+inline T absmax(const T& v1, const T& v2)
+{
+	if(std::abs(v1) > std::abs(v2))
+		return v1;
+	else
+		return v2;
+}
+
 /**
  * Calls for every pixel a function with the coordinates of the original pixel and the warped pixel and passes additionally the disparity.
- * The function is only called, if the coordinate in the warped space is still valid, that means within the bodunaries of the image
+ * The function is only called, if the coordinate in the warped space is still valid, that means within the boundaries of the image
  * @param disparity Matrix with the disparity
  * @param scaling Scaling factor of the passed disparity matrix. In most cases the disparity matrix is scaled due to subsampling, while the matrix remains integer.
  * That means, if you have a subsampling factor of four, your disparity matrix is scaled by four.
@@ -55,6 +64,48 @@ void foreach_warped_pixel(const cv::Mat_<disparity_type>& disparity, float scali
 
 			if(x >= 0 && x < disparity.cols)
 				func(cv::Point(j,y), cv::Point(x,y), cdisp);
+		}
+	}
+}
+
+/**
+ * Calls for every pixel a function with the coordinates of the original pixel and the warped pixel and passes additionally the disparity.
+ * The function is only called, if the coordinate in the warped space is still valid, that means within the boundaries of the image.
+ * Compared to the non-unique version, this function ensures, that the lambda is only called once for every position
+ * @param disparity Matrix with the disparity
+ * @param scaling Scaling factor of the passed disparity matrix. In most cases the disparity matrix is scaled due to subsampling, while the matrix remains integer.
+ * That means, if you have a subsampling factor of four, your disparity matrix is scaled by four.
+ * @param func Function that will be called for every pixel
+ */
+template<typename disparity_type, typename T>
+void foreach_warped_pixel_unique(const cv::Mat_<disparity_type>& disparity, float scaling, T func)
+{
+	#pragma omp parallel for
+	for(int y = 0; y < disparity.rows; ++y)
+	{
+		const disparity_type* disp_ptr = disparity[y];
+		std::vector<disparity_type> warp_buf(disparity.cols, 0);
+
+		for(int j = 0; j < disparity.cols; ++j)
+		{
+			disparity_type cdisp = *disp_ptr++;
+			int x = j + cdisp * scaling;
+
+			if(x >= 0 && x < disparity.cols)
+				warp_buf[x] = absmax(warp_buf[x], cdisp);
+		}
+
+		disp_ptr = disparity[y];
+		for(int j = 0; j < disparity.cols; ++j)
+		{
+			disparity_type cdisp = *disp_ptr++;
+			int x = j + cdisp * scaling;
+
+			if(x >= 0 && x < disparity.cols)
+			{
+				if(warp_buf[x] == cdisp)
+					func(cv::Point(j,y), cv::Point(x,y), cdisp);
+			}
 		}
 	}
 }
@@ -98,20 +149,11 @@ cv::Mat warp_image(const cv::Mat_<image_type>& image, const cv::Mat_<disparity_t
 {
 	cv::Mat_<image_type> warpedImage(image.size(), static_cast<image_type>(0));
 
-	foreach_warped_pixel<disparity_type>(disparity, scaling, [&](cv::Point pos, cv::Point warped_pos, disparity_type){
+	foreach_warped_pixel_unique<disparity_type>(disparity, scaling, [&](cv::Point pos, cv::Point warped_pos, disparity_type){
 		warpedImage(warped_pos) = image(pos);
 	});
 
 	return warpedImage;
-}
-
-template<typename T>
-inline T absmax(const T& v1, const T& v2)
-{
-	if(std::abs(v1) > std::abs(v2))
-		return v1;
-	else
-		return v2;
 }
 
 template<typename disparity_type>

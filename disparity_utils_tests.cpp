@@ -24,7 +24,7 @@ TEST(DisparityUtils, MinSided)
 
 TEST(DisparityUtils, WarpImageSingleRow)
 {
-	//WarpImage preferes rightmost value
+	//WarpImage preferes highest value
 
 	std::vector<int> input {1, 2,3,4, 5};
 	std::vector<short> disp1  {0,-1,0,0,-2};
@@ -32,8 +32,8 @@ TEST(DisparityUtils, WarpImageSingleRow)
 	std::vector<int> expected1 {2,0,5,4,0};
 	//std::vector<int> expected1b {1,0,3,4,0};
 
-	std::vector<int> expected2 {0,2,3,0,5};
-	//std::vector<int> expected2b {0,2,1,0,4};
+	//std::vector<int> expected2a {0,2,3,0,5};
+	std::vector<int> expected2 {0,2,1,0,4};
 
 	cv::Mat_<int> input_mat = (cv::Mat_<int>(input)).reshape(1,1);
 	cv::Mat_<short> disp1_mat = (cv::Mat_<short>(disp1)).reshape(1,1);
@@ -55,7 +55,7 @@ TEST(DisparityUtils, WarpImageMultiRow)
 	std::vector<short> disp2  {2,0,0,1,0, 0,0,1,0,0};
 
 	std::vector<int> expected1 {2,0,5,4,0,  6,8,0,9,10};
-	std::vector<int> expected2 {0,2,3,0,5,  6,7,0,9,10};
+	std::vector<int> expected2 {0,2,1,0,4,  6,7,0,8,10};
 
 	cv::Mat_<int> input_mat = (cv::Mat_<int>(input)).reshape(1,2);
 	cv::Mat_<short> disp1_mat = (cv::Mat_<short>(disp1)).reshape(1,2);
