@@ -35,12 +35,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <xmmintrin.h>
 #endif
 
-cv::Mat norm2(cv::Mat mat1, cv::Mat mat2)
+cv::Mat norm2(const cv::Mat& mat1, const cv::Mat& mat2)
 {
 	cv::Mat norm = cv::Mat(mat1.size(), CV_32FC1, cv::Scalar(0));
 	float *norm_ptr = norm.ptr<float>();
-	float *mat1_ptr = mat1.ptr<float>();
-	float *mat2_ptr = mat2.ptr<float>();
+	const float *mat1_ptr = mat1.ptr<float>();
+	const float *mat2_ptr = mat2.ptr<float>();
 
 	const int total = mat1.total();
 
@@ -54,7 +54,7 @@ cv::Mat norm2(cv::Mat mat1, cv::Mat mat2)
 	return norm;
 }
 
-cv::Mat gradient_image(cv::Mat base, cv::Mat base2, cv::Mat match, cv::Mat match2, int d)
+cv::Mat gradient_image(const cv::Mat& base, const cv::Mat& base2, const cv::Mat& match, const cv::Mat& match2, int d)
 {
 	const int simd_size = 4;
 
@@ -100,12 +100,12 @@ cv::Mat gradient_image(cv::Mat base, cv::Mat base2, cv::Mat match, cv::Mat match
 	//process remaining pixels
 	for(;i < counter_max; ++i)
 	{
-		float cbase  = base_cutted.at<float>(i);
-		float cmatch = match_shifted.at<float>(i);
-		float cbase2  = base2_cutted.at<float>(i);
-		float cmatch2 = match2_shifted.at<float>(i);
-		float cnormMatch = match_norm.at<float>(i);
-		float cnormBase  = base_norm.at<float>(i);
+		const float cbase  = base_cutted.at<float>(i);
+		const float cmatch = match_shifted.at<float>(i);
+		const float cbase2  = base2_cutted.at<float>(i);
+		const float cmatch2 = match2_shifted.at<float>(i);
+		const float cnormMatch = match_norm.at<float>(i);
+		const float cnormBase  = base_norm.at<float>(i);
 		float anglearg = (cbase*cmatch+cbase2*cmatch2)/(cnormBase*cnormMatch);
 		float weight = anglearg*anglearg;
 		result.at<float>(i) = weight*std::min(cnormBase, cnormMatch);
@@ -130,19 +130,21 @@ void derived_mat(const cv::Mat& input, cv::Mat& grad_x, cv::Mat& grad_y, bool bl
 	cv::Scharr( temp, grad_y, CV_32FC1, 0, 1);
 }
 
+gradient_calculator::gradient_calculator(cv::Mat base, cv::Mat match)
+{
+	bool blur = false;
+	derived_mat(base,  gradLeftX,  gradLeftY,  blur);
+	derived_mat(match, gradRightX, gradRightY, blur);
+}
+
+cv::Mat_<float> gradient_calculator::operator()(int d)
+{
+	return gradient_image(gradLeftX, gradLeftY, gradRightX, gradRightY, d);
+}
+
 cv::Mat sliding_gradient(single_stereo_task& task, int windowsize)
 {
-	cv::Mat gradLeftX;
-	cv::Mat gradLeftY;
-	derived_mat(task.baseGray,  gradLeftX,  gradLeftY,  false);
+	gradient_calculator calc(task.baseGray, task.matchGray);
 
-	cv::Mat gradRightX;
-	cv::Mat gradRightY;
-	derived_mat(task.matchGray, gradRightX, gradRightY, true);
-
-	auto cost_func = [=](int d) {
-		return gradient_image(gradLeftX, gradLeftY, gradRightX, gradRightY, d);
-	};
-
-	return simple_window_disparitywise_calculator(cost_func, cv::Size(windowsize, windowsize), gradLeftX, task.dispMin, task.dispMax);
+	return simple_window_disparitywise_calculator(calc, cv::Size(windowsize, windowsize), task.base.size(), task.dispMin, task.dispMax);
 }

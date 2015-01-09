@@ -26,15 +26,25 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SLIDINGGRADIENT_H
 #define SLIDINGGRADIENT_H
 
-namespace cv {
-class Mat;
-}
+#include <opencv2/core/core.hpp>
 
 class single_stereo_task;
 
-cv::Mat norm2(cv::Mat mat1, cv::Mat mat2);
+cv::Mat norm2(const cv::Mat& mat1, const cv::Mat& mat2);
+cv::Mat gradient_image(const cv::Mat &base, const cv::Mat &base2, const cv::Mat &match, const cv::Mat &match2, int d);
+void derived_mat(const cv::Mat& input, cv::Mat& grad_x, cv::Mat& grad_y, bool blur);
 
-cv::Mat gradient_image(cv::Mat base, cv::Mat base2, cv::Mat match, cv::Mat match2, int d);
+class gradient_calculator
+{
+public:
+	typedef float result_type;
+
+	gradient_calculator(cv::Mat base, cv::Mat match);
+	cv::Mat_<float> operator()(int d);
+
+protected:
+	cv::Mat gradLeftX, gradLeftY, gradRightX, gradRightY;
+};
 
 //! Calulates a dense costmap for the disparity with gradients as metric
 cv::Mat sliding_gradient(single_stereo_task& task, int windowsize);

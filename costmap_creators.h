@@ -258,9 +258,9 @@ cv::Mat flexBoxFilter(cv::Mat src, cv::Mat windowsizes)
 
 
 template<typename cost_type, typename window_type>
-cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv::Mat base, int dispMin, int dispMax)
+cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv::Size base_size, int dispMin, int dispMax)
 {
-	int sz[] = {base.rows, base.cols, dispMax - dispMin + 1};
+	int sz[] = {base_size.height, base_size.width, dispMax - dispMin + 1};
 	cv::Mat_<float> result = cv::Mat(3, sz, CV_32FC1, cv::Scalar(-std::numeric_limits<float>::max()));
 
 	#pragma omp parallel for
@@ -268,16 +268,16 @@ cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv
 	{
 		cv::Mat temp_result = window_sum(cost_func(d), d);
 
-		for(int y = 0; y < base.rows; ++y)
+		for(int y = 0; y < base_size.height; ++y)
 		{
 			if(d < 0)
 			{
-				for(int x = -d; x < base.cols; ++x)
+				for(int x = -d; x < base_size.width; ++x)
 					result(y,x,d-dispMin) = temp_result.at<float>(y, x+d);
 			}
 			else
 			{
-				int max_x = base.cols - d;
+				int max_x = base_size.width - d;
 				for(int x = 0; x < max_x; ++x)
 					result(y,x,d-dispMin) = temp_result.at<float>(y, x);
 			}
@@ -287,15 +287,15 @@ cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv
 }
 
 template<typename cost_type>
-cv::Mat simple_window_disparitywise_calculator(cost_type cost_func, cv::Size size, cv::Mat base, int dispMin, int dispMax)
+cv::Mat simple_window_disparitywise_calculator(cost_type cost_func, cv::Size window_size, cv::Size base_size, int dispMin, int dispMax)
 {
 	auto window_sum = [=](const cv::Mat& pre_result, int){
 		cv::Mat temp_result;
-		cv::boxFilter(pre_result, temp_result, -1, size);
+		cv::boxFilter(pre_result, temp_result, -1, window_size);
 		return temp_result;
 	};
 
-	return disparitywise_calculator(cost_func, window_sum, base, dispMin, dispMax);
+	return disparitywise_calculator(cost_func, window_sum, base_size, dispMin, dispMax);
 }
 
 #endif // COSTMAP_CREATORS_H
