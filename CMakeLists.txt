@@ -21,7 +21,7 @@ set(SOURCES main.cpp
     optimizer/region_optimizer.cpp
     configrun.cpp
     taskanalysis.cpp
-    metrics/sliding_gradient.cpp
+    metrics/pixelwise/gradient_disparitywise.cpp
     refinement.cpp
     metrics/pixelwise/sncc_disparitywise_calculator.cpp
     optimizer/manual_region_optimizer.cpp
@@ -36,7 +36,7 @@ set(SOURCES main.cpp
 set(HEADERS
     genericfunctions.h
     fast_array.h
-    metrics/sliding_gradient.h
+    metrics/pixelwise/gradient_disparitywise.h
     debugmatstore.h
     metrics/sliding_entropy.h
     costmap_creators.h
