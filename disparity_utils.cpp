@@ -32,37 +32,6 @@ namespace disparity
 
 typedef float costmap_type;
 
-template<typename T>
-std::size_t minimal_cost_disparity(const T* cost_ptr, int range, int dispMin)
-{
-	T min_cost = std::numeric_limits<T>::max();
-	std::size_t min_d = 0;
-	for(int d = 0; d < range; ++d)
-	{
-		if((cost_ptr[d] < min_cost && d+dispMin > 0) || (cost_ptr[d] <= min_cost && d+dispMin <= 0))
-		{
-			min_cost = cost_ptr[d];
-			min_d = d;
-		}
-	}
-	return min_d;
-}
-
-template<typename T>
-T disparity_interpolate(const T* cost_ptr, std::size_t min_d, std::size_t range, int subsample)
-{
-	T ndisp;
-	if(min_d > 0 && min_d < range-2 && (cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]) > 0 && subsample > 1)
-	{
-		T nmin_d = 0.5*(cost_ptr[min_d-1]-cost_ptr[min_d+1])/(cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]);
-		ndisp = (min_d+nmin_d)*subsample+0.5f;//add 0.5 for correct rounding
-	}
-	else
-		ndisp = min_d*subsample;
-
-	return ndisp;
-}
-
 cv::Mat create_from_costmap(const cv::Mat& cost_map, int dispMin, int subsample)
 {
 	costmap_type dispMinF = dispMin*subsample;

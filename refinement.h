@@ -28,12 +28,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 #include "window_size.h"
-#include "sliding_entropy.h"
 #include "costmap_creators.h"
 #include "stereotask.h"
 #include "disparity_region.h"
-
-#include "debugmatstore.h"
 
 #include <iostream>
 

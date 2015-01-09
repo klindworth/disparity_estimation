@@ -66,7 +66,7 @@ void foreach_warped_pixel(const cv::Mat& disparity, float scaling, T func)
  * That means, if you have a subsampling factor of four, your disparity matrix is scaled by four.
  */
 template<typename disparity_type>
-cv::Mat occlusion_stat(const cv::Mat& disparity, float scaling = 1.0f)
+cv::Mat occlusion_stat(const cv::Mat_<disparity_type>& disparity, float scaling = 1.0f)
 {
 	cv::Mat stat_image(disparity.size(), CV_8UC1, cv::Scalar(0));
 
@@ -94,12 +94,12 @@ cv::Mat occlusion_map(const cv::Mat& disparity, const cv::Mat& warped, float sca
 
 ///warps an image
 template<typename image_type, typename disparity_type>
-cv::Mat warp_image(const cv::Mat& image, const cv::Mat& disparity, float scaling = 1.0f)
+cv::Mat warp_image(const cv::Mat_<image_type>& image, const cv::Mat_<disparity_type>& disparity, float scaling = 1.0f)
 {
-	cv::Mat warpedImage(image.size(), image.type(), cv::Scalar(0));
+	cv::Mat_<image_type> warpedImage(image.size(), static_cast<image_type>(0));
 
 	foreach_warped_pixel<disparity_type>(disparity, scaling, [&](cv::Point pos, cv::Point warped_pos, disparity_type){
-		warpedImage.at<image_type>(warped_pos) = image.ptr<image_type>(pos);
+		warpedImage(warped_pos) = image(pos);
 	});
 
 	return warpedImage;
@@ -115,12 +115,12 @@ inline T absmax(const T& v1, const T& v2)
 }
 
 template<typename disparity_type>
-cv::Mat warp_disparity(const cv::Mat& disparity, float scaling = 1.0f)
+cv::Mat_<disparity_type> warp_disparity(const cv::Mat_<disparity_type>& disparity, float scaling = 1.0f)
 {
-	cv::Mat warpedImage(disparity.size(), disparity.type(), cv::Scalar(0));
+	cv::Mat_<disparity_type> warpedImage(disparity.size(), static_cast<disparity_type>(0));
 
 	foreach_warped_pixel<disparity_type>(disparity, scaling, [&](cv::Point, cv::Point warped_pos, disparity_type disp){
-		warpedImage.at<disparity_type>(warped_pos) = -absmax(warpedImage.at<disparity_type>(warped_pos), disp);
+		warpedImage(warped_pos) = absmax(warpedImage(warped_pos), static_cast<disparity_type>(-disp));
 	});
 
 	return warpedImage;
@@ -163,6 +163,37 @@ cv::Mat_<short> wta_disparity(cv::Mat base, data_type data, int dispMin, int dis
 	}
 
 	return result;
+}
+
+template<typename T>
+std::size_t minimal_cost_disparity(const T* cost_ptr, int range, int dispMin)
+{
+	T min_cost = std::numeric_limits<T>::max();
+	std::size_t min_d = 0;
+	for(int d = 0; d < range; ++d)
+	{
+		if((cost_ptr[d] < min_cost && d+dispMin > 0) || (cost_ptr[d] <= min_cost && d+dispMin <= 0))
+		{
+			min_cost = cost_ptr[d];
+			min_d = d;
+		}
+	}
+	return min_d;
+}
+
+template<typename T>
+T disparity_interpolate(const T* cost_ptr, std::size_t min_d, std::size_t range, int subsample)
+{
+	T ndisp;
+	if(min_d > 0 && min_d < range-2 && (cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]) > 0 && subsample > 1)
+	{
+		T nmin_d = 0.5*(cost_ptr[min_d-1]-cost_ptr[min_d+1])/(cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]);
+		ndisp = (min_d+nmin_d)*subsample+0.5f;//add 0.5 for correct rounding
+	}
+	else
+		ndisp = min_d*subsample;
+
+	return ndisp;
 }
 
 cv::Mat create_from_costmap(const cv::Mat &cost_map_org, int dispMin, int subsample);
