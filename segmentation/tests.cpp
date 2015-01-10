@@ -265,6 +265,28 @@ TEST(Interval, Intersecting)
 	EXPECT_TRUE(test3.intersecting(test2));
 }
 
+TEST(RegionDescriptor, Boxfilter)
+{
+	cv::Mat_<int> input(3,7);
+	std::iota(input.begin(), input.end(), 1);
+
+	region_interval l1(0, 0,3);
+	region_interval l2(1, 0,2);
+	region_interval l3(2, 1,2);
+	region_descriptor desc;
+	desc.lineIntervals.push_back(l1);
+	desc.lineIntervals.push_back(l2);
+	desc.lineIntervals.push_back(l3);
+
+	std::vector<std::pair<int, int>> result;
+	std::vector<std::pair<int, int>> expected {{0,0}, {1,1}, {4,26}, {6,39}, {6,45}, {6,51}, {6,57}, {6,63}, {5,61}, {2,21}, {0,0}};
+	result.resize(expected.size());
+
+	region_descriptors::segment_boxfilter(result, input, desc.lineIntervals, -3, 7);
+
+	ASSERT_TRUE(std::equal(result.begin(), result.end(), expected.begin()));
+}
+
 /*void value_intersecting_test()
 {
 	std::cout << "---- value intersecting test ----" << std::endl;

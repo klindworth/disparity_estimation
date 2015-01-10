@@ -333,6 +333,58 @@ T weighted_neighbors_average(const std::vector<reg_type>& container, const neigh
 	return result/sum_weights;
 }
 
+template<typename sum_type, typename T>
+void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv::Mat_<T>& src, const std::vector<region_interval>& region, int dx_min, int dx_max)
+{
+	assert(dx_max >= dx_min);
+	assert((int)result.size() == dx_max - dx_min + 1);
+
+	std::vector<region_interval> old_region = region;
+	region_descriptors::move_x(old_region.begin(), old_region.end(), dx_min, src.cols);
+
+	sum_type sum = 0;
+	int count = 0;
+	intervals::foreach_region_point(old_region.begin(), old_region.end(), [&](cv::Point pt) {
+		sum += src(pt);
+		++count;
+	});
+	result[0] = std::make_pair(count, sum);
+
+	for(int dx = dx_min+1; dx <= dx_max; ++dx)
+	{
+		for(std::size_t i = 0; i < region.size(); ++i)
+		{
+			region_interval hyp_interval = region[i];
+			hyp_interval.move(dx, src.cols);
+			assert(hyp_interval.upper - hyp_interval.lower >= 0);
+			assert(hyp_interval.upper >= 0 && hyp_interval.upper <= src.cols);
+			assert(hyp_interval.lower >= 0 && hyp_interval.lower <= src.cols);
+
+			region_interval old_interval = old_region[i];
+
+			if(hyp_interval.lower != old_interval.lower)
+			{
+				sum -= src(old_interval.y, old_interval.lower);
+				--count;
+			}
+			if(hyp_interval.upper != old_interval.upper)
+			{
+				sum += src(old_interval.y, old_interval.upper);
+				++count;
+			}
+			if(!(count > 0 ? (sum/count < 30) : true))
+			{
+				std::cout << (int)src(old_interval.y, old_interval.lower) << std::endl;
+				std::cout << (int)src(old_interval.y, old_interval.upper) << std::endl;
+			}
+			assert(count > 0 ? (sum/count < 30) : true);
+			old_region[i] = hyp_interval;
+		}
+		result[dx - dx_min] = std::make_pair(count, sum);
+		assert(count > 0 ? (sum/count < 30) : true);
+	}
+}
+
 namespace invariants
 {
 /**
