@@ -47,7 +47,7 @@ inline T absmax(const T& v1, const T& v2)
  * @param disparity Matrix with the disparity
  * @param scaling Scaling factor of the passed disparity matrix. In most cases the disparity matrix is scaled due to subsampling, while the matrix remains integer.
  * That means, if you have a subsampling factor of four, your disparity matrix is scaled by four.
- * @param func Function that will be called for every pixel
+ * @param func Function that will be called for every pixel (pos, warped_pos, disparity)
  */
 template<typename disparity_type, typename T>
 void foreach_warped_pixel(const cv::Mat_<disparity_type>& disparity, float scaling, T func)

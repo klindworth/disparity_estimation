@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 	config.optimizer.base_eval_refine = config.optimizer.base_eval2;
 	//config.enable_regionsplit = true;
 	//config.optimization_rounds = 3;
-	config.verbose = true;
+	//config.verbose = true;
 
 	refinement_config refconfig;
 	fs >> refconfig;
@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
 		optimizer = std::make_shared<ml_region_optimizer>();
 	initial_disparity_algo algo(config, refconfig, optimizer);
 
-	bool training = false;
+	bool training = true;
 	if(training)
 	{
 		algo.train(testset.tasks);

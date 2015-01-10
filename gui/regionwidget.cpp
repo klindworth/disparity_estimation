@@ -116,7 +116,7 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 
 	int pot_trunc = 10;
 
-	disparity_hypothesis_vector dhv(base.regions, match.regions);
+	disparity_hypothesis_vector dhv(base, match);
 	std::vector<float> optimization_vector;
 	int dispMax = dispMin + baseRegion.corresponding_regions.size()-1;
 	dhv(occmap, baseRegion, pot_trunc, dispMin, dispMin, dispMax, optimization_vector);

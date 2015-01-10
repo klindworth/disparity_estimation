@@ -89,16 +89,27 @@ void segment_boxfilter(std::vector<std::pair<int, sum_type> >& result, const cv:
 	}
 }
 
-disparity_hypothesis_vector::disparity_hypothesis_vector(const std::vector<disparity_region>& base_regions, const std::vector<disparity_region>& match_regions) : base_avg_cache(base_regions.size()), base_disparities_cache(base_regions.size()), match_disparities_cache(match_regions.size()), color_cache(base_regions.size())
+disparity_hypothesis_vector::disparity_hypothesis_vector(const region_container& base, const region_container& match) : base_avg_cache(base.regions.size()), base_disparities_cache(base.regions.size()), match_disparities_cache(match.regions.size()), color_cache(base.regions.size())
 {
-	for(std::size_t i = 0; i < match_regions.size(); ++i)
-		match_disparities_cache[i] = match_regions[i].disparity;
-	for(std::size_t i = 0; i < base_regions.size(); ++i)
+	for(std::size_t i = 0; i < match.regions.size(); ++i)
+		match_disparities_cache[i] = match.regions[i].disparity;
+	for(std::size_t i = 0; i < base.regions.size(); ++i)
 	{
-		base_disparities_cache[i] = base_regions[i].disparity;
-		color_cache[i] = base_regions[i].average_color;
-		base_avg_cache[i] = base_regions[i].avg_point;
+		base_disparities_cache[i] = base.regions[i].disparity;
+		color_cache[i] = base.regions[i].average_color;
+		base_avg_cache[i] = base.regions[i].avg_point;
 	}
+
+	int dispMin = base.task.dispMin;
+	cv::Mat_<float> min_costs = region_descriptors::set_regionwise<float>(base, [=](const disparity_region& region) {
+		return region.disparity_costs(region.disparity-dispMin);
+	});
+
+	warp_costs = cv::Mat_<float>(base.image_size, 1.0f);
+	cv::Mat_<short> disp = disparity_by_segments(base);
+	disparity::foreach_warped_pixel(disp, 1.0f, [&](cv::Point pos, cv::Point warped_pos, short) {
+		warp_costs(warped_pos) = std::min(min_costs(pos), warp_costs(warped_pos));
+	});
 }
 
 void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector)
@@ -113,6 +124,8 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	lr_pot_values.resize(range);
 	cost_values.resize(range);
 	rel_cost_values.resize(range);
+	cost_temp.resize(range);
+	disp_costs.resize(range);
 
 	int cidx_left = -1;
 	int cidx_right = -1;
@@ -169,6 +182,11 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		std::swap(left_neighbor_disp, right_neighbor_disp);
 		std::swap(left_color_dev, right_color_dev);
 	}
+
+	//cost
+	segment_boxfilter(cost_temp, warp_costs, baseRegion.lineIntervals, dispStart, dispEnd);
+	for(int i = 0; i < range; ++i)
+		disp_costs[i] = (cost_temp[i].first != 0) ? baseRegion.disparity_costs(i)/(float)cost_temp[i].second * cost_temp[i].first : 0;
 
 	//assert(dispRange == range);
 	//occ_avg
@@ -245,7 +263,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	create_min_version(cost_values.begin(), cost_values.end(), rel_cost_values.begin());
 
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
-	result_vector.resize(range*vector_size+3);
+	result_vector.resize(range*vector_size_per_disp+vector_size);
 	float org_size = baseRegion.size();
 	float *result_ptr = result_vector.data();
 	for(int i = 0; i < range; ++i)
@@ -262,6 +280,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 		*result_ptr++ = right_neighbor_disp - hyp_disp;
 		//*result_ptr++ = top_neighbor_disp - hyp_disp;
 		//*result_ptr++ = bottom_neighbor_disp - hyp_disp;
+		*result_ptr++ = disp_costs[i];
 	}
 	//*result_ptr = baseRegion.disparity;
 	*result_ptr++ = min_cost; //*std::min_element(cost_values.begin(), cost_values.end());
@@ -273,7 +292,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 
 disparity_hypothesis::disparity_hypothesis(const std::vector<float>& optimization_vector, int dispIdx)
 {
-	const float *ptr = optimization_vector.data() + dispIdx * disparity_hypothesis_vector::vector_size;
+	const float *ptr = optimization_vector.data() + dispIdx * disparity_hypothesis_vector::vector_size_per_disp;
 	costs = *ptr++;
 	occ_avg = *ptr++;
 	neighbor_pot = *ptr++;
@@ -290,7 +309,7 @@ float calculate_end_result(const float *raw_results, const disparity_hypothesis_
 
 float calculate_end_result(int disp_idx, const float *raw_results, const disparity_hypothesis_weight_vector &wv)
 {
-	std::size_t idx_offset = disp_idx*disparity_hypothesis_vector::vector_size;
+	std::size_t idx_offset = disp_idx*disparity_hypothesis_vector::vector_size_per_disp;
 	const float *result_ptr = raw_results + idx_offset;
 
 	return calculate_end_result(result_ptr, wv);
@@ -318,7 +337,7 @@ void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization
 	const short dispMin = base.task.dispMin;
 	const short dispRange = base.task.dispMax - base.task.dispMin + 1;
 
-	std::vector<disparity_hypothesis_vector> hyp_vec(omp_get_max_threads(), disparity_hypothesis_vector(base.regions, match.regions));
+	std::vector<disparity_hypothesis_vector> hyp_vec(omp_get_max_threads(), disparity_hypothesis_vector(base, match));
 	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
 	for(std::size_t i = 0; i < occmaps.size(); ++i)
 	{

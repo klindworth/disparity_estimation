@@ -49,7 +49,7 @@ public:
 		this->upper = x_upper;
 	}
 
-	region_interval() {}
+	region_interval() noexcept {}
 	region_interval(int y, int x_lower, int x_upper)
 	{
 		init(y, x_lower, x_upper);
