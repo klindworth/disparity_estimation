@@ -66,6 +66,7 @@ struct disparity_hypothesis_weight_vector
 
 class disparity_hypothesis_vector
 {
+protected:
 	int dispRange, dispStart;
 	//temps
 	std::vector<std::pair<int, int> > occ_temp;
@@ -83,11 +84,16 @@ class disparity_hypothesis_vector
 	//end results
 	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values, rel_cost_values;
 
+	void update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd);
+	void update_lr_pot(const disparity_region& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd);
+	void update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd);
+
 public:
 	static const int vector_size_per_disp = 9;
 	static const int vector_size = 3;
 	disparity_hypothesis_vector(const region_container& left_regions, const region_container& right_regions);
 	void operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector);
+	void update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, int dispMin, int dispStart, int dispEnd);
 };
 
 class optimizer_settings

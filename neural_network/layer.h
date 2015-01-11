@@ -137,7 +137,7 @@ public:
 		}
 
 		update_weights_internal(count);
-		regularize_weights();
+		//regularize_weights();
 		transpose_weights();
 	}
 
@@ -314,6 +314,12 @@ public:
 	std::string name() const override
 	{
 		return "fully_connected_layer";
+	}
+
+	void regularize_weights() override
+	{
+		for(int i = 0; i < this->out_dim; ++i)
+			this->abs_renorm(this->weights.data() + i*this->in_dim, this->in_dim, 1.0/this->in_dim);
 	}
 };
 

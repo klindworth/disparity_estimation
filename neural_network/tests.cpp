@@ -159,6 +159,20 @@ TEST(SimpleNN, TransposeVectorLayerReg)
 	compare_double_vector(layer.get_weights(), weights_expected);
 }
 
+TEST(SimpleNN, FullyLayerReg)
+{
+	fully_connected_layer<double> layer(false, 2, 2);
+	std::vector<double> weights_inject {1.0, 1.0, 2.0, 8.0}; //channel 1,1,2,2
+	std::vector<double> weights_expected {0.5, 0.5, 0.2, 0.8};
+
+	ASSERT_EQ(weights_inject.size(), layer.get_weights().size());
+
+	layer.get_weights() = weights_inject;
+	layer.regularize_weights();
+
+	compare_double_vector(layer.get_weights(), weights_expected);
+}
+
 TEST(SimpleNN, GradientDoubleVectorLayer)
 {
 	typedef double data_type;
