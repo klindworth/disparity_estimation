@@ -183,6 +183,13 @@ public:
 		return true;
 	}
 
+	virtual std::string name() const
+	{
+		return "layer_base";
+	}
+
+	virtual void regularize_weights() {}
+	virtual int in_connectivity() { return in_dim; }
 
 protected:
 
@@ -232,39 +239,27 @@ protected:
 		}
 	}
 
-	template<typename Iterator>
-	void mul_range(Iterator it, Iterator end, T factor)
-	{
-		for(; it != end; ++it)
-			*it *= factor;
-	}
-
-	template<typename Iterator>
-	void abs_renorm(Iterator start, Iterator end, T desired)
+	void abs_renorm(T* data, int n, T desired, int stride = 1)
 	{
 		T sum = 0;
-		for(auto it = start; it != end; ++it)
-			sum += std::abs(*it);
+		for(int i = 0; i < n; ++i)
+			sum += std::abs(data[i*stride]);
 
-		sum /= std::distance(start, end);
+		sum /= n;
 
 		if(sum > desired)
-			mul_range(start, end, desired/sum);
+			blas::scale(desired/sum, data, n, stride);
 	}
 
-	template<typename Iterator>
-	void max_renorm(Iterator start, Iterator end, T allowed)
+	void max_renorm(T* data, int n, T allowed, int stride = 1)
 	{
 		T current = 0;
-		for(auto it = start; it != end; ++it)
-			current = std::max(std::abs(it), current);
+		for(int i = 0; i < n; ++i)
+			current = std::max(std::abs(data[i*stride]), current);
 
 		if(allowed > current)
-			mul_range(start, end, allowed/current);
+			blas::scale(allowed/current, data, n, stride);
 	}
-
-	virtual void regularize_weights() {}
-	virtual int in_connectivity() { return in_dim; }
 
 	phase current_phase;
 	int in_dim;
@@ -286,7 +281,7 @@ class fully_connected_layer : public layer_base<T>
 {
 public:
 	fully_connected_layer(bool propagate_down, int in_dim, int out_dim) : layer_base<T>(propagate_down, in_dim, out_dim, in_dim*out_dim, out_dim)
-	{std::cout << "fully connected layer" << std::endl;}
+	{}
 
 	void forward_propagation(const T* bottom_data) override
 	{
@@ -315,6 +310,11 @@ public:
 		for(int i = 0; i < this->out_dim; ++i)
 			cdata.dB[i] += top_gradient[i];
 	}
+
+	std::string name() const override
+	{
+		return "fully_connected_layer";
+	}
 };
 
 
@@ -323,7 +323,7 @@ template<typename T>
 class relu_layer : public layer_base<T>
 {
 public:
-	relu_layer(bool propagate_down, int dim) : layer_base<T>(propagate_down, dim, dim, 0, 0) {std::cout << "relu-layer" << std::endl;}
+	relu_layer(bool propagate_down, int dim) : layer_base<T>(propagate_down, dim, dim, 0, 0) {}
 
 	void forward_propagation(const T *bottom_data) override
 	{
@@ -348,6 +348,11 @@ public:
 	{
 		return false;
 	}
+
+	std::string name() const override
+	{
+		return "relu_layer";
+	}
 };
 
 template<typename T>
@@ -356,7 +361,7 @@ class dropout_layer : public layer_base<T>
 public:
 	typedef layer_base<T> Base;
 	dropout_layer(bool propagate_down, int dim) : layer_base<T>(propagate_down, dim, dim, 0, 0), dropout_rate(0.25), mask(this->thread_max(), std::vector<unsigned char>(dim, 1)), rng(this->thread_max())
-	{std::cout << "dropout" << std::endl;}
+	{}
 
 	void forward_propagation(const T* bottom_data) override
 	{
@@ -409,6 +414,11 @@ public:
 		return false;
 	}
 
+	std::string name() const override
+	{
+		return "dropout_layer";
+	}
+
 protected:
 	T dropout_rate;
 	std::vector<std::vector<unsigned char>> mask;
@@ -420,7 +430,7 @@ class softmax_output_layer : public layer_base<T>
 {
 public:
 	softmax_output_layer(bool propagate_down, int in_dim) : layer_base<T>(propagate_down, in_dim, in_dim, 0, 0), temp(this->thread_max(), std::vector<T>(in_dim))
-	{std::cout << "softmax output layer" << std::endl;}
+	{}
 
 	void forward_propagation(const T* bottom_data) override
 	{
@@ -465,6 +475,11 @@ public:
 		return false;
 	}
 
+	std::string name() const override
+	{
+		return "softmax_output_layer";
+	}
+
 private:
 	std::vector<std::vector<T>> temp;
 };
@@ -475,7 +490,7 @@ class transpose_vector_connected_layer : public layer_base<T>
 public:
 	transpose_vector_connected_layer(bool propagate_down, int in_dim, int out_dim, int vectorsize, int passthrough) :
 		layer_base<T>(propagate_down, in_dim, (in_dim - passthrough)/vectorsize*out_dim + passthrough, vectorsize*out_dim, out_dim), channels_out(out_dim), vectorsize(vectorsize), passthrough(passthrough)
-	{std::cout << "transpose vector connected layer" << std::endl;}
+	{}
 
 	void forward_propagation(const T* bottom_data) override
 	{
@@ -520,7 +535,11 @@ public:
 		}
 	}
 
-protected:
+	std::string name() const override
+	{
+		return "transpose_vector_connected_layer";
+	}
+
 	int in_connectivity() override
 	{
 		return vectorsize;
@@ -529,9 +548,10 @@ protected:
 	void regularize_weights() override
 	{
 		for(int i = 0; i < channels_out; ++i)
-			this->abs_renorm(this->weights.begin() + i*vectorsize, this->weights.begin() + (i+1)*vectorsize, 1.0/vectorsize);
+			this->abs_renorm(this->weights.data() + i*vectorsize, vectorsize, 1.0/vectorsize);
 	}
 
+protected:
 	int channels_out, vectorsize, passthrough;
 };
 
@@ -544,7 +564,7 @@ class vector_connected_layer : public layer_base<T>
 public:
 	vector_connected_layer(bool propagate_down, int in_dim, int out_dim, int vectorsize, int passthrough) :
 		layer_base<T>(propagate_down, in_dim, (in_dim - passthrough)/vectorsize*out_dim + passthrough, vectorsize*out_dim, out_dim), channels_out(out_dim), vectorsize(vectorsize), passthrough(passthrough)
-	{std::cout << "vector connected layer" << std::endl;}
+	{}
 
 	void forward_propagation(const T* bottom_data) override
 	{
@@ -587,18 +607,23 @@ public:
 		}
 	}
 
-protected:
+	std::string name() const override
+	{
+		return "vector_connected_layer";
+	}
+
+	void regularize_weights() override
+	{
+		for(int i = 0; i < channels_out; ++i)
+			this->abs_renorm(this->weights.data() + i, vectorsize, 1.0/vectorsize, channels_out);
+	}
+
 	int in_connectivity() override
 	{
 		return vectorsize;
 	}
 
-	void regularize_weights() override
-	{
-		//for(int i = 0; i < channels_out; ++i)
-			//this->abs_renorm(this->weights.begin() + i*vectorsize, this->weights.begin() + (i+1)*vectorsize, 1.0/vectorsize);
-	}
-
+protected:
 	int channels_out, vectorsize, passthrough;
 };
 
@@ -612,7 +637,7 @@ class row_connected_layer : public layer_base<T>
 public:
 	row_connected_layer(bool propagate_down, int in_dim, int neurons_per_row, int rowsize, int passthrough) :
 		layer_base<T>(propagate_down, in_dim, (in_dim - passthrough)/rowsize*neurons_per_row + passthrough, (in_dim - passthrough)*neurons_per_row, (in_dim - passthrough)/rowsize*neurons_per_row), rowsize(rowsize), passthrough(passthrough), per_row_output(neurons_per_row)
-	{std::cout << "row connected layer" << std::endl;}
+	{}
 
 	void forward_propagation(const T* bottom_data) override
 	{
@@ -666,7 +691,11 @@ public:
 			cdata.dB[i] += top_gradient[i];
 	}
 
-protected:
+	std::string name() const override
+	{
+		return "row_connected_layer";
+	}
+
 	int in_connectivity() override
 	{
 		return rowsize;
@@ -677,9 +706,10 @@ protected:
 		const int row_count = (this->in_dim - passthrough)/rowsize;
 		const int neurons = per_row_output * row_count;
 		for(int i = 0; i < neurons; ++i)
-			this->abs_renorm(this->weights.begin() + i*rowsize, this->weights.begin() + (i+1)*rowsize, 1.0/rowsize);
+			this->abs_renorm(this->weights.data() + i*rowsize, rowsize, 1.0/rowsize);
 	}
 
+protected:
 	int rowsize, passthrough, per_row_output;
 };
 
@@ -689,7 +719,7 @@ class vector_extension_layer : public layer_base<T>
 public:
 	vector_extension_layer(bool propagate_down, int in_dim, int old_vectorsize, int vec_extension) :
 		layer_base<T>(propagate_down, in_dim, (in_dim - vec_extension)/old_vectorsize*(old_vectorsize+vec_extension), 0, 0), old_vectorsize(old_vectorsize), vector_extension(vec_extension)
-	{std::cout << "vector extension layer" << std::endl; assert(!propagate_down);}
+	{assert(!propagate_down);}
 
 	void forward_propagation(const T* bottom_data) override
 	{
@@ -717,6 +747,11 @@ public:
 	bool trainable() const override
 	{
 		return false;
+	}
+
+	std::string name() const override
+	{
+		return "vector_extension_layer";
 	}
 
 protected:

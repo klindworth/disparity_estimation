@@ -111,6 +111,13 @@ bool test_gradient_check_internal(data_type delta, data_type eps)
 	return gradient_check(net, input, output, eps, delta);
 }
 
+void compare_double_vector(const std::vector<double>& actual, const std::vector<double>& desired)
+{
+	ASSERT_EQ(actual.size(), desired.size());
+	for(std::size_t i = 0; i < actual.size(); ++i)
+		ASSERT_DOUBLE_EQ(desired[i], actual[i]);
+}
+
 TEST(SimpleNN, GradientDouble)
 {
 	ASSERT_TRUE(test_gradient_check_internal<double>(1e-8, 1e-6));
@@ -119,6 +126,37 @@ TEST(SimpleNN, GradientDouble)
 TEST(SimpleNN, GradientFloat)
 {
 	ASSERT_TRUE(test_gradient_check_internal<float>(1e-3, 1e-3));
+}
+
+TEST(SimpleNN, VectorLayerReg)
+{
+	vector_connected_layer<double> layer(false, 4, 2, 2, 0);
+	std::vector<double> weights_inject {1.0, 2.0, 1.0, 8.0}; //channel 1,2,1,2
+	std::vector<double> weights_expected {0.5, 0.20, 0.5, 0.8};
+
+	ASSERT_EQ(weights_inject.size(), layer.get_weights().size());
+
+	layer.get_weights() = weights_inject;
+	layer.regularize_weights();
+
+	//std::copy(layer.get_weights().begin(), layer.get_weights().end(), std::ostream_iterator<double>(std::cout, ", "));
+	//std::cout << std::endl;
+
+	compare_double_vector(layer.get_weights(), weights_expected);
+}
+
+TEST(SimpleNN, TransposeVectorLayerReg)
+{
+	transpose_vector_connected_layer<double> layer(false, 4, 2, 2, 0);
+	std::vector<double> weights_inject {1.0, 1.0, 2.0, 8.0}; //channel 1,1,2,2
+	std::vector<double> weights_expected {0.5, 0.5, 0.2, 0.8};
+
+	ASSERT_EQ(weights_inject.size(), layer.get_weights().size());
+
+	layer.get_weights() = weights_inject;
+	layer.regularize_weights();
+
+	compare_double_vector(layer.get_weights(), weights_expected);
 }
 
 TEST(SimpleNN, GradientDoubleVectorLayer)
@@ -249,13 +287,6 @@ TEST(SimpleNN, VectorExtension)
 	ASSERT_EQ(vec_layer.output_dimension(), 6);
 }
 
-void compare_double_vector(const std::vector<double>& actual, const std::vector<double>& desired)
-{
-	ASSERT_EQ(actual.size(), desired.size());
-	for(std::size_t i = 0; i < actual.size(); ++i)
-		ASSERT_DOUBLE_EQ(actual[i], desired[i]);
-}
-
 TEST(SimpleNNBlas, GEMM)
 {
 	//every resulting matrix is two elements bigger than needed for recognizing, if the blas calls try to write behind the resulting matrix
@@ -338,6 +369,16 @@ TEST(SimpleNNBlas, GEMV)
 	blas::gemv(Y11.data(), A6.data(), true, 2,3, X5.data());
 	std::vector<double> Y11_desired = Y10_desired;
 	compare_double_vector(Y11, Y11_desired);
+}
+
+TEST(SimpleNNBlas, SCALE)
+{
+	std::vector<double> input {1.0, 3.0, 5.0, 7.0};
+	std::vector<double> expected {2.0, 3.0, 10.0, 7.0};
+
+	blas::scale(2.0, input.data(), 2, 2);
+
+	compare_double_vector(input, expected);
 }
 
 /*int main(int, char **)
