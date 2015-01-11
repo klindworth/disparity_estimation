@@ -50,9 +50,9 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 	{
 		disparity_region& baseRegion = base.regions[j];
 		temp_results = cv::Mat_<float>(crange, 1, 5500.0f); //TODO: try another mt safe with less memory allocations...
-		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
+		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
 
-		for(short d = range.first; d <= range.second; ++d)
+		for(short d = drange.start(); d <= drange.end(); ++d)
 		{
 			if(!baseRegion.corresponding_regions[d-dispMin].empty())
 				temp_results(d-dispMin) = prop_eval(baseRegion, base, match, d);

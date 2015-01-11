@@ -97,17 +97,18 @@ void check_corresponding_regions(const region_container& base, const region_cont
 
 void determine_corresponding_regions(region_container& base, const region_container& match, int delta)
 {
-	const std::size_t regions_count = base.regions.size();
+	/*const std::size_t regions_count = base.regions.size();
 	#pragma omp parallel for default(none) shared(base, match, delta)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		std::pair<std::size_t, std::size_t> range;
-		if(delta == 0)
-			range = std::make_pair(base.task.dispMin, base.task.dispMax);
-		else
-			range = getSubrange(base.regions[j].base_disparity, delta, base.task);
-		determine_corresponding_regions(match.labels, base.regions[j], range.first, range.second);
-	}
+		disparity_range range = task_subrange(base.task, base.regions[j].base_disparity, delta);
+		determine_corresponding_regions(match.labels, base.regions[j], range.start(), range.end());
+	}*/
+
+	parallel_region(base.regions.begin(), base.regions.end(), [&](disparity_region& cregion){
+		disparity_range range = task_subrange(base.task, cregion.base_disparity, delta);
+		determine_corresponding_regions(match.labels, cregion, range.start(), range.end());
+	});
 }
 
 int reenumerate(cv::Mat& labels, int old_count)
@@ -151,16 +152,13 @@ void generate_stats(std::vector<disparity_region>& regions, const single_stereo_
 
 void generate_stats(disparity_region& region, const single_stereo_task& task, int delta)
 {
-	auto range = getSubrange(region.base_disparity, delta, task);
-	int len = range.second - range.first + 1;
-	float *derived = new float[len-1];
+	int len = task_subrange(task, region.base_disparity, delta).size();
+	std::vector<float> derived(len);
 	const float *costs = region.disparity_costs[0];
-	derivePartialCostmap(costs, derived, len);
+	derivePartialCostmap(costs, derived.data(), len);
 
-	analyzeDisparityRange(region.stats, costs, derived, len);
+	analyzeDisparityRange(region.stats, costs, derived.data(), len);
 	analyzeDisparityRange2(region);
-
-	delete[] derived;
 }
 
 cv::Mat disparity_by_segments(const region_container& container)

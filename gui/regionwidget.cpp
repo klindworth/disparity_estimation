@@ -229,9 +229,8 @@ void RegionWidget::setData(std::shared_ptr<region_container>& base, std::shared_
 		ui->plot->setValues(regionsBase[index].disparity_costs.ptr<float>(0), &(regionsBase[index].stats), regionsBase[index].disparity_costs.size[0], regionsBase[index].disparity_offset);
 	else
 	{
-		auto range = getSubrange(regionsBase[index].base_disparity, config->region_refinement_delta, m_base->task );
-		int rsize = range.second - range.first + 1;
-		ui->plot->setValues(regionsBase[index].disparity_costs.ptr<float>(0), &(regionsBase[index].stats), rsize, regionsBase[index].disparity_offset);
+		disparity_range drange = task_subrange(m_base->task, regionsBase[index].base_disparity, config->region_refinement_delta);
+		ui->plot->setValues(regionsBase[index].disparity_costs.ptr<float>(0), &(regionsBase[index].stats), drange.size(), regionsBase[index].disparity_offset);
 	}
 
 	ui->lblIndex->setText("Index: " + QString::number(index));

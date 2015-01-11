@@ -67,10 +67,9 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 	{
 		const disparity_region& baseRegion = base.regions[i];
 		int thread_idx = omp_get_thread_num();
-		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
 		intervals::substract_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
-		disparity_range drange(range.first, range.second, dispMin);
+		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
 		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, drange, optimization_vectors[i]);
 		intervals::add_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 	}
@@ -172,10 +171,10 @@ template<typename dst_type, typename src_type>
 void gather_region_optimization_vector(dst_type *dst_ptr, const disparity_region& baseRegion, const std::vector<src_type>& optimization_vector_base, const std::vector<std::vector<src_type>>& optimization_vectors_match, const region_container& match, int delta, const single_stereo_task& task)
 {
 	const int crange = task.range_size();
-	auto range = getSubrange(baseRegion.base_disparity, delta, task);
+	disparity_range drange = task_subrange(task, baseRegion.base_disparity, delta);
 
 	std::vector<dst_type> disp_optimization_vector(ml_region_optimizer::vector_size_per_disp);
-	for(short d = range.first; d <= range.second; ++d)
+	for(short d = drange.start(); d <= drange.end(); ++d)
 	{
 		std::fill(disp_optimization_vector.begin(), disp_optimization_vector.end(), 0.0f);
 		const int corresponding_disp_idx = -d - match.task.dispMin;
@@ -185,10 +184,10 @@ void gather_region_optimization_vector(dst_type *dst_ptr, const disparity_region
 				disp_optimization_vector[i] += percent * *it++;
 		});
 
-		const src_type *base_ptr = optimization_vector_base.data() + (d-range.first)*ml_region_optimizer::vector_size_per_disp;
+		const src_type *base_ptr = optimization_vector_base.data() + (d-drange.start())*ml_region_optimizer::vector_size_per_disp;
 		const dst_type *other_ptr = disp_optimization_vector.data();
 
-		dst_type *ndst_ptr = dst_ptr + (d-range.first)*ml_region_optimizer::vector_size_per_disp*2;
+		dst_type *ndst_ptr = dst_ptr + (d-drange.start())*ml_region_optimizer::vector_size_per_disp*2;
 		//float *ndst_ptr = dst_ptr + vector_size_per_disp*2*(int)std::abs(d);
 		//dst_type *ndst_ptr = dst_ptr + ml_region_optimizer::vector_size_per_disp*2*(crange - 1 - (int)std::abs(d));
 

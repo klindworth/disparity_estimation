@@ -117,8 +117,8 @@ void calculate_region_disparity_regionwise(single_stereo_task& task, const cv::M
 	#pragma omp parallel for default(none) shared(task, regions, base, match, delta, cost_agg) private(cost_thread)
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
-		auto range = getSubrange(regions[i].base_disparity, delta, task);
-		regions[i].disparity_offset = range.first;
+		disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
+		regions[i].disparity_offset = drange.start();
 
 		int dilate = regions[i].dilation;
 		if(dilate == regions[i].old_dilation)
@@ -126,7 +126,7 @@ void calculate_region_disparity_regionwise(single_stereo_task& task, const cv::M
 
 		std::vector<region_interval> actual_pixel_idx = dilated_region(regions[i], dilate, base);
 
-		region_disparity_internal(actual_pixel_idx, cost_agg, cost_thread, regions[i], base, match, range.first, range.second);
+		region_disparity_internal(actual_pixel_idx, cost_agg, cost_thread, regions[i], base, match, drange.start(), drange.end());
 
 		regions[i].old_dilation = dilate;
 	}

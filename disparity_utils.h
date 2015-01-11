@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 
 #include "stereotask.h"
+#include "disparity_range.h"
 
 namespace disparity {
 
@@ -243,37 +244,25 @@ cv::Mat create_image(const cv::Mat &disparity);
 
 }
 
-inline std::pair<short,short> getSubrange(short baseDisparity, short delta, const single_stereo_task& task)
+inline disparity_range task_subrange(const single_stereo_task& task, const disparity_range& drange, int pivot, int delta)
 {
 	if(delta == 0)
-		return std::make_pair(task.dispMin, task.dispMax);
+		return drange;
 	else
 	{
-		short start = std::max(baseDisparity - delta, task.dispMin);
-		short end   = std::min(baseDisparity + delta, task.dispMax);
+		short start = std::max(pivot - delta, task.dispMin);
+		short end   = std::min(pivot + delta, task.dispMax);
 
-		return std::make_pair(start, end);
+		return disparity_range(start, end, drange.offset());
 	}
 }
 
-inline std::pair<short,short> getSubrangeIdx(short baseDisparity, short delta, const single_stereo_task& task)
+inline disparity_range task_subrange(const single_stereo_task& task, int pivot, int delta)
 {
-	auto range = getSubrange(baseDisparity, delta, task);
-	range.first -= task.dispMin;
-	range.second -= task.dispMin;
-	return range;
-	/*short start = std::max(baseDisparity - delta, task.dispMin) - task.dispMin;
-	short end   = std::min(baseDisparity + delta, task.dispMax) - task.dispMin;
-
-	return std::make_pair(start, end);*/
+	if(delta == 0)
+		return task.range;
+	else
+		return task.range.subrange(pivot, delta);
 }
-
-inline bool gotDisparity(short disparity, short baseDisparity, short delta, const single_stereo_task& task)
-{
-	auto range = getSubrange(baseDisparity, delta, task);
-	return disparity >= range.first && range.second <= range.second;
-}
-
-
 
 #endif // DISPARITY_UTILS_H

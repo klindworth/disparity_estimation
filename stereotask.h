@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/core/core.hpp>
 #include <string>
+#include "disparity_range.h"
 
 class single_stereo_task
 {
@@ -35,6 +36,7 @@ public:
 	std::string name, fullname;
 	cv::Mat base, match, baseGray, matchGray, groundTruth, occ;
 	int dispMin, dispMax;
+	disparity_range range;
 	unsigned char groundTruthSampling;
 
 	inline int range_size() const { return dispMax - dispMin + 1; }

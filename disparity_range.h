@@ -8,7 +8,7 @@
 class disparity_range
 {
 public:
-	//disparity_range() : _start(0), _end(0), _offset(0) {}
+	disparity_range() : _start(0), _end(0), _offset(0) {}
 	disparity_range(int start, int end) : _start(start), _end(end), _offset(start) {}
 	disparity_range(int start, int end, int offset) : _start(start), _end(end), _offset(offset) {}
 
@@ -20,6 +20,11 @@ public:
 		int end = std::min(_end, pivot + delta);
 
 		return disparity_range(start, end, _offset);
+	}
+
+	disparity_range without_offset() const
+	{
+		return disparity_range(_start, _end);
 	}
 
 	std::size_t index(int d) const

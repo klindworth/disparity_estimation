@@ -2,6 +2,7 @@
 #define CONVERTER_TO_REGION_H_
 
 #include <opencv2/core/core.hpp>
+#include "disparity_range.h"
 
 template<typename calculator>
 void calculate_region_generic(single_stereo_task& task, const cv::Mat& base, const cv::Mat& match, std::vector<disparity_region>& regions, int delta)
@@ -15,8 +16,9 @@ void calculate_region_generic(single_stereo_task& task, const cv::Mat& base, con
 
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
-		auto range = getSubrange(regions[i].base_disparity, delta, task);
-		regions[i].disparity_offset = range.first;
+		//auto range = getSubrange(regions[i].base_disparity, delta, task);
+		disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
+		regions[i].disparity_offset = drange.start();
 		regions[i].disparity_costs = cv::Mat(crange, 1, CV_32FC1, cv::Scalar(500));
 	}
 
@@ -29,8 +31,8 @@ void calculate_region_generic(single_stereo_task& task, const cv::Mat& base, con
 
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
-			auto range = getSubrange(regions[i].base_disparity, delta, task);
-			if(d>= range.first && d <= range.second)
+			disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
+			if(drange.valid(d))
 			{
 				std::vector<region_interval> filtered = filtered_region(base.size[1], regions[i].lineIntervals, d);
 				cv::Mat diff_region = region_as_mat(diff, filtered, std::min(0, d));
@@ -83,10 +85,10 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 	//allocate in a loop
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
-		auto range = getSubrange(regions[i].base_disparity, delta, task);
-		regions[i].disparity_offset = range.first;
-		row_costs.emplace_back((range.second - range.first + 1) * regions[i].lineIntervals.size(), 1.0f);
-		row_sizes.emplace_back((range.second - range.first + 1) * regions[i].lineIntervals.size(), 0);
+		disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
+		regions[i].disparity_offset = drange.start();
+		row_costs.emplace_back(drange.size() * regions[i].lineIntervals.size(), 1.0f);
+		row_sizes.emplace_back(drange.size() * regions[i].lineIntervals.size(), 0);
 	}
 
 	std::cout << "rowwise" << std::endl;
@@ -100,11 +102,11 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
-			auto range = getSubrange(regions[i].base_disparity, delta, task);
-			std::size_t idx = d - range.first;
+			disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
+			std::size_t idx = d - drange.start();
 			std::size_t count = regions[i].lineIntervals.size();
 
-			if(d>= range.first && d <= range.second)
+			if(drange.valid(d))
 			{
 				for(std::size_t j = 0; j < count; ++j)
 				{
@@ -135,14 +137,14 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 	{
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
-			auto range = getSubrange(regions[i].base_disparity, delta, task);
-			std::size_t idx = d - range.first;
+			disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
+			std::size_t idx = d - drange.start();
 			std::size_t count = regions[i].lineIntervals.size();
 
-			if(d>= range.first && d <= range.second)
+			if(drange.valid(d))
 			{
-				int delta_neg = std::max((int)range.first, d - 2) - d;
-				int delta_pos = std::min((int)range.second, d + 2) - d;
+				int delta_neg = std::max(drange.start(), d - 2) - d;
+				int delta_pos = std::min(drange.end(), d + 2) - d;
 
 				float sum_costs = 0.0f;
 				int sum_size = 0;

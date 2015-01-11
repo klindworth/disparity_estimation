@@ -303,20 +303,19 @@ void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization
 	{
 		disparity_region& baseRegion = base.regions[i];
 		int thread_idx = omp_get_thread_num();
-		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
 		intervals::substract_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
-		disparity_range drange(range.first, range.second,dispMin);
+		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
 
 		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, drange , optimization_vectors[i]);
-		for(short d = range.first; d <= range.second; ++d)
+		for(short d = drange.start(); d <= drange.end(); ++d)
 		{
 			std::vector<corresponding_region>& cregionvec = baseRegion.corresponding_regions[d-dispMin];
 			if(!cregionvec.empty())
-				baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - range.first), optimization_vectors[i].data(), stat_eval);
+				baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - drange.start()), optimization_vectors[i].data(), stat_eval);
 		}
 
 		intervals::add_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);

@@ -227,6 +227,7 @@ void stereo_task::init_single_tasks()
 	forward.groundTruth = groundLeft;
 	forward.dispMin = -dispRange+1;
 	forward.dispMax = 0;
+	forward.range = disparity_range(-dispRange+1, 0);
 
 	backward.name = name;
 	backward.fullname = name + "-backward";
@@ -239,6 +240,7 @@ void stereo_task::init_single_tasks()
 	backward.groundTruth = groundRight;
 	backward.dispMin = 0;
 	backward.dispMax = dispRange-1;
+	backward.range = disparity_range(0, dispRange-1);
 }
 
 TaskTestSet::TaskTestSet(const std::string& filename) : task_collection(filename)
