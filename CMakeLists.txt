@@ -42,6 +42,7 @@ set(HEADERS
     costmap_creators.h
     metrics/it_metrics.h
     costmap_utils.h
+    disparity_range.h
     disparity_region.h
     disparity_region_algorithms.h
     disparitywise_calculator.h

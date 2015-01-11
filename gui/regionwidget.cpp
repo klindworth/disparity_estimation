@@ -36,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "configrun.h"
 #include <segmentation/intervals_algorithms.h>
 #include "initial_disparity.h"
+#include "disparity_range.h"
 
 #include <opencv2/highgui/highgui.hpp>
 
@@ -119,7 +120,8 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 	disparity_hypothesis_vector dhv(base, match);
 	std::vector<float> optimization_vector;
 	int dispMax = dispMin + baseRegion.corresponding_regions.size()-1;
-	dhv(occmap, baseRegion, pot_trunc, dispMin, dispMin, dispMax, optimization_vector);
+	disparity_range range(dispMin, dispMax);
+	dhv(occmap, baseRegion, pot_trunc, range, optimization_vector);
 
 	int i = 0;
 	for(auto it = baseRegion.corresponding_regions.begin(); it != baseRegion.corresponding_regions.end(); ++it)

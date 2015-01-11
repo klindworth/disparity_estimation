@@ -26,6 +26,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef REGION_OPTIMIZER_H
 #define REGION_OPTIMIZER_H
 
+#include "disparity_range.h"
+
 #include <vector>
 #include <functional>
 
@@ -66,8 +68,6 @@ struct disparity_hypothesis_weight_vector
 
 class disparity_hypothesis_vector
 {
-private:
-	int dispMin, dispStart, dispEnd;
 protected:
 
 
@@ -87,21 +87,16 @@ protected:
 	//end results
 	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values, rel_cost_values;
 
-	void update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc);
-	void update_lr_pot(const disparity_region& baseRegion, short pot_trunc);
-	void update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc);
+	void update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
+	void update_lr_pot(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
+	void update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
 
 public:
 	static const int vector_size_per_disp = 9;
 	static const int vector_size = 3;
 	disparity_hypothesis_vector(const region_container& left_regions, const region_container& right_regions);
-	void operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector);
-	void update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, int dispMin, int dispStart, int dispEnd);
-
-	inline int disp_range() const { return dispEnd - dispStart + 1; }
-	inline int disp_start() const { return dispStart; }
-	inline int disp_end() const { return dispEnd; }
-	inline int disp_offset() const { return dispMin; }
+	void operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector);
+	void update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange);
 };
 
 class optimizer_settings

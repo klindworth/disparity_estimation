@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <segmentation/intervals_algorithms.h>
 #include "disparity_utils.h"
 #include "genericfunctions.h"
+#include "disparity_range.h"
 
 #include <fstream>
 #include <boost/lexical_cast.hpp>
@@ -69,7 +70,8 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 		auto range = getSubrange(baseRegion.base_disparity, delta, base.task);
 
 		intervals::substract_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
-		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, dispMin, range.first, range.second, optimization_vectors[i]);
+		disparity_range drange(range.first, range.second, dispMin);
+		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, drange, optimization_vectors[i]);
 		intervals::add_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 	}
 }
