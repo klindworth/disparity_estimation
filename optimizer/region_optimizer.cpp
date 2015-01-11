@@ -60,9 +60,9 @@ disparity_hypothesis_vector::disparity_hypothesis_vector(const region_container&
 	});
 }
 
-void disparity_hypothesis_vector::update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, int /*dispMin*/, int dispStart, int dispEnd)
+void disparity_hypothesis_vector::update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc)
 {
-	const int range = dispEnd - dispStart + 1;
+	const int range = disp_range();
 	neighbor_pot_values.resize(range);
 	neighbor_color_pot_values.resize(range);
 
@@ -75,7 +75,7 @@ void disparity_hypothesis_vector::update_average_neighbor_values(const disparity
 	for(short i = 0; i < range; ++i)
 	{
 		short pot_sum = 0;
-		short disp = i + dispStart;
+		short disp = i + disp_start();
 		for(short cdisp : neighbor_disparities)
 			pot_sum += abs_pott(cdisp, disp, pot_trunc);
 
@@ -90,7 +90,7 @@ void disparity_hypothesis_vector::update_average_neighbor_values(const disparity
 	for(short i = 0; i < range; ++i)
 	{
 		float pot_sum = 0;
-		short disp = i + dispStart;
+		short disp = i + disp_start();
 		for(std::size_t j = 0; j < neighbor_disparities.size(); ++j)
 			pot_sum += abs_pott(neighbor_disparities[j], disp, pot_trunc) * neighbor_color_weights[j];
 
@@ -98,9 +98,12 @@ void disparity_hypothesis_vector::update_average_neighbor_values(const disparity
 	}
 }
 
-void disparity_hypothesis_vector::update_lr_pot(const disparity_region& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd)
+void disparity_hypothesis_vector::update_lr_pot(const disparity_region& baseRegion, short pot_trunc)
 {
-	const int range = dispEnd - dispStart + 1;
+	const int range = disp_range();
+	int dispStart = disp_start();
+	int dispEnd = disp_end();
+	int dispMin = disp_offset();
 	lr_pot_values.resize(range);
 	//lr_pot
 	assert((int)baseRegion.corresponding_regions.size() >= range);
@@ -123,13 +126,13 @@ float create_min_version(std::vector<float>::iterator start, std::vector<float>:
 	return min_value;
 }
 
-void disparity_hypothesis_vector::update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short /*pot_trunc*/, int /*dispMin*/, int dispStart, int dispEnd)
+void disparity_hypothesis_vector::update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short /*pot_trunc*/)
 {
-	const int range = dispEnd - dispStart + 1;
+	const int range = disp_range();
 	occ_temp.resize(range);
 	occ_avg_values.resize(range);
 
-	region_descriptors::segment_boxfilter(occ_temp, occmap, baseRegion.lineIntervals, dispStart, dispEnd);
+	region_descriptors::segment_boxfilter(occ_temp, occmap, baseRegion.lineIntervals, disp_start(), disp_end());
 
 	for(int i = 0; i < range; ++i)
 		occ_avg_values[i] = (occ_temp[i].first != 0) ? (float)occ_temp[i].second / occ_temp[i].first : -1;
@@ -138,9 +141,10 @@ void disparity_hypothesis_vector::update_occ_avg(const cv::Mat_<unsigned char>& 
 void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, int dispMin, int dispStart, int dispEnd, std::vector<float>& result_vector)
 {
 	this->dispStart = dispStart;
-	const int range = dispEnd - dispStart + 1;
+	this->dispEnd = dispEnd;
+	this->dispMin = dispMin;
 
-
+	const int range = disp_range();
 
 	cost_values.resize(range);
 	rel_cost_values.resize(range);
@@ -152,9 +156,9 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	for(int i = 0; i < range; ++i)
 		disp_costs[i] = (cost_temp[i].first != 0) ? baseRegion.disparity_costs(i)/(float)cost_temp[i].second * cost_temp[i].first : 0;
 
-	update_occ_avg(occmap, baseRegion, pot_trunc, dispMin, dispStart, dispEnd);
-	update_average_neighbor_values(baseRegion, pot_trunc, dispMin, dispStart, dispEnd);
-	update_lr_pot(baseRegion, pot_trunc, dispMin, dispStart, dispEnd);
+	update_occ_avg(occmap, baseRegion, pot_trunc);
+	update_average_neighbor_values(baseRegion, pot_trunc);
+	update_lr_pot(baseRegion, pot_trunc);
 
 	for(int i = 0; i < range; ++i)
 		cost_values[i] = baseRegion.disparity_costs((dispStart+i)-baseRegion.disparity_offset);
