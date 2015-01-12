@@ -35,8 +35,8 @@ void mat_to_file(const cv::Mat& input , const std::string &filename);
 //! Opens a binary file and constructs a matrix out of it
 cv::Mat file_to_mat(const std::string &filename);
 
-cv::Mat stream_to_mat(std::ifstream& istream);
-void mat_to_stream(const cv::Mat& input, std::ofstream& ostream);
+cv::Mat stream_to_mat(std::istream& istream);
+void mat_to_stream(const cv::Mat& input, std::ostream& ostream);
 
 inline cv::Mat subwindow(const cv::Mat& image, int x, int y, int windowsize)
 {

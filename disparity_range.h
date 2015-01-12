@@ -5,6 +5,20 @@
 #include <cstddef>
 #include <algorithm>
 
+/*class current_disparity
+{
+public:
+	std::size_t index;
+	int disparity;
+
+	inline current_disparity& operator++()
+	{
+		++index;
+		++disparity;
+		return *this;
+	}
+};*/
+
 class disparity_range
 {
 public:
@@ -43,6 +57,20 @@ public:
 	inline int end() const { return _end; }
 	inline int size() const { return _end - _start + 1; }
 	inline int offset() const { return _offset; }
+
+	/*template<typename lambda_type>
+	void foreach_disparity(lambda_type func)
+	{
+		current_disparity cdisp;
+		cdisp.index = start() - offset();
+		cdisp.disparity = start();
+		int range = size();
+		for(int i = 0; i < range; ++i)
+		{
+			func(cdisp);
+			++cdisp;
+		}
+	}*/
 
 private:
 	int _start, _end, _offset;

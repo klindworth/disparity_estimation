@@ -244,19 +244,6 @@ cv::Mat create_image(const cv::Mat &disparity);
 
 }
 
-inline disparity_range task_subrange(const single_stereo_task& task, const disparity_range& drange, int pivot, int delta)
-{
-	if(delta == 0)
-		return drange;
-	else
-	{
-		short start = std::max(pivot - delta, task.dispMin);
-		short end   = std::min(pivot + delta, task.dispMax);
-
-		return disparity_range(start, end, drange.offset());
-	}
-}
-
 inline disparity_range task_subrange(const single_stereo_task& task, int pivot, int delta)
 {
 	if(delta == 0)

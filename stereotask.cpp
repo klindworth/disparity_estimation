@@ -94,6 +94,9 @@ void stereo_task::load_images(const std::string& nameLeft, const std::string& na
 	left  = cv::imread(nameLeft);
 	right = cv::imread(nameRight);
 
+	if(!left.data || !right.data)
+		throw std::runtime_error("image couldn't be loaded: " + nameLeft + " or " + nameRight);
+
 	filenameLeft = nameLeft;
 	filenameRight = nameRight;
 

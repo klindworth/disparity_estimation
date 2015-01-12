@@ -28,6 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <fstream>
 #include <string>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <stdexcept>
 
 cv::Mat cutImageBorder(const cv::Mat& input, int windowsize)
 {
@@ -46,8 +47,10 @@ cv::Mat lowerDimensionality(const cv::Mat& input)
 	return result;
 }
 
-void mat_to_stream(const cv::Mat& input, std::ofstream& ostream)
+void mat_to_stream(const cv::Mat& input, std::ostream& ostream)
 {
+	assert(input.data);
+
 	int type = input.type();
 	ostream.write((char*)&type, sizeof(int));
 	ostream.write((char*)&(input.dims), sizeof(int));
@@ -67,7 +70,7 @@ void mat_to_file(const cv::Mat& input, const std::string& filename)
 	ostream.close();
 }
 
-cv::Mat stream_to_mat(std::ifstream& istream)
+cv::Mat stream_to_mat(std::istream& istream)
 {
 	assert(istream.is_open());
 	int type;
@@ -75,7 +78,8 @@ cv::Mat stream_to_mat(std::ifstream& istream)
 	int dims;
 	istream.read((char*)&dims, sizeof(int));
 	int elems = 1;
-	int *sz = new int[dims];
+	std::vector<int> sz(dims);
+
 	for(int i = 0; i < dims; ++i)
 	{
 		//istream >> sz[i];
@@ -83,16 +87,18 @@ cv::Mat stream_to_mat(std::ifstream& istream)
 		elems *= sz[i];
 		//std::cout << sz[i] << std::endl;
 	}
-	cv::Mat output(dims, sz, type);
+	cv::Mat output(dims, sz.data(), type);
 	istream.read(output.ptr<char>(0), elems*output.elemSize());//check elemSize
-	delete[] sz;
+
 	return output;
 }
 
 cv::Mat file_to_mat(const std::string& filename)
 {
 	std::ifstream istream(filename, std::ifstream::binary);
-	assert(istream.is_open());
+	if(!istream.is_open())
+		throw std::runtime_error(filename + " couldn't opened");
+
 	cv::Mat output = stream_to_mat(istream);
 	istream.close();
 	return output;
