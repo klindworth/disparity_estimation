@@ -25,6 +25,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "manual_region_optimizer.h"
 
+#include <omp.h>
+
 #include "disparity_region.h"
 #include "genericfunctions.h"
 #include "disparity_utils.h"
@@ -127,3 +129,62 @@ void manual_region_optimizer::run(region_container &left, region_container &righ
 		refreshOptimizationBaseValues(optimization_vectors_right, right, left, config.base_eval, refinement);
 	}
 }
+
+float calculate_end_result(const float *raw_results, const disparity_hypothesis_weight_vector& wv)
+{
+	return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.neighbor_pot + raw_results[3] * wv.lr_pot + raw_results[4] * wv.neighbor_color_pot;
+	//return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.lr_pot + raw_results[3] * wv.neighbor_color_pot;
+}
+
+float calculate_end_result(int disp_idx, const float *raw_results, const disparity_hypothesis_weight_vector &wv)
+{
+	std::size_t idx_offset = disp_idx*disparity_features_calculator::vector_size_per_disp;
+	const float *result_ptr = raw_results + idx_offset;
+
+	return calculate_end_result(result_ptr, wv);
+}
+
+void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, region_container& base, const region_container& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
+{
+	cv::Mat disp = disparity_by_segments(base);
+	cv::Mat occmap = disparity::occlusion_stat<short>(disp, 1.0);
+	int pot_trunc = 10;
+
+	const short dispMin = base.task.dispMin;
+	const short dispRange = base.task.dispMax - base.task.dispMin + 1;
+
+	std::vector<disparity_features_calculator> hyp_vec(omp_get_max_threads(), disparity_features_calculator(base, match));
+	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
+	for(std::size_t i = 0; i < occmaps.size(); ++i)
+	{
+		occmaps[i] = occmap.clone();
+		//hyp_vec.emplace_back(base.regions, match.regions);
+	}
+
+	std::size_t regions_count = base.regions.size();
+
+
+	#pragma omp parallel for
+	for(std::size_t i = 0; i < regions_count; ++i)
+	{
+		disparity_region& baseRegion = base.regions[i];
+		int thread_idx = omp_get_thread_num();
+
+		intervals::substract_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
+
+		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
+
+		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
+
+		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, drange , optimization_vectors[i]);
+		for(short d = drange.start(); d <= drange.end(); ++d)
+		{
+			std::vector<corresponding_region>& cregionvec = baseRegion.corresponding_regions[d-dispMin];
+			if(!cregionvec.empty())
+				baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - drange.start()), optimization_vectors[i].data(), stat_eval);
+		}
+
+		intervals::add_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
+	}
+}
+

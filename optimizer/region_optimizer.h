@@ -66,6 +66,8 @@ struct disparity_hypothesis_weight_vector
 	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
 };
 
+class neighbor_values;
+
 class disparity_features_calculator
 {
 protected:
@@ -90,6 +92,7 @@ protected:
 	void update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
 	void update_lr_pot(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
 	void update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
+	neighbor_values get_neighbor_values(const disparity_region& baseRegion, const disparity_range& drange);
 
 public:
 	static const int vector_size_per_disp = 9;
@@ -124,8 +127,6 @@ public:
 protected:
 	bool training_mode;
 };
-
-void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, region_container& left, const region_container& match, const disparity_hypothesis_weight_vector& base_eval, int delta);
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const optimizer_settings& config);
 const cv::FileNode& operator>>(const cv::FileNode& stream, optimizer_settings& config);

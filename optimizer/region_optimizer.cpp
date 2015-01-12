@@ -164,66 +164,84 @@ void disparity_features_calculator::operator()(const cv::Mat_<unsigned char>& oc
 	update_result_vector(result_vector, baseRegion, drange);
 }
 
+struct single_neighbor_values
+{
+	single_neighbor_values() {}
+	single_neighbor_values(const std::vector<short>& disparities, const std::vector<cv::Vec3d>& colors, const disparity_region& baseRegion, int neigh_idx) {
+		disparity = neigh_idx >= 0 ? disparities[neigh_idx] : baseRegion.disparity;
+		color_dev = neigh_idx >= 0 ? cv::norm(colors[neigh_idx] - baseRegion.average_color) : 0;
+	}
+
+	float color_dev;
+	short disparity;
+};
+
+struct neighbor_values
+{
+	neighbor_values(const std::vector<short>& disparities, const std::vector<cv::Vec3d>& colors, const disparity_region& baseRegion, int idx_left, int idx_right, int idx_top, int idx_bottom)
+		: left(disparities, colors, baseRegion, idx_left), right(disparities, colors, baseRegion, idx_right), top(disparities, colors, baseRegion, idx_top), bottom(disparities, colors, baseRegion, idx_bottom)
+	{}
+	single_neighbor_values left, right, top, bottom;
+};
+
+neighbor_values disparity_features_calculator::get_neighbor_values(const disparity_region& baseRegion, const disparity_range& drange)
+{
+	int cidx_left = -1;
+	int cidx_right = -1;
+	int cidx_top = -1;
+	int cidx_bottom = -1;
+
+	assert(baseRegion.neighbors.size() > 0);
+
+	int y_diff_left = std::numeric_limits<int>::max();
+	int y_diff_right = std::numeric_limits<int>::max();
+	int x_diff_top = std::numeric_limits<int>::max();
+	int x_diff_bottom = std::numeric_limits<int>::max();
+
+	for(const std::pair<std::size_t, std::size_t>& cneigh : baseRegion.neighbors)
+	{
+		int cy_diff = std::abs(baseRegion.avg_point.y - base_avg_cache[cneigh.first].y);
+		if( (baseRegion.avg_point.x > base_avg_cache[cneigh.first].x) && (cy_diff < y_diff_left) )
+		{
+			y_diff_left = cy_diff;
+			cidx_left = cneigh.first;
+		}
+		else if( (baseRegion.avg_point.x < base_avg_cache[cneigh.first].x) && (cy_diff < y_diff_right) )
+		{
+			y_diff_right = cy_diff;
+			cidx_right = cneigh.first;
+		}
+
+		int cx_diff = std::abs(baseRegion.avg_point.x - base_avg_cache[cneigh.first].x);
+		if( (baseRegion.avg_point.y < base_avg_cache[cneigh.first].y) && (cx_diff < x_diff_top) )
+		{
+			x_diff_top = cx_diff;
+			cidx_top = cneigh.first;
+		}
+		else if( (baseRegion.avg_point.y > base_avg_cache[cneigh.first].y) && (cx_diff < x_diff_bottom) )
+		{
+			x_diff_bottom = cy_diff;
+			cidx_bottom = cneigh.first;
+		}
+	}
+
+	if(drange.start() < 0)
+		std::swap(cidx_left, cidx_right);
+
+	return neighbor_values(base_disparities_cache, color_cache, baseRegion, cidx_left, cidx_right, cidx_top, cidx_bottom);
+}
+
 void disparity_features_calculator::update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange)
 {
 	const int range = drange.size();
 	const int dispMin = drange.offset();
 
-	int cidx_left = -1;
-	int cidx_right = -1;
-	int cidx_top = -1;
-	int cidx_bottom = -1;
-	//extract neighbors
-	{
-		assert(baseRegion.neighbors.size() > 0);
+	neighbor_values neigh = get_neighbor_values(baseRegion, drange);
 
-		int y_diff_left = std::numeric_limits<int>::max();
-		int y_diff_right = std::numeric_limits<int>::max();
-		int x_diff_top = std::numeric_limits<int>::max();
-		int x_diff_bottom = std::numeric_limits<int>::max();
-
-		for(const std::pair<std::size_t, std::size_t>& cneigh : baseRegion.neighbors)
-		{
-			int cy_diff = std::abs(baseRegion.avg_point.y - base_avg_cache[cneigh.first].y);
-			if( (baseRegion.avg_point.x > base_avg_cache[cneigh.first].x) && (cy_diff < y_diff_left) )
-			{
-				y_diff_left = cy_diff;
-				cidx_left = cneigh.first;
-			}
-			else if( (baseRegion.avg_point.x < base_avg_cache[cneigh.first].x) && (cy_diff < y_diff_right) )
-			{
-				y_diff_right = cy_diff;
-				cidx_right = cneigh.first;
-			}
-
-			int cx_diff = std::abs(baseRegion.avg_point.x - base_avg_cache[cneigh.first].x);
-			if( (baseRegion.avg_point.y < base_avg_cache[cneigh.first].y) && (cx_diff < x_diff_top) )
-			{
-				x_diff_top = cx_diff;
-				cidx_top = cneigh.first;
-			}
-			else if( (baseRegion.avg_point.y > base_avg_cache[cneigh.first].y) && (cx_diff < x_diff_bottom) )
-			{
-				x_diff_bottom = cy_diff;
-				cidx_bottom = cneigh.first;
-			}
-		}
-	}
-
-	short left_neighbor_disp  = cidx_left >= 0 ? base_disparities_cache[cidx_left] : baseRegion.disparity;
-	short right_neighbor_disp = cidx_right >= 0 ? base_disparities_cache[cidx_right] : baseRegion.disparity;
-	short top_neighbor_disp  = cidx_top >= 0 ? base_disparities_cache[cidx_top] : baseRegion.disparity;
-	short bottom_neighbor_disp = cidx_bottom >= 0 ? base_disparities_cache[cidx_bottom] : baseRegion.disparity;
-	float left_color_dev = cidx_left >= 0 ? cv::norm(color_cache[cidx_left] - baseRegion.average_color) : 0;
-	float right_color_dev = cidx_right >= 0 ? cv::norm(color_cache[cidx_right] - baseRegion.average_color) : 0;
-	float top_color_dev = cidx_top >= 0 ? cv::norm(color_cache[cidx_top] - baseRegion.average_color) : 0;
-	float bottom_color_dev = cidx_bottom >= 0 ? cv::norm(color_cache[cidx_bottom] - baseRegion.average_color) : 0;
-
-	if(dispMin < 0)
-	{
-		std::swap(left_neighbor_disp, right_neighbor_disp);
-		std::swap(left_color_dev, right_color_dev);
-	}
+	short left_neighbor_disp  = neigh.left.disparity;
+	short right_neighbor_disp = neigh.right.disparity;
+	float left_color_dev = neigh.left.color_dev;
+	float right_color_dev = neigh.right.color_dev;
 
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
 	result_vector.resize(range*vector_size_per_disp+vector_size);
@@ -262,64 +280,6 @@ disparity_hypothesis::disparity_hypothesis(const std::vector<float>& optimizatio
 	lr_pot = *ptr++;
 	neighbor_color_pot = *ptr++;
 
-}
-
-float calculate_end_result(const float *raw_results, const disparity_hypothesis_weight_vector& wv)
-{
-	return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.neighbor_pot + raw_results[3] * wv.lr_pot + raw_results[4] * wv.neighbor_color_pot;
-	//return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.lr_pot + raw_results[3] * wv.neighbor_color_pot;
-}
-
-float calculate_end_result(int disp_idx, const float *raw_results, const disparity_hypothesis_weight_vector &wv)
-{
-	std::size_t idx_offset = disp_idx*disparity_features_calculator::vector_size_per_disp;
-	const float *result_ptr = raw_results + idx_offset;
-
-	return calculate_end_result(result_ptr, wv);
-}
-
-void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, region_container& base, const region_container& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
-{
-	cv::Mat disp = disparity_by_segments(base);
-	cv::Mat occmap = disparity::occlusion_stat<short>(disp, 1.0);
-	int pot_trunc = 10;
-
-	const short dispMin = base.task.dispMin;
-	const short dispRange = base.task.dispMax - base.task.dispMin + 1;
-
-	std::vector<disparity_features_calculator> hyp_vec(omp_get_max_threads(), disparity_features_calculator(base, match));
-	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
-	for(std::size_t i = 0; i < occmaps.size(); ++i)
-	{
-		occmaps[i] = occmap.clone();
-		//hyp_vec.emplace_back(base.regions, match.regions);
-	}
-
-	std::size_t regions_count = base.regions.size();
-
-
-	#pragma omp parallel for
-	for(std::size_t i = 0; i < regions_count; ++i)
-	{
-		disparity_region& baseRegion = base.regions[i];
-		int thread_idx = omp_get_thread_num();
-
-		intervals::substract_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
-
-		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
-
-		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
-
-		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, drange , optimization_vectors[i]);
-		for(short d = drange.start(); d <= drange.end(); ++d)
-		{
-			std::vector<corresponding_region>& cregionvec = baseRegion.corresponding_regions[d-dispMin];
-			if(!cregionvec.empty())
-				baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - drange.start()), optimization_vectors[i].data(), stat_eval);
-		}
-
-		intervals::add_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
-	}
 }
 
 const cv::FileNode& operator>>(const cv::FileNode& node, disparity_hypothesis_weight_vector& config)

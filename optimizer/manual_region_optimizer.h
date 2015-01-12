@@ -42,4 +42,6 @@ private:
 	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
 };
 
+void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, region_container& left, const region_container& match, const disparity_hypothesis_weight_vector& base_eval, int delta);
+
 #endif
