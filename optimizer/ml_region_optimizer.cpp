@@ -52,7 +52,7 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 
 	const short dispMin = base.task.dispMin;
 
-	std::vector<disparity_hypothesis_vector> hyp_vec(omp_get_max_threads(), disparity_hypothesis_vector(base, match));
+	std::vector<disparity_features_calculator> hyp_vec(omp_get_max_threads(), disparity_features_calculator(base, match));
 	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
 	for(std::size_t i = 0; i < occmaps.size(); ++i)
 	{

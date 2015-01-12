@@ -37,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <random>
 #include <omp.h>
 
-disparity_hypothesis_vector::disparity_hypothesis_vector(const region_container& base, const region_container& match) : base_avg_cache(base.regions.size()), base_disparities_cache(base.regions.size()), match_disparities_cache(match.regions.size()), color_cache(base.regions.size())
+disparity_features_calculator::disparity_features_calculator(const region_container& base, const region_container& match) : base_avg_cache(base.regions.size()), base_disparities_cache(base.regions.size()), match_disparities_cache(match.regions.size()), color_cache(base.regions.size())
 {
 	for(std::size_t i = 0; i < match.regions.size(); ++i)
 		match_disparities_cache[i] = match.regions[i].disparity;
@@ -60,7 +60,7 @@ disparity_hypothesis_vector::disparity_hypothesis_vector(const region_container&
 	});
 }
 
-void disparity_hypothesis_vector::update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange)
+void disparity_features_calculator::update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange)
 {
 	const int range = drange.size();
 	neighbor_pot_values.resize(range);
@@ -98,7 +98,7 @@ void disparity_hypothesis_vector::update_average_neighbor_values(const disparity
 	}
 }
 
-void disparity_hypothesis_vector::update_lr_pot(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange)
+void disparity_features_calculator::update_lr_pot(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange)
 {
 	const int range = drange.size();
 	const int dispStart = drange.start();
@@ -126,7 +126,7 @@ float create_min_version(std::vector<float>::iterator start, std::vector<float>:
 	return min_value;
 }
 
-void disparity_hypothesis_vector::update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short /*pot_trunc*/, const disparity_range& drange)
+void disparity_features_calculator::update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short /*pot_trunc*/, const disparity_range& drange)
 {
 	const int range = drange.size();
 	occ_temp.resize(range);
@@ -138,7 +138,7 @@ void disparity_hypothesis_vector::update_occ_avg(const cv::Mat_<unsigned char>& 
 		occ_avg_values[i] = (occ_temp[i].first != 0) ? (float)occ_temp[i].second / occ_temp[i].first : -1;
 }
 
-void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector)
+void disparity_features_calculator::operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector)
 {
 	const int range = drange.size();
 
@@ -164,7 +164,7 @@ void disparity_hypothesis_vector::operator()(const cv::Mat_<unsigned char>& occm
 	update_result_vector(result_vector, baseRegion, drange);
 }
 
-void disparity_hypothesis_vector::update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange)
+void disparity_features_calculator::update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange)
 {
 	const int range = drange.size();
 	const int dispMin = drange.offset();
@@ -255,7 +255,7 @@ void disparity_hypothesis_vector::update_result_vector(std::vector<float>& resul
 
 disparity_hypothesis::disparity_hypothesis(const std::vector<float>& optimization_vector, int dispIdx)
 {
-	const float *ptr = optimization_vector.data() + dispIdx * disparity_hypothesis_vector::vector_size_per_disp;
+	const float *ptr = optimization_vector.data() + dispIdx * disparity_features_calculator::vector_size_per_disp;
 	costs = *ptr++;
 	occ_avg = *ptr++;
 	neighbor_pot = *ptr++;
@@ -272,7 +272,7 @@ float calculate_end_result(const float *raw_results, const disparity_hypothesis_
 
 float calculate_end_result(int disp_idx, const float *raw_results, const disparity_hypothesis_weight_vector &wv)
 {
-	std::size_t idx_offset = disp_idx*disparity_hypothesis_vector::vector_size_per_disp;
+	std::size_t idx_offset = disp_idx*disparity_features_calculator::vector_size_per_disp;
 	const float *result_ptr = raw_results + idx_offset;
 
 	return calculate_end_result(result_ptr, wv);
@@ -287,7 +287,7 @@ void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization
 	const short dispMin = base.task.dispMin;
 	const short dispRange = base.task.dispMax - base.task.dispMin + 1;
 
-	std::vector<disparity_hypothesis_vector> hyp_vec(omp_get_max_threads(), disparity_hypothesis_vector(base, match));
+	std::vector<disparity_features_calculator> hyp_vec(omp_get_max_threads(), disparity_features_calculator(base, match));
 	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
 	for(std::size_t i = 0; i < occmaps.size(); ++i)
 	{

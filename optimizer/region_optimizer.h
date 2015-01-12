@@ -66,7 +66,7 @@ struct disparity_hypothesis_weight_vector
 	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
 };
 
-class disparity_hypothesis_vector
+class disparity_features_calculator
 {
 protected:
 
@@ -94,7 +94,7 @@ protected:
 public:
 	static const int vector_size_per_disp = 9;
 	static const int vector_size = 3;
-	disparity_hypothesis_vector(const region_container& left_regions, const region_container& right_regions);
+	disparity_features_calculator(const region_container& left_regions, const region_container& right_regions);
 	void operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector);
 	void update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange);
 };
