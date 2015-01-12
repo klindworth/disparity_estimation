@@ -166,10 +166,10 @@ inline void foreach_region_point(Iterator it, Iterator end, lambda_type func)
  * @param change Value that will be added
  */
 template<typename dst_type>
-void add_region_value(cv::Mat& dst, const std::vector<region_interval>& interval_container, dst_type change)
+void add_region_value(cv::Mat_<dst_type>& dst, const std::vector<region_interval>& interval_container, dst_type change)
 {
 	foreach_region_point(interval_container.begin(), interval_container.end(), [=,&dst](cv::Point pt){
-		dst.at<dst_type>(pt) += change;
+		dst(pt) += change;
 	});
 }
 
@@ -180,10 +180,10 @@ void add_region_value(cv::Mat& dst, const std::vector<region_interval>& interval
  * @param change Value that will be substracted
  */
 template<typename dst_type>
-void substract_region_value(cv::Mat& dst, const std::vector<region_interval>& interval_container, dst_type change)
+void substract_region_value(cv::Mat_<dst_type>& dst, const std::vector<region_interval>& interval_container, dst_type change)
 {
 	foreach_region_point(interval_container.begin(), interval_container.end(), [=,&dst](cv::Point pt){
-		dst.at<dst_type>(pt) -= change;
+		dst(pt) -= change;
 	});
 }
 
@@ -197,13 +197,13 @@ void substract_region_value(cv::Mat& dst, const std::vector<region_interval>& in
  * @param cmp_func Determines if two values belong to the same interval. The function should return true, if the two values should belong together.
  */
 template<typename value_type, typename factory_type, typename cmp_type>
-void convert_generic(const cv::Mat& values, factory_type factory, cmp_type cmp_func)
+void convert_generic(const cv::Mat_<value_type>& values, factory_type factory, cmp_type cmp_func)
 {
 	assert(values.dims == 2);
 
 	for(int y = 0; y < values.rows; ++y)
 	{
-		const value_type *src_ptr = values.ptr<value_type>(y,0);
+		const value_type *src_ptr = values[y];
 
 		std::size_t last_x = 0;
 		value_type last_value = *src_ptr;
@@ -232,7 +232,7 @@ void convert_generic(const cv::Mat& values, factory_type factory, cmp_type cmp_f
  * @param factory Function of type (int x, int lower, int upper, value_type value), that will be called, every time a new interval was discovered
  */
 template<typename value_type, typename factory_type>
-void convert_differential(const cv::Mat& values, factory_type factory)
+void convert_differential(const cv::Mat_<value_type>& values, factory_type factory)
 {
 	auto cmp_func = [](value_type last, value_type current) {
 		return (last == current);

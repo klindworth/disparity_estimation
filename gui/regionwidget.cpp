@@ -105,7 +105,7 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 {
 	std::vector<disparity_region>& other_regions = match.regions;
 	cv::Mat disp = disparity_by_segments(base);
-	cv::Mat occmap = disparity::occlusion_stat<short>(disp, 1.0);
+	cv::Mat_<unsigned char> occmap = disparity::occlusion_stat<short>(disp, 1.0);
 	//cv::imshow("occ_test", getValueScaledImage<unsigned char, unsigned char>(occmap));
 	intervals::substract_region_value<unsigned char>(occmap, baseRegion.warped_interval, 1);
 
