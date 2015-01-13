@@ -37,6 +37,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <random>
 #include <omp.h>
 
+single_neighbor_values::single_neighbor_values(const std::vector<short>& disparities, const std::vector<cv::Vec3d>& colors, const disparity_region& baseRegion, int neigh_idx) {
+	disparity = neigh_idx >= 0 ? disparities[neigh_idx] : baseRegion.disparity;
+	color_dev = neigh_idx >= 0 ? cv::norm(colors[neigh_idx] - baseRegion.average_color) : 0;
+}
+
 disparity_features_calculator::disparity_features_calculator(const region_container& base, const region_container& match) : base_avg_cache(base.regions.size()), base_disparities_cache(base.regions.size()), match_disparities_cache(match.regions.size()), color_cache(base.regions.size())
 {
 	for(std::size_t i = 0; i < match.regions.size(); ++i)
@@ -115,17 +120,6 @@ void disparity_features_calculator::update_lr_pot(const disparity_region& baseRe
 	}
 }
 
-float create_min_version(std::vector<float>::iterator start, std::vector<float>::iterator end, std::vector<float>::iterator ins)
-{
-	float min_value = *(std::min_element(start, end));
-
-	std::transform(start, end, ins, [min_value](float val){
-		return val - min_value;
-	});
-
-	return min_value;
-}
-
 void disparity_features_calculator::update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short /*pot_trunc*/, const disparity_range& drange)
 {
 	const int range = drange.size();
@@ -138,51 +132,17 @@ void disparity_features_calculator::update_occ_avg(const cv::Mat_<unsigned char>
 		occ_avg_values[i] = (occ_temp[i].first != 0) ? (float)occ_temp[i].second / occ_temp[i].first : -1;
 }
 
-void disparity_features_calculator::operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector)
+void disparity_features_calculator::update_warp_costs(const disparity_region& baseRegion, const disparity_range& drange)
 {
 	const int range = drange.size();
 
-	cost_values.resize(range);
-	rel_cost_values.resize(range);
+	warp_costs_values.resize(range);
 	cost_temp.resize(range);
-	disp_costs.resize(range);
 
-	//cost
 	region_descriptors::segment_boxfilter(cost_temp, warp_costs, baseRegion.lineIntervals, drange.start(), drange.end());
 	for(int i = 0; i < range; ++i)
-		disp_costs[i] = (cost_temp[i].first != 0) ? baseRegion.disparity_costs(i)/(float)cost_temp[i].second * cost_temp[i].first : 0;
-
-	update_occ_avg(occmap, baseRegion, pot_trunc, drange);
-	update_average_neighbor_values(baseRegion, pot_trunc, drange);
-	update_lr_pot(baseRegion, pot_trunc, drange);
-
-	for(int i = 0; i < range; ++i)
-		cost_values[i] = baseRegion.disparity_costs((drange.start()+i)-baseRegion.disparity_offset);
-
-	create_min_version(cost_values.begin(), cost_values.end(), rel_cost_values.begin());
-
-	update_result_vector(result_vector, baseRegion, drange);
+		warp_costs_values[i] = (cost_temp[i].first != 0) ? baseRegion.disparity_costs(i)/(float)cost_temp[i].second * cost_temp[i].first : 0;
 }
-
-struct single_neighbor_values
-{
-	single_neighbor_values() {}
-	single_neighbor_values(const std::vector<short>& disparities, const std::vector<cv::Vec3d>& colors, const disparity_region& baseRegion, int neigh_idx) {
-		disparity = neigh_idx >= 0 ? disparities[neigh_idx] : baseRegion.disparity;
-		color_dev = neigh_idx >= 0 ? cv::norm(colors[neigh_idx] - baseRegion.average_color) : 0;
-	}
-
-	float color_dev;
-	short disparity;
-};
-
-struct neighbor_values
-{
-	neighbor_values(const std::vector<short>& disparities, const std::vector<cv::Vec3d>& colors, const disparity_region& baseRegion, int idx_left, int idx_right, int idx_top, int idx_bottom)
-		: left(disparities, colors, baseRegion, idx_left), right(disparities, colors, baseRegion, idx_right), top(disparities, colors, baseRegion, idx_top), bottom(disparities, colors, baseRegion, idx_bottom)
-	{}
-	single_neighbor_values left, right, top, bottom;
-};
 
 neighbor_values disparity_features_calculator::get_neighbor_values(const disparity_region& baseRegion, const disparity_range& drange)
 {
@@ -231,45 +191,7 @@ neighbor_values disparity_features_calculator::get_neighbor_values(const dispari
 	return neighbor_values(base_disparities_cache, color_cache, baseRegion, cidx_left, cidx_right, cidx_top, cidx_bottom);
 }
 
-void disparity_features_calculator::update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange)
-{
-	const int range = drange.size();
-	const int dispMin = drange.offset();
 
-	neighbor_values neigh = get_neighbor_values(baseRegion, drange);
-
-	short left_neighbor_disp  = neigh.left.disparity;
-	short right_neighbor_disp = neigh.right.disparity;
-	float left_color_dev = neigh.left.color_dev;
-	float right_color_dev = neigh.right.color_dev;
-
-	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
-	result_vector.resize(range*vector_size_per_disp+vector_size);
-	float org_size = baseRegion.size();
-	float *result_ptr = result_vector.data();
-	for(int i = 0; i < range; ++i)
-	{
-		*result_ptr++ = cost_values[i];
-		*result_ptr++ = occ_avg_values[i];
-		*result_ptr++ = neighbor_pot_values[i];
-		*result_ptr++ = lr_pot_values[i];
-		*result_ptr++ = neighbor_color_pot_values[i];
-		*result_ptr++ = (float)occ_temp[i].first / org_size;
-		//*result_ptr++ = rel_cost_values[i];
-		int hyp_disp = dispMin + i;
-		*result_ptr++ = left_neighbor_disp - hyp_disp;
-		*result_ptr++ = right_neighbor_disp - hyp_disp;
-		//*result_ptr++ = top_neighbor_disp - hyp_disp;
-		//*result_ptr++ = bottom_neighbor_disp - hyp_disp;
-		*result_ptr++ = disp_costs[i];
-	}
-	//*result_ptr = baseRegion.disparity;
-	*result_ptr++ = *std::min_element(cost_values.begin(), cost_values.end());
-	*result_ptr++ = left_color_dev;
-	*result_ptr++ = right_color_dev;
-	//*result_ptr++ = top_color_dev;
-	//*result_ptr++ = bottom_color_dev;
-}
 
 disparity_hypothesis::disparity_hypothesis(const std::vector<float>& optimization_vector, int dispIdx)
 {

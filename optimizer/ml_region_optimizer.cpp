@@ -52,7 +52,7 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 
 	const short dispMin = base.task.dispMin;
 
-	std::vector<disparity_features_calculator> hyp_vec(omp_get_max_threads(), disparity_features_calculator(base, match));
+	std::vector<ml_feature_calculator> hyp_vec(omp_get_max_threads(), ml_feature_calculator(base, match));
 	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
 	for(std::size_t i = 0; i < occmaps.size(); ++i)
 	{
@@ -498,4 +498,75 @@ void ml_region_optimizer::training()
 {
 	training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + ".txt", training_iteration);
 	training_internal(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + ".txt", training_iteration);
+}
+
+void ml_feature_calculator::update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange)
+{
+	const int range = drange.size();
+	const int dispMin = drange.offset();
+
+	neighbor_values neigh = get_neighbor_values(baseRegion, drange);
+
+	short left_neighbor_disp  = neigh.left.disparity;
+	short right_neighbor_disp = neigh.right.disparity;
+	float left_color_dev = neigh.left.color_dev;
+	float right_color_dev = neigh.right.color_dev;
+
+	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
+	result_vector.resize(range*vector_size_per_disp+vector_size);
+	float org_size = baseRegion.size();
+	float *result_ptr = result_vector.data();
+	for(int i = 0; i < range; ++i)
+	{
+		*result_ptr++ = cost_values[i];
+		*result_ptr++ = occ_avg_values[i];
+		*result_ptr++ = neighbor_pot_values[i];
+		*result_ptr++ = lr_pot_values[i];
+		*result_ptr++ = neighbor_color_pot_values[i];
+		*result_ptr++ = (float)occ_temp[i].first / org_size;
+		//*result_ptr++ = rel_cost_values[i];
+		int hyp_disp = dispMin + i;
+		*result_ptr++ = left_neighbor_disp - hyp_disp;
+		*result_ptr++ = right_neighbor_disp - hyp_disp;
+		//*result_ptr++ = top_neighbor_disp - hyp_disp;
+		//*result_ptr++ = bottom_neighbor_disp - hyp_disp;
+		*result_ptr++ = warp_costs_values[i];
+	}
+	//*result_ptr = baseRegion.disparity;
+	*result_ptr++ = *std::min_element(cost_values.begin(), cost_values.end());
+	*result_ptr++ = left_color_dev;
+	*result_ptr++ = right_color_dev;
+	//*result_ptr++ = top_color_dev;
+	//*result_ptr++ = bottom_color_dev;
+}
+
+float create_min_version(std::vector<float>::iterator start, std::vector<float>::iterator end, std::vector<float>::iterator ins)
+{
+	float min_value = *(std::min_element(start, end));
+
+	std::transform(start, end, ins, [min_value](float val){
+		return val - min_value;
+	});
+
+	return min_value;
+}
+
+void ml_feature_calculator::operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector)
+{
+	const int range = drange.size();
+
+	cost_values.resize(range);
+	rel_cost_values.resize(range);
+
+	update_warp_costs(baseRegion, drange);
+	update_occ_avg(occmap, baseRegion, pot_trunc, drange);
+	update_average_neighbor_values(baseRegion, pot_trunc, drange);
+	update_lr_pot(baseRegion, pot_trunc, drange);
+
+	for(int i = 0; i < range; ++i)
+		cost_values[i] = baseRegion.disparity_costs((drange.start()+i)-baseRegion.disparity_offset);
+
+	create_min_version(cost_values.begin(), cost_values.end(), rel_cost_values.begin());
+
+	update_result_vector(result_vector, baseRegion, drange);
 }

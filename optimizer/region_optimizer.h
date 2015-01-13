@@ -52,6 +52,22 @@ class stereo_task;
 	class FileNode;
 }*/
 
+struct single_neighbor_values
+{
+	single_neighbor_values(const std::vector<short>& disparities, const std::vector<cv::Vec3d>& colors, const disparity_region& baseRegion, int neigh_idx);
+
+	float color_dev;
+	short disparity;
+};
+
+struct neighbor_values
+{
+	neighbor_values(const std::vector<short>& disparities, const std::vector<cv::Vec3d>& colors, const disparity_region& baseRegion, int idx_left, int idx_right, int idx_top, int idx_bottom)
+		: left(disparities, colors, baseRegion, idx_left), right(disparities, colors, baseRegion, idx_right), top(disparities, colors, baseRegion, idx_top), bottom(disparities, colors, baseRegion, idx_bottom)
+	{}
+	single_neighbor_values left, right, top, bottom;
+};
+
 class disparity_hypothesis
 {
 public:
@@ -65,8 +81,6 @@ struct disparity_hypothesis_weight_vector
 {
 	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
 };
-
-class neighbor_values;
 
 class disparity_features_calculator
 {
@@ -84,7 +98,7 @@ protected:
 
 	cv::Mat_<float> warp_costs;
 	std::vector<std::pair<int, float> > cost_temp;
-	std::vector<float> disp_costs;
+	std::vector<float> warp_costs_values;
 
 	//end results
 	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values, rel_cost_values;
@@ -92,14 +106,14 @@ protected:
 	void update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
 	void update_lr_pot(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
 	void update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
+	void update_warp_costs(const disparity_region& baseRegion, const disparity_range& drange);
 	neighbor_values get_neighbor_values(const disparity_region& baseRegion, const disparity_range& drange);
 
 public:
 	static const int vector_size_per_disp = 9;
 	static const int vector_size = 3;
 	disparity_features_calculator(const region_container& left_regions, const region_container& right_regions);
-	void operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector);
-	void update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange);
+
 };
 
 class optimizer_settings
