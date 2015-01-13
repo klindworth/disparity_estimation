@@ -195,12 +195,13 @@ neighbor_values disparity_features_calculator::get_neighbor_values(const dispari
 
 disparity_hypothesis::disparity_hypothesis(const std::vector<float>& optimization_vector, int dispIdx)
 {
-	const float *ptr = optimization_vector.data() + dispIdx * disparity_features_calculator::vector_size_per_disp;
+	/*const float *ptr = optimization_vector.data() + dispIdx * disparity_features_calculator::vector_size_per_disp;
 	costs = *ptr++;
 	occ_avg = *ptr++;
 	neighbor_pot = *ptr++;
 	lr_pot = *ptr++;
-	neighbor_color_pot = *ptr++;
+	neighbor_color_pot = *ptr++;*/
+	assert(false);
 
 }
 

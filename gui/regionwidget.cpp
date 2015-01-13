@@ -40,7 +40,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <opencv2/highgui/highgui.hpp>
 
-#include "ml_region_optimizer.h"
 #include "manual_region_optimizer.h"
 
 RegionWidget::RegionWidget(QWidget *parent) :
@@ -120,16 +119,16 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 
 	int pot_trunc = 10;
 
-	ml_feature_calculator dhv(base, match);
-	std::vector<float> optimization_vector;
+	manual_optimizer_feature_calculator dhv(base, match);
 	int dispMax = dispMin + baseRegion.corresponding_regions.size()-1;
 	disparity_range range(dispMin, dispMax);
-	dhv(occmap, baseRegion, pot_trunc, range, optimization_vector);
+	dhv.update(occmap, pot_trunc, baseRegion, range);
 
 	int i = 0;
 	for(auto it = baseRegion.corresponding_regions.begin(); it != baseRegion.corresponding_regions.end(); ++it)
 	{
-		disparity_hypothesis hyp(optimization_vector, i);
+		//disparity_hypothesis hyp(optimization_vector, i);
+		disparity_hypothesis hyp = dhv.get_disparity_hypothesis(i);
 		short currentDisp = i + dispMin;
 		//disparity_hypothesis hyp(occmap, baseRegion, currentDisp, base.regions, other_regions, pot_trunc, dispMin);
 

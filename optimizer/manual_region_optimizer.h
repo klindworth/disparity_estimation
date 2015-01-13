@@ -28,6 +28,28 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "region_optimizer.h"
 
+class manual_optimizer_feature_calculator : public disparity_features_calculator
+{
+public:
+	manual_optimizer_feature_calculator(const region_container& left_regions, const region_container& right_regions) : disparity_features_calculator(left_regions, right_regions)
+	{
+	}
+
+	void update(const cv::Mat_<unsigned char>& occmap, short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange);
+
+	disparity_hypothesis get_disparity_hypothesis(int disp_idx) const
+	{
+		disparity_hypothesis result;
+		result.costs = cost_values[disp_idx];
+		result.lr_pot = lr_pot_values[disp_idx];
+		result.neighbor_color_pot = neighbor_color_pot_values[disp_idx];
+		result.neighbor_pot = neighbor_pot_values[disp_idx];
+		result.occ_avg = occ_avg_values[disp_idx];
+
+		return result;
+	}
+};
+
 class manual_region_optimizer : public region_optimizer
 {
 public:

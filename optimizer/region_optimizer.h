@@ -90,23 +90,20 @@ struct disparity_hypothesis_weight_vector
 class disparity_features_calculator
 {
 protected:
-
+	//construction-time calculated
+	std::vector<cv::Point> base_avg_cache;
+	std::vector<short> base_disparities_cache, match_disparities_cache;
+	std::vector<cv::Vec3d> color_cache;
+	cv::Mat_<float> warp_costs;
 
 	//temps
 	std::vector<std::pair<int, int> > occ_temp;
 	std::vector<short> neighbor_disparities;
-	std::vector<cv::Point> base_avg_cache;
 	std::vector<float> neighbor_color_weights;
-
-	std::vector<short> base_disparities_cache, match_disparities_cache;
-	std::vector<cv::Vec3d> color_cache;
-
-	cv::Mat_<float> warp_costs;
 	std::vector<std::pair<int, float> > cost_temp;
-	std::vector<float> warp_costs_values;
 
 	//end results
-	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values, rel_cost_values;
+	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values, rel_cost_values, warp_costs_values;
 
 	void update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
 	void update_lr_pot(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);

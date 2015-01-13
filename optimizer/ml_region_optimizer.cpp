@@ -513,7 +513,7 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 	float right_color_dev = neigh.right.color_dev;
 
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
-	result_vector.resize(range*vector_size_per_disp+vector_size);
+	result_vector.resize(range*ml_region_optimizer::vector_size_per_disp+ml_region_optimizer::vector_size);
 	float org_size = baseRegion.size();
 	float *result_ptr = result_vector.data();
 	for(int i = 0; i < range; ++i)

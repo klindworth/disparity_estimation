@@ -127,7 +127,7 @@ void manual_region_optimizer::run(region_container &left, region_container &righ
 	}
 }
 
-float calculate_end_result(const float *raw_results, const disparity_hypothesis_weight_vector& wv)
+/*float calculate_end_result(const float *raw_results, const disparity_hypothesis_weight_vector& wv)
 {
 	return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.neighbor_pot + raw_results[3] * wv.lr_pot + raw_results[4] * wv.neighbor_color_pot;
 	//return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.lr_pot + raw_results[3] * wv.neighbor_color_pot;
@@ -139,42 +139,21 @@ float calculate_end_result(int disp_idx, const float *raw_results, const dispari
 	const float *result_ptr = raw_results + idx_offset;
 
 	return calculate_end_result(result_ptr, wv);
-}
+}*/
 
-class manual_optimizer_feature_calculator : public disparity_features_calculator
+void manual_optimizer_feature_calculator::update(const cv::Mat_<unsigned char>& occmap, short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange)
 {
-public:
-	manual_optimizer_feature_calculator(const region_container& left_regions, const region_container& right_regions) : disparity_features_calculator(left_regions, right_regions)
-	{
+	const int range = drange.size();
 
-	}
+	cost_values.resize(range);
 
-	void update(const cv::Mat_<unsigned char>& occmap, short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange)
-	{
-		const int range = drange.size();
+	update_occ_avg(occmap, baseRegion, pot_trunc, drange);
+	update_average_neighbor_values(baseRegion, pot_trunc, drange);
+	update_lr_pot(baseRegion, pot_trunc, drange);
 
-		cost_values.resize(range);
-
-		update_occ_avg(occmap, baseRegion, pot_trunc, drange);
-		update_average_neighbor_values(baseRegion, pot_trunc, drange);
-		update_lr_pot(baseRegion, pot_trunc, drange);
-
-		for(int i = 0; i < range; ++i)
-			cost_values[i] = baseRegion.disparity_costs((drange.start()+i)-baseRegion.disparity_offset);
-	}
-
-	disparity_hypothesis get_disparity_hypothesis(int disp_idx) const
-	{
-		disparity_hypothesis result;
-		result.costs = cost_values[disp_idx];
-		result.lr_pot = lr_pot_values[disp_idx];
-		result.neighbor_color_pot = neighbor_color_pot_values[disp_idx];
-		result.neighbor_pot = neighbor_pot_values[disp_idx];
-		result.occ_avg = occ_avg_values[disp_idx];
-
-		return result;
-	}
-};
+	for(int i = 0; i < range; ++i)
+		cost_values[i] = baseRegion.disparity_costs((drange.start()+i)-baseRegion.disparity_offset);
+}
 
 void refreshOptimizationBaseValues(region_container& base, const region_container& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
 {
