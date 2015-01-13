@@ -149,19 +149,11 @@ public:
 
 	}
 
-	void update(const cv::Mat_<unsigned char>& occmap, short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange, const disparity_hypothesis_weight_vector& wv)
+	void update(const cv::Mat_<unsigned char>& occmap, short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange)
 	{
 		const int range = drange.size();
 
 		cost_values.resize(range);
-		//rel_cost_values.resize(range);
-		//cost_temp.resize(range);
-		//disp_costs.resize(range);
-
-		//cost
-		/*region_descriptors::segment_boxfilter(cost_temp, warp_costs, baseRegion.lineIntervals, drange.start(), drange.end());
-		for(int i = 0; i < range; ++i)
-			disp_costs[i] = (cost_temp[i].first != 0) ? baseRegion.disparity_costs(i)/(float)cost_temp[i].second * cost_temp[i].first : 0;*/
 
 		update_occ_avg(occmap, baseRegion, pot_trunc, drange);
 		update_average_neighbor_values(baseRegion, pot_trunc, drange);
@@ -169,25 +161,19 @@ public:
 
 		for(int i = 0; i < range; ++i)
 			cost_values[i] = baseRegion.disparity_costs((drange.start()+i)-baseRegion.disparity_offset);
-
-		//create_min_version(cost_values.begin(), cost_values.end(), rel_cost_values.begin());
-
-		//update_result_vector(result_vector, baseRegion, drange);
-
-		//new
-		end_results.resize(drange.size());
-
-		for(int i = 0; i < drange.size(); ++i)
-			end_results[i] = cost_values[i] * wv.costs + lr_pot_values[i] * wv.lr_pot + neighbor_color_pot_values[i] * wv.neighbor_color_pot + neighbor_pot_values[i] * wv.neighbor_pot + occ_avg_values[i] * wv.occ_avg;
 	}
 
-	float calculate_optimization_energy(int disp_idx)
+	disparity_hypothesis get_disparity_hypothesis(int disp_idx) const
 	{
-		return end_results[disp_idx];
-	}
+		disparity_hypothesis result;
+		result.costs = cost_values[disp_idx];
+		result.lr_pot = lr_pot_values[disp_idx];
+		result.neighbor_color_pot = neighbor_color_pot_values[disp_idx];
+		result.neighbor_pot = neighbor_pot_values[disp_idx];
+		result.occ_avg = occ_avg_values[disp_idx];
 
-protected:
-	std::vector<float> end_results;
+		return result;
+	}
 };
 
 void refreshOptimizationBaseValues(region_container& base, const region_container& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
@@ -222,12 +208,12 @@ void refreshOptimizationBaseValues(region_container& base, const region_containe
 
 		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
 
-		hyp_vec[thread_idx].update(occmaps[thread_idx], pot_trunc, baseRegion, drange, stat_eval);
+		hyp_vec[thread_idx].update(occmaps[thread_idx], pot_trunc, baseRegion, drange);
 		for(short d = drange.start(); d <= drange.end(); ++d)
 		{
 			std::vector<corresponding_region>& cregionvec = baseRegion.corresponding_regions[d-dispMin];
 			if(!cregionvec.empty())
-				baseRegion.optimization_energy(d-dispMin) = hyp_vec[thread_idx].calculate_optimization_energy((d - drange.start()));
+				baseRegion.optimization_energy(d-dispMin) = stat_eval.evaluate_hypthesis(hyp_vec[thread_idx].get_disparity_hypothesis((d - drange.start())));
 				//baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - drange.start()), optimization_vectors[i].data(), stat_eval);
 		}
 

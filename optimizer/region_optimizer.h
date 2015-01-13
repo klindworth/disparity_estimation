@@ -80,6 +80,11 @@ public:
 struct disparity_hypothesis_weight_vector
 {
 	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
+
+	inline float evaluate_hypthesis(const disparity_hypothesis& hyp) const
+	{
+		return hyp.costs * costs + hyp.occ_avg * occ_avg + hyp.neighbor_pot * neighbor_pot + hyp.lr_pot * lr_pot + hyp.neighbor_color_pot * neighbor_color_pot;
+	}
 };
 
 class disparity_features_calculator

@@ -41,6 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/highgui/highgui.hpp>
 
 #include "ml_region_optimizer.h"
+#include "manual_region_optimizer.h"
 
 RegionWidget::RegionWidget(QWidget *parent) :
 	QWidget(parent),
