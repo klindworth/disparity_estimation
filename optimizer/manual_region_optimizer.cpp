@@ -31,11 +31,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "disparity_utils.h"
 
-void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, region_container& base, region_container& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const disparity_region&, const region_container&, const region_container&, int)> prop_eval, int delta)
+void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, region_container& base, region_container& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const disparity_region&, const region_container&, const region_container&, int)> prop_eval, int delta)
 {
 	//std::cout << "base" << std::endl;
-	refreshOptimizationBaseValues(optimization_vectors_base, base, match, base_eval, delta);
-	refreshOptimizationBaseValues(optimization_vectors_match, match, base, base_eval, delta);
+	refreshOptimizationBaseValues(base, match, base_eval, delta);
+	refreshOptimizationBaseValues(match, base, base_eval, delta);
 	//std::cout << "optimize" << std::endl;
 
 	std::random_device random_dev;
@@ -98,9 +98,6 @@ void manual_region_optimizer::reset(const region_container &left, const region_c
 
 	damping_history_right.resize(right.regions.size());
 	std::fill(damping_history_right.begin(), damping_history_right.end(), 0);
-
-	optimization_vectors_left.resize(left.regions.size());
-	optimization_vectors_right.resize(right.regions.size());
 }
 
 void manual_region_optimizer::run(region_container &left, region_container &right, const optimizer_settings &config, int refinement)
@@ -110,23 +107,23 @@ void manual_region_optimizer::run(region_container &left, region_container &righ
 	for(int i = 0; i < config.rounds; ++i)
 	{
 		std::cout << "optimization round" << std::endl;
-		optimize(damping_history_left, optimization_vectors_left, optimization_vectors_right, left, right, config.base_eval, config.prop_eval, refinement);
+		optimize(damping_history_left, left, right, config.base_eval, config.prop_eval, refinement);
 		refresh_warped_regions(left);
-		optimize(damping_history_right, optimization_vectors_right, optimization_vectors_left, right, left, config.base_eval, config.prop_eval, refinement);
+		optimize(damping_history_right, right, left, config.base_eval, config.prop_eval, refinement);
 		refresh_warped_regions(right);
 	}
 	for(int i = 0; i < config.rounds; ++i)
 	{
 		std::cout << "optimization round2" << std::endl;
-		optimize(damping_history_left, optimization_vectors_left, optimization_vectors_right, left, right, config.base_eval2, config.prop_eval2, refinement);
+		optimize(damping_history_left, left, right, config.base_eval2, config.prop_eval2, refinement);
 		refresh_warped_regions(left);
-		optimize(damping_history_right, optimization_vectors_right, optimization_vectors_left, right, left, config.base_eval2, config.prop_eval2, refinement);
+		optimize(damping_history_right, right, left, config.base_eval2, config.prop_eval2, refinement);
 		refresh_warped_regions(right);
 	}
 	if(config.rounds == 0)
 	{
-		refreshOptimizationBaseValues(optimization_vectors_left, left, right, config.base_eval, refinement);
-		refreshOptimizationBaseValues(optimization_vectors_right, right, left, config.base_eval, refinement);
+		refreshOptimizationBaseValues(left, right, config.base_eval, refinement);
+		refreshOptimizationBaseValues(right, left, config.base_eval, refinement);
 	}
 }
 
@@ -193,7 +190,7 @@ protected:
 	std::vector<float> end_results;
 };
 
-void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, region_container& base, const region_container& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
+void refreshOptimizationBaseValues(region_container& base, const region_container& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
 {
 	cv::Mat disp = disparity_by_segments(base);
 	cv::Mat occmap = disparity::occlusion_stat<short>(disp, 1.0);
