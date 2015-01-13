@@ -45,10 +45,8 @@ using namespace neural_network;
 void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& optimization_vectors, const region_container& base, const region_container& match, int delta)
 {
 	cv::Mat disp = disparity_by_segments(base);
-	//std::copy(disp.ptr<short>(91,0), disp.ptr<short>(91, base.image_size.width), std::ostream_iterator<int>(std::cout, ","));
-	//std::cout << "\n" << std::endl;
 	cv::Mat occmap = disparity::occlusion_stat<short>(disp, 1.0);
-	int pot_trunc = 10;
+	int pot_trunc = 15;
 
 	const short dispMin = base.task.dispMin;
 
@@ -436,12 +434,12 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 		std::swap(samples_gt[i], samples_gt[exchange_idx]);
 	}
 
-	std::vector<unsigned int> stats(crange, 0);
+	/*std::vector<unsigned int> stats(crange, 0);
 	for(std::size_t i = 0; i < samples_gt.size(); ++i)
 		++(stats[std::abs(samples_gt[i])]);
 	for(std::size_t i = 0; i < stats.size(); ++i)
 		std::cout << "[" << i << "] " << (float)stats[i]/samples_gt.size() << ", " << (float)stats[i]/samples_gt.size()/(1.0/crange) << "\n";
-	std::cout << std::endl;
+	std::cout << std::endl;*/
 
 	//TODO: class statistics?
 

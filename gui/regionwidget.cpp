@@ -113,11 +113,11 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 
 	tree->clear();
 	QStringList header;
-	header << "Disp" << "Other Disp" << "DispDiff" << "disp_neigh_color" << "Costs" << "own_occ" << /*"E_base" <<*/ "E" << "E_own" << "E_Other";
+	header << "Disp" << "Other Disp" << "lr_pot" << "neigh_color_pot" << "costs" << "own_occ" << "warp_costs" << /*"E_base" <<*/ "E" << "E_own" << "E_Other";
 	tree->setColumnCount(header.size());
 	tree->setHeaderLabels(header);
 
-	int pot_trunc = 10;
+	int pot_trunc = 15;
 
 	manual_optimizer_feature_calculator dhv(base, match);
 	int dispMax = dispMin + baseRegion.corresponding_regions.size()-1;
@@ -131,8 +131,6 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 		short currentDisp = i + dispMin;
 
 		float avg_disp = corresponding_regions_average(other_regions, *it, [](const disparity_region& cregion){return (float)cregion.disparity;});
-		//float stddev = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
-		float disp_pot = corresponding_regions_average(other_regions, *it, [&](const disparity_region& cregion){return (float)std::min(std::abs(currentDisp+cregion.disparity), 10);});
 		float e_other = baseRegion.optimization_energy.data ? corresponding_regions_average(other_regions, *it, [&](const disparity_region& cregion){return cregion.optimization_energy(-currentDisp-m_matchDispMin);}) : 0;
 
 		//ratings
@@ -147,10 +145,11 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 		QStringList item;
 		item << QString::number(i+dispMin);
 		item << QString::number(avg_disp);
-		item << QString::number(disp_pot);
+		item << QString::number(hyp.lr_pot);
 		item << QString::number(hyp.neighbor_color_pot);
 		item << QString::number(hyp.costs);
 		item << QString::number(hyp.occ_avg);
+		item << QString::number(hyp.warp_costs);
 
 		if(!it->empty())
 			item << QString::number(rating);

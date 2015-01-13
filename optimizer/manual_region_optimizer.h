@@ -45,6 +45,7 @@ public:
 		result.neighbor_color_pot = neighbor_color_pot_values[disp_idx];
 		result.neighbor_pot = neighbor_pot_values[disp_idx];
 		result.occ_avg = occ_avg_values[disp_idx];
+		result.warp_costs = warp_costs_values[disp_idx];
 
 		return result;
 	}

@@ -136,6 +136,7 @@ void manual_optimizer_feature_calculator::update(const cv::Mat_<unsigned char>& 
 	update_occ_avg(occmap, baseRegion, pot_trunc, drange);
 	update_average_neighbor_values(baseRegion, pot_trunc, drange);
 	update_lr_pot(baseRegion, pot_trunc, drange);
+	update_warp_costs(baseRegion, drange);
 
 	for(int i = 0; i < range; ++i)
 		cost_values[i] = baseRegion.disparity_costs((drange.start()+i)-baseRegion.disparity_offset);
@@ -145,7 +146,7 @@ void refreshOptimizationBaseValues(region_container& base, const region_containe
 {
 	cv::Mat disp = disparity_by_segments(base);
 	cv::Mat occmap = disparity::occlusion_stat<short>(disp, 1.0);
-	int pot_trunc = 10;
+	int pot_trunc = 15;
 
 	const short dispMin = base.task.dispMin;
 	const short dispRange = base.task.dispMax - base.task.dispMin + 1;

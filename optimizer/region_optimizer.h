@@ -70,12 +70,12 @@ struct neighbor_values
 
 struct disparity_hypothesis
 {
-	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
+	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot, warp_costs;
 };
 
 struct disparity_hypothesis_weight_vector
 {
-	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
+	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot, warp_costs;
 
 	inline float evaluate_hypthesis(const disparity_hypothesis& hyp) const
 	{

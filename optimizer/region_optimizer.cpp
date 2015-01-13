@@ -58,11 +58,15 @@ disparity_features_calculator::disparity_features_calculator(const region_contai
 		return region.disparity_costs(region.disparity-dispMin);
 	});
 
+	//matstore.add_mat("min_costs", min_costs);
+
 	warp_costs = cv::Mat_<float>(base.image_size, 1.0f);
 	cv::Mat_<short> disp = disparity_by_segments(base);
 	disparity::foreach_warped_pixel(disp, 1.0f, [&](cv::Point pos, cv::Point warped_pos, short) {
 		warp_costs(warped_pos) = std::min(min_costs(pos), warp_costs(warped_pos));
 	});
+
+	//matstore.add_mat("warped_costs", warp_costs);
 }
 
 void disparity_features_calculator::update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange)
@@ -88,7 +92,7 @@ void disparity_features_calculator::update_average_neighbor_values(const dispari
 	}
 
 	//TODO: stays constant during iterations -> dont recalculate
-	float weight_sum = gather_neighbor_color_weights_from_cache(neighbor_color_weights, baseRegion.average_color, 15.0f, color_cache, baseRegion.neighbors);
+	float weight_sum = gather_neighbor_color_weights_from_cache(neighbor_color_weights, baseRegion.average_color, 5.0f, color_cache, baseRegion.neighbors);
 	weight_sum = 1.0f/weight_sum;
 
 	//color neighbor pot
