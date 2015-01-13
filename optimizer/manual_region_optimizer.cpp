@@ -127,20 +127,6 @@ void manual_region_optimizer::run(region_container &left, region_container &righ
 	}
 }
 
-/*float calculate_end_result(const float *raw_results, const disparity_hypothesis_weight_vector& wv)
-{
-	return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.neighbor_pot + raw_results[3] * wv.lr_pot + raw_results[4] * wv.neighbor_color_pot;
-	//return raw_results[0] * wv.costs + raw_results[1] * wv.occ_avg + raw_results[2] * wv.lr_pot + raw_results[3] * wv.neighbor_color_pot;
-}
-
-float calculate_end_result(int disp_idx, const float *raw_results, const disparity_hypothesis_weight_vector &wv)
-{
-	std::size_t idx_offset = disp_idx*disparity_features_calculator::vector_size_per_disp;
-	const float *result_ptr = raw_results + idx_offset;
-
-	return calculate_end_result(result_ptr, wv);
-}*/
-
 void manual_optimizer_feature_calculator::update(const cv::Mat_<unsigned char>& occmap, short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange)
 {
 	const int range = drange.size();
@@ -193,7 +179,6 @@ void refreshOptimizationBaseValues(region_container& base, const region_containe
 			std::vector<corresponding_region>& cregionvec = baseRegion.corresponding_regions[d-dispMin];
 			if(!cregionvec.empty())
 				baseRegion.optimization_energy(d-dispMin) = stat_eval.evaluate_hypthesis(hyp_vec[thread_idx].get_disparity_hypothesis((d - drange.start())));
-				//baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - drange.start()), optimization_vectors[i].data(), stat_eval);
 		}
 
 		intervals::add_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);

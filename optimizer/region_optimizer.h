@@ -68,12 +68,8 @@ struct neighbor_values
 	single_neighbor_values left, right, top, bottom;
 };
 
-class disparity_hypothesis
+struct disparity_hypothesis
 {
-public:
-	disparity_hypothesis() {}
-	disparity_hypothesis(const std::vector<float>& optimization_vector, int dispIdx);
-
 	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
 };
 
@@ -112,10 +108,7 @@ protected:
 	neighbor_values get_neighbor_values(const disparity_region& baseRegion, const disparity_range& drange);
 
 public:
-	static const int vector_size_per_disp = 9;
-	static const int vector_size = 3;
 	disparity_features_calculator(const region_container& left_regions, const region_container& right_regions);
-
 };
 
 class optimizer_settings

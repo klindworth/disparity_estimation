@@ -127,10 +127,8 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 	int i = 0;
 	for(auto it = baseRegion.corresponding_regions.begin(); it != baseRegion.corresponding_regions.end(); ++it)
 	{
-		//disparity_hypothesis hyp(optimization_vector, i);
 		disparity_hypothesis hyp = dhv.get_disparity_hypothesis(i);
 		short currentDisp = i + dispMin;
-		//disparity_hypothesis hyp(occmap, baseRegion, currentDisp, base.regions, other_regions, pot_trunc, dispMin);
 
 		float avg_disp = corresponding_regions_average(other_regions, *it, [](const disparity_region& cregion){return (float)cregion.disparity;});
 		//float stddev = getOtherRegionsAverage(other_regions, *it, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
