@@ -202,7 +202,7 @@ void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization
 	const short dispMin = base.task.dispMin;
 	const short dispRange = base.task.dispMax - base.task.dispMin + 1;
 
-	std::vector<disparity_features_calculator> hyp_vec(omp_get_max_threads(), disparity_features_calculator(base, match));
+	std::vector<manual_optimizer_feature_calculator> hyp_vec(omp_get_max_threads(), manual_optimizer_feature_calculator(base, match));
 	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
 	for(std::size_t i = 0; i < occmaps.size(); ++i)
 	{
@@ -225,12 +225,13 @@ void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization
 
 		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
 
-		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, drange , optimization_vectors[i]);
+		hyp_vec[thread_idx].update(occmaps[thread_idx], pot_trunc, baseRegion, drange, stat_eval);
 		for(short d = drange.start(); d <= drange.end(); ++d)
 		{
 			std::vector<corresponding_region>& cregionvec = baseRegion.corresponding_regions[d-dispMin];
 			if(!cregionvec.empty())
-				baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - drange.start()), optimization_vectors[i].data(), stat_eval);
+				baseRegion.optimization_energy(d-dispMin) = hyp_vec[thread_idx].calculate_optimization_energy((d - drange.start()));
+				//baseRegion.optimization_energy(d-dispMin) = calculate_end_result((d - drange.start()), optimization_vectors[i].data(), stat_eval);
 		}
 
 		intervals::add_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);

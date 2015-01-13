@@ -72,7 +72,7 @@ void mat_to_file(const cv::Mat& input, const std::string& filename)
 
 cv::Mat stream_to_mat(std::istream& istream)
 {
-	assert(istream.is_open());
+	//assert(istream.is_open());
 	int type;
 	istream.read((char*)&type, sizeof(int));
 	int dims;
