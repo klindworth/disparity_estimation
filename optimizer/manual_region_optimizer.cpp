@@ -144,6 +144,55 @@ float calculate_end_result(int disp_idx, const float *raw_results, const dispari
 	return calculate_end_result(result_ptr, wv);
 }
 
+class manual_optimizer_feature_calculator : public disparity_features_calculator
+{
+public:
+	manual_optimizer_feature_calculator(const region_container& left_regions, const region_container& right_regions) : disparity_features_calculator(left_regions, right_regions)
+	{
+
+	}
+
+	void update(const cv::Mat_<unsigned char>& occmap, short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange, const disparity_hypothesis_weight_vector& wv)
+	{
+		const int range = drange.size();
+
+		cost_values.resize(range);
+		//rel_cost_values.resize(range);
+		//cost_temp.resize(range);
+		//disp_costs.resize(range);
+
+		//cost
+		/*region_descriptors::segment_boxfilter(cost_temp, warp_costs, baseRegion.lineIntervals, drange.start(), drange.end());
+		for(int i = 0; i < range; ++i)
+			disp_costs[i] = (cost_temp[i].first != 0) ? baseRegion.disparity_costs(i)/(float)cost_temp[i].second * cost_temp[i].first : 0;*/
+
+		update_occ_avg(occmap, baseRegion, pot_trunc, drange);
+		update_average_neighbor_values(baseRegion, pot_trunc, drange);
+		update_lr_pot(baseRegion, pot_trunc, drange);
+
+		for(int i = 0; i < range; ++i)
+			cost_values[i] = baseRegion.disparity_costs((drange.start()+i)-baseRegion.disparity_offset);
+
+		//create_min_version(cost_values.begin(), cost_values.end(), rel_cost_values.begin());
+
+		//update_result_vector(result_vector, baseRegion, drange);
+
+		//new
+		end_results.resize(drange.size());
+
+		for(int i = 0; i < drange.size(); ++i)
+			end_results[i] = cost_values[i] * wv.costs + lr_pot_values[i] * wv.lr_pot + neighbor_color_pot_values[i] * wv.neighbor_color_pot + neighbor_pot_values[i] * wv.neighbor_pot + occ_avg_values[i] * wv.occ_avg;
+	}
+
+	float calculate_optimization_energy(int disp_idx)
+	{
+		return end_results[disp_idx];
+	}
+
+protected:
+	std::vector<float> end_results;
+};
+
 void refreshOptimizationBaseValues(std::vector<std::vector<float>>& optimization_vectors, region_container& base, const region_container& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
 {
 	cv::Mat disp = disparity_by_segments(base);
