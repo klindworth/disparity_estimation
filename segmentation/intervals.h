@@ -79,22 +79,23 @@ public:
 	//! Returns the length (in x direction) of the interval
 	inline int length() const
 	{
+		assert(upper - lower >= 0);
 		return upper - lower;
 	}
 
-	inline bool operator<(const region_interval& rhs) const
+	inline bool operator<(const region_interval& rhs) const noexcept
 	{
 		return (this->y < rhs.y) || (this->lower < rhs.lower && this->y == rhs.y);
 	}
 
 	//rhs is bigger (operator< ordered)
-	inline bool intersectingOrdered(const region_interval& rhs) const
+	inline bool intersectingOrdered(const region_interval& rhs) const noexcept
 	{
 		return((this->lower <= rhs.lower && this->y == rhs.y) && this->upper > rhs.lower);
 	}
 
 	//! Returns, if this interval have an intersection with another interval
-	inline bool intersecting(const region_interval& rhs) const
+	inline bool intersecting(const region_interval& rhs) const noexcept
 	{
 		return intersectingOrdered(rhs) || rhs.intersectingOrdered(*this);
 	}
@@ -123,13 +124,13 @@ public:
 	}
 
 	//! Constructs an classic version of this interval without the additional value.
-	region_interval to_interval()
+	region_interval to_interval() const
 	{
 		return region_interval(y, lower, upper);
 	}
 };
 
-inline bool operator==(const region_interval& lhs, const region_interval& rhs)
+inline bool operator==(const region_interval& lhs, const region_interval& rhs) noexcept
 {
 	return (lhs.y == rhs.y) && (lhs.lower == rhs.lower) && (lhs.upper == rhs.upper);
 }

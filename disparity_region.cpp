@@ -57,15 +57,16 @@ std::vector<region_interval> filtered_region(int width, const std::vector<region
 	return filtered;
 }
 
-void determine_corresponding_regions(const cv::Mat_<int>& labelsMatch, disparity_region& region, const short dispMin, const short dispMax)
+void determine_corresponding_regions(const cv::Mat_<int>& labelsMatch, disparity_region& region, const disparity_range& drange)
 {
-	const int dispRange = dispMax-dispMin + 1;
+	const int dispRange = drange.size();
 	region.corresponding_regions = std::vector<std::vector<corresponding_region>>(dispRange);
 	//TODO segment boxfilter?
+	sparse_histogramm hist;
 	for(int i = 0; i < dispRange; ++i)
 	{
-		int cdisparity = i + dispMin;
-		sparse_histogramm hist;
+		int cdisparity = i + drange.start();
+		hist.reset();
 		foreach_warped_region_point(region.lineIntervals.begin(), region.lineIntervals.end(), labelsMatch.cols, cdisparity, [&](cv::Point pt)
 		{
 			hist.increment(labelsMatch(pt));
@@ -73,11 +74,22 @@ void determine_corresponding_regions(const cv::Mat_<int>& labelsMatch, disparity
 
 		region.corresponding_regions[i].reserve(hist.size());
 		double normalizer = hist.total() > 0 ? 1.0/hist.total() : 0.0;
-		for(auto it = hist.begin(); it != hist.end(); ++it)
+		auto hend = hist.cend();
+		for(auto it = hist.cbegin(); it != hend; ++it)
 		{
 			double mutual_percent = (double)it->second * normalizer;
 			region.corresponding_regions[i].push_back(corresponding_region(it->first, mutual_percent));
 		}
+		/*for(auto it = hist.begin(); it != hist.end(); ++it)
+		{
+			double mutual_percent = (double)it->second * normalizer;
+			region.corresponding_regions[i].push_back(corresponding_region(it->first, mutual_percent));
+		}*/
+		/*for(const auto& it : hist)
+		{
+			double mutual_percent = (double)it.second * normalizer;
+			region.corresponding_regions[i].push_back(corresponding_region(it.first, mutual_percent));
+		}*/
 	}
 }
 
@@ -97,17 +109,9 @@ void check_corresponding_regions(const region_container& base, const region_cont
 
 void determine_corresponding_regions(region_container& base, const region_container& match, int delta)
 {
-	/*const std::size_t regions_count = base.regions.size();
-	#pragma omp parallel for default(none) shared(base, match, delta)
-	for(std::size_t j = 0; j < regions_count; ++j)
-	{
-		disparity_range range = task_subrange(base.task, base.regions[j].base_disparity, delta);
-		determine_corresponding_regions(match.labels, base.regions[j], range.start(), range.end());
-	}*/
-
 	parallel_region(base.regions.begin(), base.regions.end(), [&](disparity_region& cregion){
 		disparity_range range = task_subrange(base.task, cregion.base_disparity, delta);
-		determine_corresponding_regions(match.labels, cregion, range.start(), range.end());
+		determine_corresponding_regions(match.labels, cregion, range);
 	});
 }
 

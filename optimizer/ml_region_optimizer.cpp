@@ -342,13 +342,13 @@ void ml_region_optimizer::reset_internal()
 	int pass = ml_region_optimizer::vector_size;
 	nnet = std::unique_ptr<network<double>>(new network<double>(dims));
 	//nnet->emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	nnet->emplace_layer<vector_connected_layer>(nvector, nvector, pass);
-	nnet->emplace_layer<relu_layer>();
+	//nnet->emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
+	//nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
 	nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<transpose_vector_connected_layer>(4, nvector*2, pass);
 	nnet->emplace_layer<relu_layer>();
-	//nnet->emplace_layer<row_connected_layer>(crange, crange, 0);
+	//nnet->emplace_layer<row_connected_layer>(crange, crange, pass);
 	//nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<fully_connected_layer>(crange);
 	nnet->emplace_layer<relu_layer>();
@@ -466,8 +466,8 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	int nvector = ml_region_optimizer::vector_size_per_disp;
 	int pass = ml_region_optimizer::vector_size;
 	//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	net.emplace_layer<vector_connected_layer>(nvector, nvector, pass);
-	net.emplace_layer<relu_layer>();
+	//net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
+	//net.emplace_layer<relu_layer>();
 	net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<transpose_vector_connected_layer>(4, nvector*2, pass);

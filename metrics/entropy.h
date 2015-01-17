@@ -106,7 +106,7 @@ inline result_type calculate_joint_entropy_unnormalized_sparse(counter_type& cou
 template<typename result_type, typename counter_type, typename entropytable_type>
 inline result_type calculate_entropy_unnormalized(counter_type& counter, const entropytable_type& entropy_table, int bins)
 {
-	auto *counter_ptr = counter.at(1);
+	auto *counter_ptr = counter.ptr(1);
 	result_type result = 0.0f;
 	unsigned int normalize_counter = 0;
 	for(int i = 1; i <= bins; ++i)
@@ -139,7 +139,7 @@ inline result_type calculate_joint_entropy_normalized_sparse(counter_type& count
 template<typename result_type, typename counter_type, typename entropytable_type>
 inline result_type calculate_entropy_normalized(counter_type& counter, const entropytable_type& entropy_table, int bins)
 {
-	auto *counter_ptr = counter.data;
+	auto *counter_ptr = counter.ptr();
 	result_type result = 0.0f;
 	for(int i = 0; i < bins; ++i)
 		result += entropy_table(*counter_ptr++);

@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <algorithm>
 #include <map>
 #include <unordered_map>
+#include <boost/container/flat_map.hpp>
 
 class sparse_counter_compare_yx
 {
@@ -60,7 +61,8 @@ class sparse_counter
 {
 public:
 	typedef index_type_t index_type;
-	typedef std::map<index_type, int, compare_obj> internal_store;
+	//typedef std::map<index_type, int, compare_obj> internal_store;
+	typedef boost::container::flat_map<index_type, int, compare_obj> internal_store;
 	//typedef std::unordered_map<index_type, int> internal_store;
 	typedef typename internal_store::iterator iterator;
 	typedef typename internal_store::const_iterator const_iterator;
@@ -137,5 +139,23 @@ private:
 
 typedef sparse_counter<std::pair<int, int>, sparse_counter_compare_yx> sparse_2d_histogramm;
 typedef sparse_counter<int, sparse_counter_compare_val> sparse_histogramm;
+
+namespace std {
+	sparse_histogramm::iterator begin(sparse_histogramm& hist) {
+		return hist.begin();
+	}
+
+	sparse_histogramm::iterator end(sparse_histogramm& hist) {
+		return hist.end();
+	}
+
+	sparse_histogramm::const_iterator begin(const sparse_histogramm& hist) {
+		return hist.cbegin();
+	}
+
+	sparse_histogramm::const_iterator end(const sparse_histogramm& hist) {
+		return hist.cend();
+	}
+}
 
 #endif // SPARSE_COUNTER_H

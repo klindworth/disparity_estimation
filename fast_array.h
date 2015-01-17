@@ -33,7 +33,6 @@ class fast_array
 {
 public:
 	static const int size = tsize;
-	T *data;
 
 	fast_array() {
 		data = static_cast<T*>(cv::fastMalloc(size*sizeof(T)));
@@ -45,7 +44,11 @@ public:
 		return *(data + x);
 	}
 
-	inline T* at(int x) {
+	inline T* ptr() {
+		return data;
+	}
+
+	inline T* ptr(int x) {
 		assert(x >= 0 && x < size);
 		return data + x;
 	}
@@ -57,13 +60,15 @@ public:
 	~fast_array() {
 		cv::fastFree(data);
 	}
+
+private:
+	T *data;
 };
 
 template<typename T, int tsize, int tsize2>
 class fast_array2d
 {
 public:
-	T *data;
 	static const int size = tsize*tsize2;
 	static const int step1 = tsize;
 	static const int step2 = tsize2;
@@ -83,12 +88,16 @@ public:
 		return *(data + step1*x + y);
 	}
 
-	inline T* at(int x) {
+	inline T* ptr() {
+		return data;
+	}
+
+	inline T* ptr(int x) {
 		assert(x >= 0 && x < size);
 		return data + x;
 	}
 
-	inline T* at(int x, int y) {
+	inline T* ptr(int x, int y) {
 		assert(x >= 0 && y >= 0 && x < step1 && y < step2);
 		return data + step1*x + y;
 	}
@@ -97,9 +106,12 @@ public:
 		memset(data, 0, size*sizeof(T));
 	}
 
-	~fast_array2d()	{
+	~fast_array2d() {
 		cv::fastFree(data);
 	}
+
+private:
+	T *data;
 };
 
 #endif // FAST_ARRAY_H
