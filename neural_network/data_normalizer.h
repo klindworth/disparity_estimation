@@ -107,11 +107,6 @@ public:
 		stream << vector_size << " ";
 		stream << onetimesize << " ";
 
-		for(auto& cmean : mean_normalizers)
-			stream << cmean;
-		for(auto& cstddev : stddev_normalizers)
-			stream << cstddev;
-
 		std::copy(mean_normalizers.begin(), mean_normalizers.end(), std::ostream_iterator<T>(stream, " "));
 		std::copy(stddev_normalizers.begin(), stddev_normalizers.end(), std::ostream_iterator<T>(stream, " "));
 	}

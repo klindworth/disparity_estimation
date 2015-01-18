@@ -111,8 +111,7 @@ void gather_region_optimization_vector(dst_type *dst_ptr, const disparity_region
 		const dst_type *other_ptr = disp_optimization_vector.data();
 
 		dst_type *ndst_ptr = dst_ptr + (d-drange.start())*ml_region_optimizer::vector_size_per_disp*2;
-		//float *ndst_ptr = dst_ptr + vector_size_per_disp*2*(int)std::abs(d);
-		//dst_type *ndst_ptr = dst_ptr + ml_region_optimizer::vector_size_per_disp*2*(crange - 1 - (int)std::abs(d));
+		//dst_type *ndst_ptr = dst_ptr + ml_region_optimizer::vector_size_per_disp*2*(int)std::abs(d);
 
 		for(int j = 0; j < ml_region_optimizer::vector_size_per_disp; ++j)
 			*ndst_ptr++ = *base_ptr++;
@@ -130,8 +129,6 @@ void gather_region_optimization_vector(dst_type *dst_ptr, const disparity_region
 
 void ml_region_optimizer::optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename)
 {
-	const int crange = base.task.range_size();
-
 	std::ifstream istream(filename);
 
 	if(!istream.is_open())
@@ -143,17 +140,16 @@ void ml_region_optimizer::optimize_ml(region_container& base, const region_conta
 	std::cout << "optimize" << std::endl;
 
 	const std::size_t regions_count = base.regions.size();
+	const short sign = (base.task.dispMin < 0) ? -1 : 1;
 
-	short sign = (base.task.dispMin < 0) ? -1 : 1;
-
+	std::vector<std::vector<double>> region_optimization_vectors(omp_get_max_threads(), std::vector<double>(base.task.range_size()*vector_size_per_disp*2+vector_size));
 	#pragma omp parallel for
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		std::vector<double> region_optimization_vector(crange*vector_size_per_disp*2+vector_size); //recycle taskwise in prediction mode
-		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
-		//normalize_feature_vector(region_optimization_vector, mean_normalization_vector, stddev_normalization_vector);
-		normalizer.apply(region_optimization_vector);
-		base.regions[j].disparity = nnet->predict(region_optimization_vector.data()) * sign;
+		int thread_idx = omp_get_thread_num();
+		gather_region_optimization_vector(region_optimization_vectors[thread_idx].data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
+		normalizer.apply(region_optimization_vectors[thread_idx]);
+		base.regions[j].disparity = nnet->predict(region_optimization_vectors[thread_idx].data()) * sign;
 	}
 
 	refresh_warped_regions(base);
@@ -279,7 +275,7 @@ ml_region_optimizer::ml_region_optimizer()
 	nnet = nullptr;
 
 	reset_internal();
-	training_iteration = 0;
+	training_iteration = 1;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
 }
