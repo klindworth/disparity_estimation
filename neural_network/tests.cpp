@@ -1,4 +1,5 @@
 #include <neural_network/network.h>
+#include <neural_network/data_normalizer.h>
 
 #include <gtest/gtest.h>
 
@@ -393,6 +394,24 @@ TEST(SimpleNNBlas, SCALE)
 	blas::scale(2.0, input.data(), 2, 2);
 
 	compare_double_vector(input, expected);
+}
+
+TEST(SimpleNN, DataNormalizer)
+{
+	data_normalizer<double> normalizer(2,1);
+	std::vector<std::vector<double>> samples { {1,2,3,4,5}, {2,3,4,5,6}, {3,4,5,6,7} };
+
+	normalizer.gather(samples);
+
+	std::vector<double> actual_mean = normalizer.mean_normalizers;
+	std::vector<double> expected_mean {3,4,6};
+
+	compare_double_vector(actual_mean, expected_mean);
+
+	std::vector<double> actual_dev = normalizer.stddev_normalizers;
+	std::vector<double> expected_dev {1.0/std::sqrt(10.0/6), 1.0/std::sqrt(10.0/6), 1.0/std::sqrt(2.0/3.0)};
+
+	compare_double_vector(actual_dev, expected_dev);
 }
 
 /*int main(int, char **)
