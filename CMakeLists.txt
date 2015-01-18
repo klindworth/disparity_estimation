@@ -70,6 +70,7 @@ set(HEADERS
     neural_network/network.h
     neural_network/blas_wrapper.h
     neural_network/layer.h
+    neural_network/data_normalizer.h
 )
 
 set(QTHEADERS
