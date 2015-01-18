@@ -91,11 +91,11 @@ void gather_statistic(const std::vector<T>& data, std::vector<T>& sums, int& cou
 	for(int k = 0; k < crange; ++k)
 	{
 		for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
-			sums[i] += func(*ptr++);
+			sums[i] += func(*ptr++, i);
 		++count;
 	}
 	for(int k = 0; k < ml_region_optimizer::vector_size; ++k)
-		sums[ml_region_optimizer::vector_size_per_disp+k] += func(*ptr++);
+		sums[ml_region_optimizer::vector_size_per_disp+k] += func(*ptr++, ml_region_optimizer::vector_size_per_disp+k);
 
 	assert(std::distance(data.data(), ptr) == (int)data.size());
 }
@@ -342,19 +342,6 @@ void ml_region_optimizer::reset_internal()
 	nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<fully_connected_layer>(crange);
 	nnet->emplace_layer<softmax_output_layer>();
-
-	/*nnet->emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<vector_connected_layer>(ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
-	nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<transpose_vector_connected_layer>(4, ml_region_optimizer::vector_size_per_disp*2, ml_region_optimizer::vector_size);
-	nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<row_connected_layer>(crange, crange, ml_region_optimizer::vector_size);
-	nnet->emplace_layer<relu_layer>();
-	//nnet->emplace_layer<fully_connected_layer>(crange);
-	//nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<fully_connected_layer>(crange);
-	nnet->emplace_layer<softmax_output_layer>();*/
 }
 
 ml_region_optimizer::ml_region_optimizer()
@@ -383,18 +370,21 @@ void gather_normalizers(std::vector<std::vector<T>>& data, std::vector<T>& mean_
 	stddev_normalizer.resize(ml_region_optimizer::normalizer_size);
 
 	int mean_count = 0;
-	gather_statistic(data, mean_normalizer, mean_count, [](T val) {return val;});
+	gather_statistic(data, mean_normalizer, mean_count, [](T val, std::size_t) {return val;});
 	prepare_normalizer(mean_normalizer, mean_count, data.size());
 
 	int std_count = 0;
-	gather_statistic(data, stddev_normalizer, std_count, [](T val) {return val*val;});
+	gather_statistic(data, stddev_normalizer, std_count, [&](T val, std::size_t n_idx) {
+		T submean = val - mean_normalizer[n_idx];
+		return submean*submean;
+	});
 	prepare_normalizer(stddev_normalizer, std_count, data.size());
 
 	for(auto& val : stddev_normalizer)
 		val = 1.0 / std::sqrt(val);
 }
 
-void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename, int iteration)
+void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename)
 {
 	int crange = 164;
 
@@ -436,20 +426,6 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	assert(dims == (ml_region_optimizer::vector_size_per_disp*2*crange)+ml_region_optimizer::vector_size);
 	network<double> net(dims);
 
-	/*if(iteration > 0)
-	{
-		//load old weights as init?
-		std::ifstream istream(filename);
-
-		/*if(!istream.is_open())
-			throw std::runtime_error("file not found: " + filename);
-
-		for(auto& cval : mean_normalization_vector)
-			istream >> cval;
-		for(auto& cval : stddev_normalization_vector)
-			istream >> cval;
-	}*/
-
 	//int nvector = ml_region_optimizer::vector_size_per_disp + ml_region_optimizer::vector_size;
 	int nvector = ml_region_optimizer::vector_size_per_disp;
 	int pass = ml_region_optimizer::vector_size;
@@ -482,8 +458,8 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 
 void ml_region_optimizer::training()
 {
-	training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + ".txt", training_iteration);
-	training_internal(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + ".txt", training_iteration);
+	training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + ".txt");
+	training_internal(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + ".txt");
 }
 
 void ml_feature_calculator::update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange)
