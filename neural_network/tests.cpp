@@ -412,6 +412,16 @@ TEST(SimpleNN, DataNormalizer)
 	std::vector<double> expected_dev {1.0/std::sqrt(10.0/6), 1.0/std::sqrt(10.0/6), 1.0/std::sqrt(2.0/3.0)};
 
 	compare_double_vector(actual_dev, expected_dev);
+
+	std::vector<std::vector<double>> samples_norm = samples;
+	for(auto& csample : samples_norm)
+		normalizer.apply(csample);
+
+	data_normalizer<double> check_normalizer(2,1);
+	check_normalizer.gather(samples_norm);
+
+	compare_double_vector(check_normalizer.mean_normalizers, {0.0, 0.0, 0.0});
+	compare_double_vector(check_normalizer.stddev_normalizers, {1.0, 1.0, 1.0});
 }
 
 /*int main(int, char **)
