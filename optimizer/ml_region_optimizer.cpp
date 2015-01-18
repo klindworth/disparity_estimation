@@ -84,6 +84,48 @@ private:
 
 public:
 
+	data_normalizer(int vector_size, int onetimesize)
+	{
+		this->vector_size = vector_size;
+		this->onetimesize = onetimesize;
+
+		mean_normalizers.resize(vector_size+onetimesize);
+		stddev_normalizers.resize(vector_size+onetimesize);
+	}
+
+	data_normalizer(std::istream& stream)
+	{
+		this->read(stream);
+	}
+
+	void read(std::istream& stream)
+	{
+		stream >> vector_size;
+		stream >> onetimesize;
+
+		mean_normalizers.resize(vector_size+onetimesize);
+		stddev_normalizers.resize(vector_size+onetimesize);
+
+		for(auto& cmean : mean_normalizers)
+			stream >> cmean;
+		for(auto& cstddev : stddev_normalizers)
+			stream >> cstddev;
+	}
+
+	void write(std::ostream& stream) const
+	{
+		stream << vector_size << " ";
+		stream << onetimesize << " ";
+
+		for(auto& cmean : mean_normalizers)
+			stream << cmean;
+		for(auto& cstddev : stddev_normalizers)
+			stream << cstddev;
+
+		std::copy(mean_normalizers.begin(), mean_normalizers.end(), std::ostream_iterator<T>(stream, " "));
+		std::copy(stddev_normalizers.begin(), stddev_normalizers.end(), std::ostream_iterator<T>(stream, " "));
+	}
+
 	void gather(const std::vector<std::vector<T>>& data)
 	{
 		mean_normalizers.resize(vector_size+onetimesize);
@@ -285,21 +327,23 @@ void gather_region_optimization_vector(dst_type *dst_ptr, const disparity_region
 
 void ml_region_optimizer::optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename)
 {
-	std::cout << "base" << std::endl;
-
 	const int crange = base.task.range_size();
 
-	std::vector<double> mean_normalization_vector(normalizer_size,0.0f);
-	std::vector<double> stddev_normalization_vector(normalizer_size, 0.0f);
+
+
+	/*std::vector<double> mean_normalization_vector(normalizer_size,0.0f);
+	std::vector<double> stddev_normalization_vector(normalizer_size, 0.0f);*/
 	std::ifstream istream(filename);
 
 	if(!istream.is_open())
 		throw std::runtime_error("file not found: " + filename);
 
-	for(auto& cval : mean_normalization_vector)
+	data_normalizer<double> normalizer(istream);
+
+	/*for(auto& cval : mean_normalization_vector)
 		istream >> cval;
 	for(auto& cval : stddev_normalization_vector)
-		istream >> cval;
+		istream >> cval;*/
 
 	istream >> *nnet;
 
@@ -314,7 +358,8 @@ void ml_region_optimizer::optimize_ml(region_container& base, const region_conta
 	{
 		std::vector<double> region_optimization_vector(crange*vector_size_per_disp*2+vector_size); //recycle taskwise in prediction mode
 		gather_region_optimization_vector(region_optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
-		normalize_feature_vector(region_optimization_vector, mean_normalization_vector, stddev_normalization_vector);
+		//normalize_feature_vector(region_optimization_vector, mean_normalization_vector, stddev_normalization_vector);
+		normalizer.apply(region_optimization_vector);
 		base.regions[j].disparity = nnet->predict(region_optimization_vector.data()) * sign;
 	}
 
@@ -482,13 +527,18 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 
 	std::cout << "start actual training" << std::endl;
 
-	std::vector<double> mean_normalization_vector;
+	/*std::vector<double> mean_normalization_vector;
 	std::vector<double> stddev_normalization_vector;
 	gather_normalizers(samples, mean_normalization_vector, stddev_normalization_vector);
 
 	//apply normalization
 	for(auto& cvec : samples)
-		normalize_feature_vector(cvec, mean_normalization_vector, stddev_normalization_vector);
+		normalize_feature_vector(cvec, mean_normalization_vector, stddev_normalization_vector);*/
+
+	data_normalizer<double> normalizer(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	normalizer.gather(samples);
+	for(auto& cvec : samples)
+		normalizer.apply(cvec);
 
 	assert(samples.size() == samples_gt.size());
 
@@ -539,8 +589,9 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 
 	std::ofstream ostream(filename);
 	ostream.precision(17);
-	std::copy(mean_normalization_vector.begin(), mean_normalization_vector.end(), std::ostream_iterator<float>(ostream, " "));
-	std::copy(stddev_normalization_vector.begin(), stddev_normalization_vector.end(), std::ostream_iterator<float>(ostream, " "));
+	/*std::copy(mean_normalization_vector.begin(), mean_normalization_vector.end(), std::ostream_iterator<float>(ostream, " "));
+	std::copy(stddev_normalization_vector.begin(), stddev_normalization_vector.end(), std::ostream_iterator<float>(ostream, " "));*/
+	normalizer.write(ostream);
 
 	ostream << net;
 	ostream.close();
