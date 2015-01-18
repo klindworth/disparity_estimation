@@ -217,70 +217,6 @@ void region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<short
 	}
 }
 
-template<typename T, typename lambda_type>
-void gather_statistic(const std::vector<T>& data, std::vector<T>& sums, int& count, lambda_type func)
-{
-	int crange = (data.size() - ml_region_optimizer::vector_size)/ ml_region_optimizer::vector_size_per_disp;
-	const T* ptr = data.data();
-	for(int k = 0; k < crange; ++k)
-	{
-		for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
-			sums[i] += func(*ptr++, i);
-		++count;
-	}
-	for(int k = 0; k < ml_region_optimizer::vector_size; ++k)
-		sums[ml_region_optimizer::vector_size_per_disp+k] += func(*ptr++, ml_region_optimizer::vector_size_per_disp+k);
-
-	assert(std::distance(data.data(), ptr) == (int)data.size());
-}
-
-template<typename T, typename lambda_type>
-void gather_statistic(const std::vector<std::vector<T>>& data, std::vector<T>& sums, int& count, lambda_type func)
-{
-	assert(sums.size() == ml_region_optimizer::normalizer_size);
-	std::fill(sums.begin(), sums.end(), 0);
-	count = 0;
-
-	for(const std::vector<T>& cdata :data)
-		gather_statistic(cdata, sums, count, func);
-}
-
-template<typename T>
-void prepare_normalizer(std::vector<T>& sums, int count, std::size_t samples)
-{
-	for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
-		sums[i] /= count;
-	for(int i = ml_region_optimizer::vector_size_per_disp; i < ml_region_optimizer::vector_size_per_disp+ml_region_optimizer::vector_size; ++i)
-		sums[i] /= samples;
-}
-
-template<typename T>
-void normalize_feature_vector(T *ptr, int n, const std::vector<T>& mean_normalization_vector, const std::vector<T>& stddev_normalization_vector)
-{
-	int cmax = (n - ml_region_optimizer::vector_size) / ml_region_optimizer::vector_size_per_disp;
-	assert((n - ml_region_optimizer::vector_size) % (ml_region_optimizer::vector_size_per_disp) == 0);
-	assert(mean_normalization_vector.size() == stddev_normalization_vector.size());
-	for(int j = 0; j < cmax; ++j)
-	{
-		for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
-		{
-			*ptr -= mean_normalization_vector[i];
-			*ptr++ *= stddev_normalization_vector[i];
-		}
-	}
-	for(int j = 0; j < ml_region_optimizer::vector_size; ++j)
-	{
-		*ptr -= mean_normalization_vector[ml_region_optimizer::vector_size_per_disp+j];
-		*ptr++ *= stddev_normalization_vector[ml_region_optimizer::vector_size_per_disp+j];
-	}
-}
-
-template<typename T>
-void normalize_feature_vector(std::vector<T>& data, const std::vector<T>& mean_normalization_vector, const std::vector<T>& stddev_normalization_vector)
-{
-	normalize_feature_vector(data.data(), data.size(), mean_normalization_vector, stddev_normalization_vector);
-}
-
 void ml_region_optimizer::refresh_base_optimization_vector(const region_container& left, const region_container& right, int delta)
 {
 	refresh_base_optimization_vector_internal(optimization_vectors_left, left, right, delta);
@@ -329,22 +265,12 @@ void ml_region_optimizer::optimize_ml(region_container& base, const region_conta
 {
 	const int crange = base.task.range_size();
 
-
-
-	/*std::vector<double> mean_normalization_vector(normalizer_size,0.0f);
-	std::vector<double> stddev_normalization_vector(normalizer_size, 0.0f);*/
 	std::ifstream istream(filename);
 
 	if(!istream.is_open())
 		throw std::runtime_error("file not found: " + filename);
 
 	data_normalizer<double> normalizer(istream);
-
-	/*for(auto& cval : mean_normalization_vector)
-		istream >> cval;
-	for(auto& cval : stddev_normalization_vector)
-		istream >> cval;*/
-
 	istream >> *nnet;
 
 	std::cout << "optimize" << std::endl;
@@ -500,40 +426,11 @@ void ml_region_optimizer::reset(const region_container& /*left*/, const region_c
 	reset_internal();
 }
 
-template<typename T>
-void gather_normalizers(std::vector<std::vector<T>>& data, std::vector<T>& mean_normalizer, std::vector<T>& stddev_normalizer)
-{
-	mean_normalizer.resize(ml_region_optimizer::normalizer_size);
-	stddev_normalizer.resize(ml_region_optimizer::normalizer_size);
-
-	int mean_count = 0;
-	gather_statistic(data, mean_normalizer, mean_count, [](T val, std::size_t) {return val;});
-	prepare_normalizer(mean_normalizer, mean_count, data.size());
-
-	int std_count = 0;
-	gather_statistic(data, stddev_normalizer, std_count, [&](T val, std::size_t n_idx) {
-		T submean = val - mean_normalizer[n_idx];
-		return submean*submean;
-	});
-	prepare_normalizer(stddev_normalizer, std_count, data.size());
-
-	for(auto& val : stddev_normalizer)
-		val = 1.0 / std::sqrt(val);
-}
-
 void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename)
 {
 	int crange = 164;
 
 	std::cout << "start actual training" << std::endl;
-
-	/*std::vector<double> mean_normalization_vector;
-	std::vector<double> stddev_normalization_vector;
-	gather_normalizers(samples, mean_normalization_vector, stddev_normalization_vector);
-
-	//apply normalization
-	for(auto& cvec : samples)
-		normalize_feature_vector(cvec, mean_normalization_vector, stddev_normalization_vector);*/
 
 	data_normalizer<double> normalizer(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
 	normalizer.gather(samples);
@@ -589,8 +486,6 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 
 	std::ofstream ostream(filename);
 	ostream.precision(17);
-	/*std::copy(mean_normalization_vector.begin(), mean_normalization_vector.end(), std::ostream_iterator<float>(ostream, " "));
-	std::copy(stddev_normalization_vector.begin(), stddev_normalization_vector.end(), std::ostream_iterator<float>(ostream, " "));*/
 	normalizer.write(ostream);
 
 	ostream << net;
