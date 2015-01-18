@@ -245,6 +245,13 @@ public:
 			clayer->load_weights(stream);
 	}
 
+	void load_weights(std::istream &stream, int up_to_layer)
+	{
+		assert(up_to_layer < layers.size() && up_to_layer);
+		for(int i = 0; i <= up_to_layer; ++i)
+			layers[i]->load_weights(stream);
+	}
+
 	void reset_weights()
 	{
 		for(const auto& clayer : layers)

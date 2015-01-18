@@ -127,7 +127,7 @@ void manual_region_optimizer::run(region_container &left, region_container &righ
 	}
 }
 
-void manual_optimizer_feature_calculator::update(const cv::Mat_<unsigned char>& occmap, short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange)
+void manual_optimizer_feature_calculator::update(cv::Mat_<unsigned char>& occmap, short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange)
 {
 	const int range = drange.size();
 
@@ -168,8 +168,6 @@ void refreshOptimizationBaseValues(region_container& base, const region_containe
 		disparity_region& baseRegion = base.regions[i];
 		int thread_idx = omp_get_thread_num();
 
-		intervals::substract_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
-
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
 		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
@@ -181,8 +179,6 @@ void refreshOptimizationBaseValues(region_container& base, const region_containe
 			if(!cregionvec.empty())
 				baseRegion.optimization_energy(d-dispMin) = stat_eval.evaluate_hypthesis(hyp_vec[thread_idx].get_disparity_hypothesis((d - drange.start())));
 		}
-
-		intervals::add_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 	}
 }
 

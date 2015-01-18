@@ -66,10 +66,8 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 		const disparity_region& baseRegion = base.regions[i];
 		int thread_idx = omp_get_thread_num();
 
-		intervals::substract_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
 		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, drange, optimization_vectors[i]);
-		intervals::add_region_value<unsigned char>(occmaps[thread_idx], baseRegion.warped_interval, 1);
 	}
 }
 
@@ -549,7 +547,7 @@ float create_min_version(std::vector<float>::iterator start, std::vector<float>:
 	return min_value;
 }
 
-void ml_feature_calculator::operator()(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector)
+void ml_feature_calculator::operator()(cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector)
 {
 	const int range = drange.size();
 

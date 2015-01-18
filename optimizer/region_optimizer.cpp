@@ -124,13 +124,15 @@ void disparity_features_calculator::update_lr_pot(const disparity_region& baseRe
 	}
 }
 
-void disparity_features_calculator::update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short /*pot_trunc*/, const disparity_range& drange)
+void disparity_features_calculator::update_occ_avg(cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short /*pot_trunc*/, const disparity_range& drange)
 {
 	const int range = drange.size();
 	occ_temp.resize(range);
 	occ_avg_values.resize(range);
 
+	intervals::substract_region_value<unsigned char>(occmap, baseRegion.warped_interval, 1);
 	region_descriptors::segment_boxfilter(occ_temp, occmap, baseRegion.lineIntervals, drange.start(), drange.end());
+	intervals::add_region_value<unsigned char>(occmap, baseRegion.warped_interval, 1);
 
 	for(int i = 0; i < range; ++i)
 		occ_avg_values[i] = (occ_temp[i].first != 0) ? (float)occ_temp[i].second / occ_temp[i].first : -1;

@@ -103,7 +103,7 @@ protected:
 
 	void update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
 	void update_lr_pot(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
-	void update_occ_avg(const cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
+	void update_occ_avg(cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
 	void update_warp_costs(const disparity_region& baseRegion, const disparity_range& drange);
 	neighbor_values get_neighbor_values(const disparity_region& baseRegion, const disparity_range& drange);
 
