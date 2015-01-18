@@ -42,7 +42,7 @@ single_neighbor_values::single_neighbor_values(const std::vector<short>& dispari
 	color_dev = neigh_idx >= 0 ? cv::norm(colors[neigh_idx] - baseRegion.average_color) : 0;
 }
 
-disparity_features_calculator::disparity_features_calculator(const region_container& base, const region_container& match) : base_avg_cache(base.regions.size()), base_disparities_cache(base.regions.size()), match_disparities_cache(match.regions.size()), color_cache(base.regions.size())
+shared_features_cache::shared_features_cache(const region_container& base, const region_container& match) : base_avg_cache(base.regions.size()), base_disparities_cache(base.regions.size()), match_disparities_cache(match.regions.size()), color_cache(base.regions.size())
 {
 	for(std::size_t i = 0; i < match.regions.size(); ++i)
 		match_disparities_cache[i] = match.regions[i].disparity;
@@ -69,6 +69,16 @@ disparity_features_calculator::disparity_features_calculator(const region_contai
 	//matstore.add_mat("warped_costs", warp_costs);
 }
 
+disparity_features_calculator::disparity_features_calculator(const region_container& base, const region_container& match) : cache(std::make_shared<shared_features_cache>(base, match))
+{
+	cv::Mat disp = disparity_by_segments(base);
+	occmap = disparity::occlusion_stat<short>(disp, 1.0);
+}
+
+disparity_features_calculator::disparity_features_calculator(const disparity_features_calculator& org) : cache(org.cache), occmap(org.occmap.clone())
+{
+}
+
 void disparity_features_calculator::update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange)
 {
 	const int range = drange.size();
@@ -76,8 +86,8 @@ void disparity_features_calculator::update_average_neighbor_values(const dispari
 	neighbor_color_pot_values.resize(range);
 
 	region_descriptors::gather_neighbor_values_idx(neighbor_disparities, baseRegion.neighbors, [&](std::size_t idx){
-		assert(base_disparities_cache.size() > idx);
-		return base_disparities_cache[idx];
+		assert(cache->base_disparities_cache.size() > idx);
+		return cache->base_disparities_cache[idx];
 	});
 
 	float divider = 1.0f/neighbor_disparities.size();
@@ -92,7 +102,7 @@ void disparity_features_calculator::update_average_neighbor_values(const dispari
 	}
 
 	//TODO: stays constant during iterations -> dont recalculate
-	float weight_sum = gather_neighbor_color_weights_from_cache(neighbor_color_weights, baseRegion.average_color, 5.0f, color_cache, baseRegion.neighbors);
+	float weight_sum = gather_neighbor_color_weights_from_cache(neighbor_color_weights, baseRegion.average_color, 5.0f, cache->color_cache, baseRegion.neighbors);
 	weight_sum = 1.0f/weight_sum;
 
 	//color neighbor pot
@@ -119,12 +129,12 @@ void disparity_features_calculator::update_lr_pot(const disparity_region& baseRe
 	for(short cdisp = dispStart; cdisp <= dispEnd; ++cdisp)
 	{
 		lr_pot_values[cdisp - dispStart] = corresponding_regions_average_by_index(baseRegion.corresponding_regions[cdisp-dispMin], [&](std::size_t idx){
-			return (float)abs_pott(cdisp, (short)-match_disparities_cache[idx], pot_trunc);
+			return (float)abs_pott(cdisp, (short)-cache->match_disparities_cache[idx], pot_trunc);
 		});
 	}
 }
 
-void disparity_features_calculator::update_occ_avg(cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short /*pot_trunc*/, const disparity_range& drange)
+void disparity_features_calculator::update_occ_avg(const disparity_region& baseRegion, short /*pot_trunc*/, const disparity_range& drange)
 {
 	const int range = drange.size();
 	occ_temp.resize(range);
@@ -145,7 +155,7 @@ void disparity_features_calculator::update_warp_costs(const disparity_region& ba
 	warp_costs_values.resize(range);
 	cost_temp.resize(range);
 
-	region_descriptors::segment_boxfilter(cost_temp, warp_costs, baseRegion.lineIntervals, drange.start(), drange.end());
+	region_descriptors::segment_boxfilter(cost_temp, cache->warp_costs, baseRegion.lineIntervals, drange.start(), drange.end());
 	for(int i = 0; i < range; ++i)
 		warp_costs_values[i] = (cost_temp[i].first != 0) ? baseRegion.disparity_costs(i)/(float)cost_temp[i].second * cost_temp[i].first : 0;
 }
@@ -166,25 +176,25 @@ neighbor_values disparity_features_calculator::get_neighbor_values(const dispari
 
 	for(const std::pair<std::size_t, std::size_t>& cneigh : baseRegion.neighbors)
 	{
-		int cy_diff = std::abs(baseRegion.avg_point.y - base_avg_cache[cneigh.first].y);
-		if( (baseRegion.avg_point.x > base_avg_cache[cneigh.first].x) && (cy_diff < y_diff_left) )
+		int cy_diff = std::abs(baseRegion.avg_point.y - cache->base_avg_cache[cneigh.first].y);
+		if( (baseRegion.avg_point.x > cache->base_avg_cache[cneigh.first].x) && (cy_diff < y_diff_left) )
 		{
 			y_diff_left = cy_diff;
 			cidx_left = cneigh.first;
 		}
-		else if( (baseRegion.avg_point.x < base_avg_cache[cneigh.first].x) && (cy_diff < y_diff_right) )
+		else if( (baseRegion.avg_point.x < cache->base_avg_cache[cneigh.first].x) && (cy_diff < y_diff_right) )
 		{
 			y_diff_right = cy_diff;
 			cidx_right = cneigh.first;
 		}
 
-		int cx_diff = std::abs(baseRegion.avg_point.x - base_avg_cache[cneigh.first].x);
-		if( (baseRegion.avg_point.y < base_avg_cache[cneigh.first].y) && (cx_diff < x_diff_top) )
+		int cx_diff = std::abs(baseRegion.avg_point.x - cache->base_avg_cache[cneigh.first].x);
+		if( (baseRegion.avg_point.y < cache->base_avg_cache[cneigh.first].y) && (cx_diff < x_diff_top) )
 		{
 			x_diff_top = cx_diff;
 			cidx_top = cneigh.first;
 		}
-		else if( (baseRegion.avg_point.y > base_avg_cache[cneigh.first].y) && (cx_diff < x_diff_bottom) )
+		else if( (baseRegion.avg_point.y > cache->base_avg_cache[cneigh.first].y) && (cx_diff < x_diff_bottom) )
 		{
 			x_diff_bottom = cy_diff;
 			cidx_bottom = cneigh.first;
@@ -194,7 +204,7 @@ neighbor_values disparity_features_calculator::get_neighbor_values(const dispari
 	if(drange.start() < 0)
 		std::swap(cidx_left, cidx_right);
 
-	return neighbor_values(base_disparities_cache, color_cache, baseRegion, cidx_left, cidx_right, cidx_top, cidx_bottom);
+	return neighbor_values(cache->base_disparities_cache, cache->color_cache, baseRegion, cidx_left, cidx_right, cidx_top, cidx_bottom);
 }
 
 const cv::FileNode& operator>>(const cv::FileNode& node, disparity_hypothesis_weight_vector& config)

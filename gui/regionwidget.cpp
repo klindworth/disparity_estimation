@@ -106,10 +106,6 @@ void RegionWidget::warpTree(int index, disparity_region& baseRegion, std::vector
 void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_container& base, region_container& match, QTreeWidget *tree, int dispMin)
 {
 	std::vector<disparity_region>& other_regions = match.regions;
-	cv::Mat disp = disparity_by_segments(base);
-	cv::Mat_<unsigned char> occmap = disparity::occlusion_stat<short>(disp, 1.0);
-	//cv::imshow("occ_test", getValueScaledImage<unsigned char, unsigned char>(occmap));
-	intervals::substract_region_value<unsigned char>(occmap, baseRegion.warped_interval, 1);
 
 	tree->clear();
 	QStringList header;
@@ -122,7 +118,7 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 	manual_optimizer_feature_calculator dhv(base, match);
 	int dispMax = dispMin + baseRegion.corresponding_regions.size()-1;
 	disparity_range range(dispMin, dispMax);
-	dhv.update(occmap, pot_trunc, baseRegion, range);
+	dhv.update(pot_trunc, baseRegion, range);
 
 	int i = 0;
 	for(auto it = baseRegion.corresponding_regions.begin(); it != baseRegion.corresponding_regions.end(); ++it)

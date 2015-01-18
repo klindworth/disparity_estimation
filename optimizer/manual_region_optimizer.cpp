@@ -127,13 +127,13 @@ void manual_region_optimizer::run(region_container &left, region_container &righ
 	}
 }
 
-void manual_optimizer_feature_calculator::update(cv::Mat_<unsigned char>& occmap, short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange)
+void manual_optimizer_feature_calculator::update(short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange)
 {
 	const int range = drange.size();
 
 	cost_values.resize(range);
 
-	update_occ_avg(occmap, baseRegion, pot_trunc, drange);
+	update_occ_avg(baseRegion, pot_trunc, drange);
 	update_average_neighbor_values(baseRegion, pot_trunc, drange);
 	update_lr_pot(baseRegion, pot_trunc, drange);
 	update_warp_costs(baseRegion, drange);
@@ -144,41 +144,27 @@ void manual_optimizer_feature_calculator::update(cv::Mat_<unsigned char>& occmap
 
 void refreshOptimizationBaseValues(region_container& base, const region_container& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
 {
-	cv::Mat disp = disparity_by_segments(base);
-	cv::Mat occmap = disparity::occlusion_stat<short>(disp, 1.0);
 	int pot_trunc = 15;
 
-	const short dispMin = base.task.dispMin;
-	const short dispRange = base.task.dispMax - base.task.dispMin + 1;
+	const short dispMin = base.task.range.start();
+	const short dispRange = base.task.range.size();
 
 	std::vector<manual_optimizer_feature_calculator> hyp_vec(omp_get_max_threads(), manual_optimizer_feature_calculator(base, match));
-	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
-	for(std::size_t i = 0; i < occmaps.size(); ++i)
-	{
-		occmaps[i] = occmap.clone();
-		//hyp_vec.emplace_back(base.regions, match.regions);
-	}
 
-	std::size_t regions_count = base.regions.size();
-
-
-	#pragma omp parallel for
-	for(std::size_t i = 0; i < regions_count; ++i)
-	{
-		disparity_region& baseRegion = base.regions[i];
+	parallel_region(base.regions.begin(), base.regions.end(), [&](disparity_region& baseRegion) {
 		int thread_idx = omp_get_thread_num();
 
 		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
 
 		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
 
-		hyp_vec[thread_idx].update(occmaps[thread_idx], pot_trunc, baseRegion, drange);
+		hyp_vec[thread_idx].update(pot_trunc, baseRegion, drange);
 		for(short d = drange.start(); d <= drange.end(); ++d)
 		{
 			std::vector<corresponding_region>& cregionvec = baseRegion.corresponding_regions[d-dispMin];
 			if(!cregionvec.empty())
 				baseRegion.optimization_energy(d-dispMin) = stat_eval.evaluate_hypthesis(hyp_vec[thread_idx].get_disparity_hypothesis((d - drange.start())));
 		}
-	}
+	});
 }
 

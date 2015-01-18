@@ -35,7 +35,7 @@ public:
 	{
 	}
 
-	void update(cv::Mat_<unsigned char>& occmap, short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange);
+	void update(short pot_trunc, const disparity_region& baseRegion, const disparity_range& drange);
 
 	disparity_hypothesis get_disparity_hypothesis(int disp_idx) const
 	{

@@ -44,19 +44,9 @@ using namespace neural_network;
 
 void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& optimization_vectors, const region_container& base, const region_container& match, int delta)
 {
-	cv::Mat disp = disparity_by_segments(base);
-	cv::Mat occmap = disparity::occlusion_stat<short>(disp, 1.0);
 	int pot_trunc = 15;
 
-	const short dispMin = base.task.dispMin;
-
 	std::vector<ml_feature_calculator> hyp_vec(omp_get_max_threads(), ml_feature_calculator(base, match));
-	std::vector<cv::Mat_<unsigned char>> occmaps(omp_get_max_threads());
-	for(std::size_t i = 0; i < occmaps.size(); ++i)
-	{
-		occmaps[i] = occmap.clone();
-	}
-
 	std::size_t regions_count = base.regions.size();
 
 	optimization_vectors.resize(regions_count);
@@ -67,7 +57,7 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 		int thread_idx = omp_get_thread_num();
 
 		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
-		hyp_vec[thread_idx](occmaps[thread_idx], baseRegion, pot_trunc, drange, optimization_vectors[i]);
+		hyp_vec[thread_idx](baseRegion, pot_trunc, drange, optimization_vectors[i]);
 	}
 }
 
@@ -547,7 +537,7 @@ float create_min_version(std::vector<float>::iterator start, std::vector<float>:
 	return min_value;
 }
 
-void ml_feature_calculator::operator()(cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector)
+void ml_feature_calculator::operator()(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector)
 {
 	const int range = drange.size();
 
@@ -555,7 +545,7 @@ void ml_feature_calculator::operator()(cv::Mat_<unsigned char>& occmap, const di
 	rel_cost_values.resize(range);
 
 	update_warp_costs(baseRegion, drange);
-	update_occ_avg(occmap, baseRegion, pot_trunc, drange);
+	update_occ_avg(baseRegion, pot_trunc, drange);
 	update_average_neighbor_values(baseRegion, pot_trunc, drange);
 	update_lr_pot(baseRegion, pot_trunc, drange);
 

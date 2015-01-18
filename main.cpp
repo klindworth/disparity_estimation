@@ -143,11 +143,11 @@ int main(int argc, char *argv[])
 	//StereoTask testset("tasks/im2rgb");
 	//folder_testset testset("tasks/kitti-training_small");
 	//folder_testset testset("tasks/kitti-training_small-valid");
-	folder_testset testset("tasks/kitti-training_debug");
+	//folder_testset testset("tasks/kitti-training_debug");
 	//StereoTask testset("tasks/kit3"); //5, 3 neuer problemfall?
 
 	//simulated (hard) tasks
-	//stereo_task testset("tasks/2im2");
+	stereo_task testset("tasks/2im2");
 
 	//vl/ir
 	//StereoTask testset("tasks/ir-vl");
@@ -166,11 +166,11 @@ int main(int argc, char *argv[])
 	//std::string configfile = "tasks/config-irvl.yml";
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";
 	//std::string configfile = "tasks/config-big-msslic.yml";
-	//std::string configfile = "tasks/config-small-msslic-refine.yml";
+	std::string configfile = "tasks/config-small-msslic-refine.yml";
 	//std::string configfile = "tasks/config-debug.yml";
 	//std::string configfile = "tasks/config-rgbl-msslic.yml";
 	//std::string configfile = "tasks/config-kit-refine2.yml";
-	std::string configfile = "tasks/config-kit3.yml";
+	//std::string configfile = "tasks/config-kit3.yml";
 	//std::string configfile = "tasks/config-kit-it.yml";
 	//std::string configfile = "tasks/config-rgb-slic.yml";
 	//std::string configfile = "tasks/config-small-woopt.yml";
@@ -219,7 +219,7 @@ int main(int argc, char *argv[])
 		optimizer = std::make_shared<ml_region_optimizer>();
 	initial_disparity_algo algo(config, refconfig, optimizer);
 
-	bool training = true;
+	/*bool training = true;
 	if(training)
 	{
 		algo.train(testset.tasks);
@@ -228,9 +228,9 @@ int main(int argc, char *argv[])
 	{
 		for(stereo_task& ctask : testset.tasks)
 			algo(ctask);
-	}
+	}*/
 
-	//algo(testset);
+	algo(testset);
 
 	ImageStore imviewer;
 	imviewer.refreshList(matstore);

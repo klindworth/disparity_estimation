@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <vector>
 #include <functional>
+#include <memory>
 
 #include <opencv2/core/core.hpp>
 
@@ -83,15 +84,25 @@ struct disparity_hypothesis_weight_vector
 	}
 };
 
-class disparity_features_calculator
+class shared_features_cache
 {
-protected:
-	//construction-time calculated
+public:
+	shared_features_cache(const region_container& left_regions, const region_container& right_regions);
+
 	std::vector<cv::Point> base_avg_cache;
 	std::vector<short> base_disparities_cache, match_disparities_cache;
 	std::vector<cv::Vec3d> color_cache;
 	cv::Mat_<float> warp_costs;
+};
 
+class disparity_features_calculator
+{
+protected:
+	//construction-time calculated
+	const std::shared_ptr<const shared_features_cache> cache;
+
+
+	cv::Mat_<unsigned char> occmap;
 	//temps
 	std::vector<std::pair<int, int> > occ_temp;
 	std::vector<short> neighbor_disparities;
@@ -103,12 +114,13 @@ protected:
 
 	void update_average_neighbor_values(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
 	void update_lr_pot(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
-	void update_occ_avg(cv::Mat_<unsigned char>& occmap, const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
+	void update_occ_avg(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange);
 	void update_warp_costs(const disparity_region& baseRegion, const disparity_range& drange);
 	neighbor_values get_neighbor_values(const disparity_region& baseRegion, const disparity_range& drange);
 
 public:
 	disparity_features_calculator(const region_container& left_regions, const region_container& right_regions);
+	disparity_features_calculator(const disparity_features_calculator& org);
 };
 
 class optimizer_settings
