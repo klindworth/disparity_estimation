@@ -148,6 +148,12 @@ public:
 		return idx;
 	}
 
+	int predict(const std::vector<T>& data)
+	{
+		assert(data.size() == layers.front().input_dimension());
+		return this->predict(data.data());
+	}
+
 	void update_weights(int batch_size)
 	{
 		for(auto& clayer : layers)

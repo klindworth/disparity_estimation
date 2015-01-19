@@ -185,7 +185,7 @@ public:
 	void save_weights(std::ostream& stream) const
 	{
 		std::cout << "weights: " << this->weights.size() << ", bias: " << this->bias.size() << std::endl;
-		stream << this->weights.size() << " " << this->bias.size() << " ";
+		stream << this->name() << " " << this->weights.size() << " " << this->bias.size() << " ";
 		std::copy(this->weights.begin(), this->weights.end(), std::ostream_iterator<T>(stream, " "));
 		std::copy(this->bias.begin(), this->bias.end(), std::ostream_iterator<T>(stream, " "));
 		/*for(T cweight : this->weights)
@@ -197,10 +197,12 @@ public:
 	void load_weights(std::istream& stream)
 	{
 		std::size_t weight_count, bias_count;
+		std::string layername;
+		stream >> layername;
 		stream >> weight_count;
 		stream >> bias_count;
 
-		if( (weight_count != this->weights.size()) || (bias_count != this->bias.size()) )
+		if( (weight_count != this->weights.size()) || (bias_count != this->bias.size()) || (layername != this->name()))
 			throw std::runtime_error("weightsfile doesn't fit");
 
 		for(T& cweight : this->weights)

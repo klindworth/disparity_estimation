@@ -91,7 +91,7 @@ void ml_region_optimizer::refresh_base_optimization_vector(const region_containe
 }
 
 template<typename dst_type, typename src_type>
-void gather_region_optimization_vector(dst_type *dst_ptr, const disparity_region& baseRegion, const std::vector<src_type>& optimization_vector_base, const std::vector<std::vector<src_type>>& optimization_vectors_match, const region_container& match, int delta, const single_stereo_task& task)
+void merge_with_corresponding_optimization_vector(dst_type *dst_ptr, const disparity_region& baseRegion, const std::vector<src_type>& optimization_vector_base, const std::vector<std::vector<src_type>>& optimization_vectors_match, const region_container& match, int delta, const single_stereo_task& task)
 {
 	const int crange = task.range_size();
 	disparity_range drange = task_subrange(task, baseRegion.base_disparity, delta);
@@ -129,6 +129,8 @@ void gather_region_optimization_vector(dst_type *dst_ptr, const disparity_region
 
 void ml_region_optimizer::optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename)
 {
+	std::cout << "optimize" << std::endl;
+
 	std::ifstream istream(filename);
 
 	if(!istream.is_open())
@@ -137,8 +139,6 @@ void ml_region_optimizer::optimize_ml(region_container& base, const region_conta
 	data_normalizer<double> normalizer(istream);
 	istream >> *nnet;
 
-	std::cout << "optimize" << std::endl;
-
 	const std::size_t regions_count = base.regions.size();
 	const short sign = (base.task.dispMin < 0) ? -1 : 1;
 
@@ -146,17 +146,16 @@ void ml_region_optimizer::optimize_ml(region_container& base, const region_conta
 	#pragma omp parallel for
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		int thread_idx = omp_get_thread_num();
-		gather_region_optimization_vector(region_optimization_vectors[thread_idx].data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
-		normalizer.apply(region_optimization_vectors[thread_idx]);
-		base.regions[j].disparity = nnet->predict(region_optimization_vectors[thread_idx].data()) * sign;
+		std::vector<double>& optimization_vector = region_optimization_vectors[omp_get_thread_num()];
+		merge_with_corresponding_optimization_vector(optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
+		normalizer.apply(optimization_vector);
+		base.regions[j].disparity = nnet->predict(optimization_vector) * sign;
 	}
 
 	refresh_warped_regions(base);
-	std::cout << "end optimize" << std::endl;
 }
 
-std::ostream& operator<<(std::ostream& stream, result_eps_calculator& res)
+std::ostream& operator<<(std::ostream& stream, const result_eps_calculator& res)
 {
 	res.print_to_stream(stream);
 	return stream;
@@ -183,7 +182,7 @@ void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, st
 		{
 			dst_data.emplace_back(vector_size_per_disp*2*crange+vector_size);
 			double *dst_ptr = dst_data.back().data();
-			gather_region_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task);
+			merge_with_corresponding_optimization_vector(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task);
 
 			dst_gt.push_back(gt[j]);
 
@@ -193,8 +192,6 @@ void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, st
 	}
 	std::cout << diff_calc << std::endl;
 }
-
-
 
 void ml_region_optimizer::run(region_container& left, region_container& right, const optimizer_settings& /*config*/, int refinement)
 {
@@ -224,6 +221,7 @@ void ml_region_optimizer::run(region_container& left, region_container& right, c
 		region_ground_truth(left.regions, left.task.groundTruth, std::back_inserter(gt));
 
 		result_eps_calculator diff_calc;
+		//gt diff image
 		cv::Mat_<unsigned char> diff_image(left.image_size, 0);
 		for(std::size_t i = 0; i < left.regions.size(); ++i)
 		{
@@ -240,7 +238,7 @@ void ml_region_optimizer::run(region_container& left, region_container& right, c
 
 
 		std::cout << diff_calc << std::endl;
-		std::cout << total_diff_calc << std::endl;
+		std::cout << "total: " << total_diff_calc << std::endl;
 	}
 }
 
@@ -262,20 +260,18 @@ void ml_region_optimizer::reset_internal()
 	nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<transpose_vector_connected_layer>(4, nvector*2, pass);
 	nnet->emplace_layer<relu_layer>();
-	//nnet->emplace_layer<row_connected_layer>(crange, crange, pass);
-	//nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<fully_connected_layer>(crange);
+	nnet->emplace_layer<row_connected_layer>(crange, crange, pass);
 	nnet->emplace_layer<relu_layer>();
+	//nnet->emplace_layer<fully_connected_layer>(crange);
+	//nnet->emplace_layer<relu_layer>();
 	nnet->emplace_layer<fully_connected_layer>(crange);
 	nnet->emplace_layer<softmax_output_layer>();
 }
 
 ml_region_optimizer::ml_region_optimizer()
 {
-	nnet = nullptr;
-
 	reset_internal();
-	training_iteration = 1;
+	training_iteration = 0;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
 }
@@ -289,22 +285,10 @@ void ml_region_optimizer::reset(const region_container& /*left*/, const region_c
 	reset_internal();
 }
 
-void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename)
+template<typename T>
+void randomize_dataset(std::vector<T>& samples, std::vector<short>& samples_gt)
 {
-	int crange = 164;
-
-	std::cout << "start actual training" << std::endl;
-
-	data_normalizer<double> normalizer(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	normalizer.gather(samples);
-	for(auto& cvec : samples)
-		normalizer.apply(cvec);
-
 	assert(samples.size() == samples_gt.size());
-
-	int dims = samples.front().size();
-	std::cout << "copy" << std::endl;
-
 	std::mt19937 rng;
 	std::uniform_int_distribution<> dist(0, samples.size() - 1);
 	for(std::size_t i = 0; i < samples.size(); ++i)
@@ -313,7 +297,21 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 		std::swap(samples[i], samples[exchange_idx]);
 		std::swap(samples_gt[i], samples_gt[exchange_idx]);
 	}
+}
 
+void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename)
+{
+	int crange = 164;
+
+	std::cout << "start actual training" << std::endl;
+
+	data_normalizer<double> normalizer(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	normalizer.gather(samples);
+	normalizer.apply(samples);
+
+	randomize_dataset(samples, samples_gt);
+
+	//class statistics
 	/*std::vector<unsigned int> stats(crange, 0);
 	for(std::size_t i = 0; i < samples_gt.size(); ++i)
 		++(stats[std::abs(samples_gt[i])]);
@@ -321,10 +319,7 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 		std::cout << "[" << i << "] " << (float)stats[i]/samples_gt.size() << ", " << (float)stats[i]/samples_gt.size()/(1.0/crange) << "\n";
 	std::cout << std::endl;*/
 
-	//TODO: class statistics?
-
-	std::cout << "ann" << std::endl;
-	//neural_network<double> net (dims, crange, {dims, dims});
+	int dims = samples.front().size();
 	assert(dims == (ml_region_optimizer::vector_size_per_disp*2*crange)+ml_region_optimizer::vector_size);
 	network<double> net(dims);
 
@@ -338,10 +333,10 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<transpose_vector_connected_layer>(4, nvector*2, pass);
 	net.emplace_layer<relu_layer>();
-	//net.emplace_layer<row_connected_layer>(crange, crange, pass);
-	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(crange);
+	net.emplace_layer<row_connected_layer>(crange, crange, pass);
 	net.emplace_layer<relu_layer>();
+	//net.emplace_layer<fully_connected_layer>(crange);
+	//net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
 

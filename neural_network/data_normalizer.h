@@ -131,7 +131,7 @@ public:
 			val = 1.0 / std::sqrt(val);
 	}
 
-	void apply(T *ptr, int n)
+	void apply(T *ptr, int n) const
 	{
 		int cmax = (n - onetimesize) / vector_size;
 		assert((n - onetimesize) % vector_size == 0);
@@ -151,9 +151,15 @@ public:
 		}
 	}
 
-	void apply(std::vector<T>& data)
+	void apply(std::vector<T>& data) const
 	{
 		apply(data.data(), data.size());
+	}
+
+	void apply(std::vector<std::vector<T>>& data) const
+	{
+		for(auto& csample : data)
+			apply(csample);
 	}
 
 	int vector_size, onetimesize;
