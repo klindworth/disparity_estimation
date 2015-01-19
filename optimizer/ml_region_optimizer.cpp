@@ -62,28 +62,6 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 	}
 }
 
-template<typename region_type, typename InsertIterator>
-void region_ground_truth(const std::vector<region_type>& regions, cv::Mat_<short> gt, InsertIterator it)
-{
-	for(std::size_t i = 0; i < regions.size(); ++i)
-	{
-		int sum = 0;
-		int count = 0;
-
-		intervals::foreach_region_point(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end(), [&](cv::Point pt){
-			short value = gt(pt);
-			if(value != 0)
-			{
-				sum += value;
-				++count;
-			}
-		});
-
-		*it = count > 0 ? std::round(sum/count) : 0;
-		++it;
-	}
-}
-
 void ml_region_optimizer::refresh_base_optimization_vector(const region_container& left, const region_container& right, int delta)
 {
 	refresh_base_optimization_vector_internal(optimization_vectors_left, left, right, delta);
@@ -220,22 +198,12 @@ void ml_region_optimizer::run(region_container& left, region_container& right, c
 		std::vector<short> gt;
 		region_ground_truth(left.regions, left.task.groundTruth, std::back_inserter(gt));
 
-		result_eps_calculator diff_calc;
-		//gt diff image
-		cv::Mat_<unsigned char> diff_image(left.image_size, 0);
-		for(std::size_t i = 0; i < left.regions.size(); ++i)
-		{
-			if(gt[i] != 0)
-			{
-				diff_calc(gt[i], left.regions[i].disparity);
-				total_diff_calc(gt[i], left.regions[i].disparity);
-
-				intervals::set_region_value<unsigned char>(diff_image, left.regions[i].lineIntervals, std::abs(std::abs(gt[i]) - std::abs(left.regions[i].disparity)));
-			}
-		}
+		result_eps_calculator diff_calc = get_region_comparision(left.regions, gt);
+		cv::Mat_<unsigned char> diff_image = get_region_gt_error_image(left, gt);
 
 		matstore.add_mat(diff_image, "gt_diff");
 
+		total_diff_calc += diff_calc;
 
 		std::cout << diff_calc << std::endl;
 		std::cout << "total: " << total_diff_calc << std::endl;

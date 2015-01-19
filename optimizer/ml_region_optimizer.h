@@ -27,6 +27,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ML_REGION_OPTIMIZER_H
 
 #include "region_optimizer.h"
+#include "region_ground_truth.h"
 #include <memory>
 
 class single_stereo_task;
@@ -36,43 +37,6 @@ namespace neural_network
 template<typename T>
 class network;
 }
-
-
-class result_eps_calculator
-{
-public:
-	result_eps_calculator()
-	{
-		std::fill(counters.begin(), counters.end(), 0);
-		total = 0;
-	}
-
-	void operator()(short gt, short estimated)
-	{
-		++total;
-		unsigned int diff = std::abs(std::abs(estimated) - std::abs(gt));
-
-		for(unsigned int i = diff; i < 11; ++i)
-			++counters[i];
-	}
-
-	float epsilon_result(unsigned int eps) const
-	{
-		if(eps < 11)
-			return (float)counters[eps]/total;
-		else
-			return 1.0f;
-	}
-
-	void print_to_stream(std::ostream& stream) const
-	{
-		stream << "correct: " << (float)counters[0]/total << ", approx5: " << (float)counters[4]/total << ", approx10: " << (float)counters[9]/total;
-	}
-
-private:
-	std::array<unsigned int, 11> counters;
-	unsigned int total = 0;
-};
 
 class ml_feature_calculator : public disparity_features_calculator
 {
