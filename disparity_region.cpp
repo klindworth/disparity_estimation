@@ -141,13 +141,6 @@ void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t o
 	}
 }
 
-void generate_stats(std::vector<disparity_region>& regions)
-{
-	parallel_region(regions, [&](disparity_region& region) {
-		generate_stats(region, region.stats);
-	});
-}
-
 void generate_stats(const disparity_region& region, stat_t& stats)
 {
 	int len = region.disparity_costs.total();

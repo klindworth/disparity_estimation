@@ -242,8 +242,6 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 	}
 
 	generate_region_information(left, right);
-	generate_stats(left.regions);
-	generate_stats(right.regions);
 
 	optimizer.run(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
 	//run_optimization(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
@@ -256,12 +254,12 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 
 	if(config.verbose)
 	{
-		matstore.add_mat(region_wise_image<float>(left, [](const disparity_region& region){return region.stats.stddev;}), "stddev-left");
+		/*matstore.add_mat(region_wise_image<float>(left, [](const disparity_region& region){return region.stats.stddev;}), "stddev-left");
 		matstore.add_mat(region_wise_image<float>(right, [](const disparity_region& region){return region.stats.stddev;}), "stddev-right");
 		matstore.add_mat(region_wise_image<float>(left, [](const disparity_region& region){return region.stats.mean;}), "mean-left");
 		matstore.add_mat(region_wise_image<float>(left ,[](const disparity_region& region){return region.stats.confidence2;}), "confidence2-left");
 		matstore.add_mat(region_wise_image<float>(right ,[](const disparity_region& region){return region.stats.confidence2;}), "confidence2-right");
-		matstore.add_mat(region_wise_image<float>(left, [](const disparity_region& region){return region.stats.stddev/region.stats.mean;}), "stddev-norm");
+		matstore.add_mat(region_wise_image<float>(left, [](const disparity_region& region){return region.stats.stddev/region.stats.mean;}), "stddev-norm");*/
 		//matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [&](const SegRegion& region){return region.disparity_costs(region.disparity-task.forward.dispMin);}), "opt-left");
 		//matstore.addMat(regionWiseImage<float>(task.backward, right.regions, [&](const SegRegion& region){return region.disparity_costs(region.disparity-task.backward.dispMin);}), "opt-right");
 		//matstore.addMat(regionWiseImage<float>(task.forward, left.regions, [&](const SegRegion& region){return region.confidence(region.disparity-task.forward.dispMin);}), "mi-conf-left");

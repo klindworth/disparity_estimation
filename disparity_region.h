@@ -67,7 +67,6 @@ public:
 	cv::Mat_<float> disparity_costs;
 	cv::Mat_<float> optimization_energy;
 
-	stat_t stats;
 	short disparity;
 	short base_disparity;
 	short disparity_offset;
@@ -89,7 +88,6 @@ void fill_region_container(std::shared_ptr<region_container>& result, single_ste
 int reenumerate(cv::Mat& labels, int old_count);
 void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t old_idx, std::size_t new_idx);
 
-void generate_stats(std::vector<disparity_region>& regions);
 void generate_stats(const disparity_region& region, stat_t& stats);
 
 void determine_corresponding_regions(region_container& base, const region_container& match, int delta);

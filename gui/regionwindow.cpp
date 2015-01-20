@@ -299,6 +299,8 @@ void RegionWindow::on_pbOptimize_clicked()
 
 	auto prop_eval = [=](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity) {
 
+		stat_t cstat;
+		generate_stats(baseRegion, cstat);
 		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.dispMin];
 		float disp_pot = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
 		//float stddev = getOtherRegionsAverage(match.regions, other_regions, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
@@ -306,7 +308,7 @@ void RegionWindow::on_pbOptimize_clicked()
 		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
 		float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
 
-		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.stats.confidence2;}), std::numeric_limits<float>::min());
+		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cstat.confidence2;}), std::numeric_limits<float>::min());
 		//float mi_confidence = getOtherRegionsAverage(match.regions, other_regions, [&](const SegRegion& cregion){return cregion.confidence(-disparity-match.task.dispMin);});
 
 		//float stddev_sum = stddev + baseRegion.stats.stddev;
@@ -317,7 +319,7 @@ void RegionWindow::on_pbOptimize_clicked()
 		//float rating = e_other + e_base;
 		float rating;
 		if(choosen == 1)
-			rating = (baseRegion.stats.confidence2 *e_base+confidence*e_other) / (confidence + baseRegion.stats.confidence2)+pot_factor*disp_pot;
+			rating = (cstat.confidence2 *e_base+confidence*e_other) / (confidence + cstat.confidence2)+pot_factor*disp_pot;
 		//else if(choosen == 2)
 			//rating = (own_mi_confidence * e_base + mi_confidence * e_other)/(own_mi_confidence+mi_confidence)+pot_factor*disp_pot;
 		else if(choosen == 3)

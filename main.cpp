@@ -117,16 +117,19 @@ int main(int argc, char *argv[])
 	QApplication app(argc, argv);
 
 	auto prop_eval = [](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity) {
-
+		stat_t cstat;
+		generate_stats(baseRegion, cstat);
 		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.dispMin];
 		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
 		float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
-		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.stats.confidence2;}), std::numeric_limits<float>::min());
+		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cstat.confidence2;}), std::numeric_limits<float>::min());
 
-		return (baseRegion.stats.confidence2 *e_base+confidence*e_other) / (confidence + baseRegion.stats.confidence2);
+		return (cstat.confidence2 *e_base+confidence*e_other) / (confidence + cstat.confidence2);
 	};
 
 	auto prop_eval2 = [](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity) {
+		stat_t cstat;
+		generate_stats(baseRegion, cstat);
 
 		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.dispMin];
 		float disp_pot = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
@@ -134,9 +137,9 @@ int main(int argc, char *argv[])
 		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
 		float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
 
-		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.stats.confidence2;}), std::numeric_limits<float>::min());
+		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cstat.confidence2;}), std::numeric_limits<float>::min());
 
-		return (baseRegion.stats.confidence2 *e_base+confidence*e_other) / (confidence + baseRegion.stats.confidence2) + disp_pot/2.5f;
+		return (cstat.confidence2 *e_base+confidence*e_other) / (confidence + cstat.confidence2) + disp_pot/2.5f;
 	};
 
 	//RGB tasks
