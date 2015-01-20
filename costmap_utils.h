@@ -52,6 +52,8 @@ public:
 	//std::vector<RegionInterval> minima_ranges;
 };
 
+void generate_stats(const disparity_region& region, stat_t& stats);
+
 cv::Mat deriveCostmap(const cv::Mat &cost_map);
 void derivePartialCostmap(const float *cost_map, float *result, int len);
 void analyzeDisparityRange(stat_t& cstat, const float *src_ptr, const float *derived_ptr, int range);

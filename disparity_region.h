@@ -29,9 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 
 #include <vector>
-#include <array>
 #include "stereotask.h"
-#include "costmap_utils.h"
 #include <segmentation/region_descriptor.h>
 #include <segmentation/segmentation.h>
 
@@ -81,14 +79,12 @@ struct region_container : public segmentation_image<disparity_region>
 	//std::vector<short> disparity;
 };
 
-cv::Mat disparity_by_segments(const region_container &container);
+cv::Mat_<short> disparity_by_segments(const region_container &container);
 
 void fill_region_container(std::shared_ptr<region_container>& result, single_stereo_task& task, std::shared_ptr<segmentation_algorithm>& algorithm);
 
-int reenumerate(cv::Mat& labels, int old_count);
+int reenumerate_segmentation_labels(cv::Mat& labels, int old_count);
 void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t old_idx, std::size_t new_idx);
-
-void generate_stats(const disparity_region& region, stat_t& stats);
 
 void determine_corresponding_regions(region_container& base, const region_container& match, int delta);
 void refresh_warped_regions(region_container& container);

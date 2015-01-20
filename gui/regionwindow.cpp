@@ -36,6 +36,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "initial_disparity.h"
 #include "manual_region_optimizer.h"
 #include "disparity_region_algorithms.h"
+#include "costmap_utils.h"
 
 #include <opencv2/imgproc/imgproc.hpp>
 #include <iostream>

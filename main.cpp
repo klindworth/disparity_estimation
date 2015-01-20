@@ -34,6 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "stereotask.h"
 #include "imagestore.h"
 #include "initial_disparity.h"
+#include "costmap_utils.h"
 
 #include "region_optimizer.h"
 #include "disparity_region.h"

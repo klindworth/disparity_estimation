@@ -101,45 +101,6 @@ public:
 
 typedef std::function<void(single_stereo_task&, const cv::Mat&, const cv::Mat&, std::vector<disparity_region>&, int)> disparity_region_func;
 
-//for IT metrics (region wise)
-template<typename cost_type>
-void calculate_region_disparity_regionwise(single_stereo_task& task, const cv::Mat& base, const cv::Mat& match, std::vector<disparity_region>& regions, int delta)
-{
-	int dilate_step = 2;//FIXME
-	int dilate_max = 4;
-
-	const std::size_t regions_count = regions.size();
-
-	auto it = std::max_element(regions.begin(), regions.end(), [](const disparity_region& lhs, const disparity_region& rhs) {
-		return lhs.m_size < rhs.m_size;
-	});
-
-	cost_type cost_agg(base, match, it->size() * 3);
-	typename cost_type::thread_type cost_thread;
-
-	stat_t cstat;
-
-	#pragma omp parallel for default(none) shared(task, regions, base, match, delta, cost_agg, dilate_step, dilate_max) private(cost_thread, cstat)
-	for(std::size_t i = 0; i < regions_count; ++i)
-	{
-		disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
-		regions[i].disparity_offset = drange.start();
-
-		for(int dilate = 0; dilate <= dilate_max; dilate += dilate_step)
-		{
-			std::vector<region_interval> actual_pixel_idx = dilated_region(regions[i], dilate, base);
-
-			region_disparity_internal(actual_pixel_idx, cost_agg, cost_thread, regions[i], base, match, drange.start(), drange.end());
-
-			//dilateLR stuff
-			generate_stats(regions[i], cstat);
-
-			if ( !(cstat.confidence_range == 0 || cstat.confidence_range > 2 || cstat.confidence_variance > 0.2) )
-				break;
-		}
-	}
-}
-
 //untested
 cv::Mat convertDisparityFromPartialCostmap(const cv::Mat& disparity, const cv::Mat& rangeCenters, int subsampling = 1)
 {

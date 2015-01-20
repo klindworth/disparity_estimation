@@ -211,3 +211,15 @@ cv::Mat deriveCostmap(const cv::Mat& cost_map)
 	return result;
 }
 
+
+void generate_stats(const disparity_region& region, stat_t& stats)
+{
+	int len = region.disparity_costs.total();
+	std::vector<float> derived(len);
+	const float *costs = region.disparity_costs[0];
+	derivePartialCostmap(costs, derived.data(), len);
+
+	analyzeDisparityRange(stats, costs, derived.data(), len);
+	analyzeDisparityRange2(region, stats);
+}
+

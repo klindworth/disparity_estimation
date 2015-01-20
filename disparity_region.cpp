@@ -109,7 +109,7 @@ void determine_corresponding_regions(region_container& base, const region_contai
 	});
 }
 
-int reenumerate(cv::Mat& labels, int old_count)
+int reenumerate_segmentation_labels(cv::Mat& labels, int old_count)
 {
 	std::vector<int> map(old_count, -1);
 	int* ptr = labels.ptr<int>(0);
@@ -141,18 +141,7 @@ void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t o
 	}
 }
 
-void generate_stats(const disparity_region& region, stat_t& stats)
-{
-	int len = region.disparity_costs.total();
-	std::vector<float> derived(len);
-	const float *costs = region.disparity_costs[0];
-	derivePartialCostmap(costs, derived.data(), len);
-
-	analyzeDisparityRange(stats, costs, derived.data(), len);
-	analyzeDisparityRange2(region, stats);
-}
-
-cv::Mat disparity_by_segments(const region_container& container)
+cv::Mat_<short> disparity_by_segments(const region_container& container)
 {
 	return region_descriptors::set_regionwise<short>(container, [](const disparity_region& cregion){return cregion.disparity;});
 	//return regionWiseSet<short>(container.task.base.size(), container.regions, [](const DisparityRegion& cregion){return cregion.disparity;});
