@@ -44,6 +44,7 @@ class region_container;
 class disparity_region;
 class initial_disparity_config;
 class stereo_task;
+class stat_t;
 
 /*namespace cv {
 	class Mat;
@@ -130,7 +131,7 @@ public:
 	bool enable_damping;
 	std::string optimizer_type;
 
-	std::function<float(const disparity_region&, const region_container&, const region_container&, int)> prop_eval, prop_eval2;
+	std::function<float(const disparity_region&, const region_container&, const region_container&, int, const stat_t&)> prop_eval, prop_eval2;
 	disparity_hypothesis_weight_vector base_eval, base_eval2;
 };
 

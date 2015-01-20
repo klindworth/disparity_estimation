@@ -297,10 +297,7 @@ void RegionWindow::on_pbOptimize_clicked()
 
 	double pot_factor = ui->spDispFinal->value();
 
-	auto prop_eval = [=](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity) {
-
-		stat_t cstat;
-		generate_stats(baseRegion, cstat);
+	auto prop_eval = [=](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity, const stat_t& cstat) {
 		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.dispMin];
 		float disp_pot = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
 		//float stddev = getOtherRegionsAverage(match.regions, other_regions, [](const DisparityRegion& cregion){return cregion.stats.stddev;});

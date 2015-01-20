@@ -36,7 +36,8 @@ class region_interval;
 class disparity_region;
 
 //saves the statistics for an pixel in a cost map
-typedef struct statistics {
+class stat_t {
+public:
 	float mean;
 	float stddev;
 	float min;
@@ -49,7 +50,7 @@ typedef struct statistics {
 	//std::vector<short> minima;
 	//std::vector<short> bad_minima;
 	//std::vector<RegionInterval> minima_ranges;
-} stat_t;
+};
 
 cv::Mat deriveCostmap(const cv::Mat &cost_map);
 void derivePartialCostmap(const float *cost_map, float *result, int len);

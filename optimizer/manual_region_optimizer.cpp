@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "disparity_utils.h"
 
-void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, region_container& base, region_container& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const disparity_region&, const region_container&, const region_container&, int)> prop_eval, int delta)
+void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, region_container& base, region_container& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const disparity_region&, const region_container&, const region_container&, int, const stat_t&)> prop_eval, int delta)
 {
 	//std::cout << "base" << std::endl;
 	refreshOptimizationBaseValues(base, match, base_eval, delta);
@@ -45,6 +45,7 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 	const int dispMin = base.task.dispMin;
 
 	std::vector<std::vector<float>> temp_results(omp_get_max_threads(), std::vector<float>(base.task.range_size()));
+	std::vector<stat_t> cstat(omp_get_max_threads());
 
 	const std::size_t regions_count = base.regions.size();
 	for(std::size_t j = 0; j < regions_count; ++j)
@@ -58,7 +59,7 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 		for(short d = drange.start(); d <= drange.end(); ++d)
 		{
 			if(!baseRegion.corresponding_regions[d-dispMin].empty())
-				temp_results[thread_idx][d-dispMin] = prop_eval(baseRegion, base, match, d);
+				temp_results[thread_idx][d-dispMin] = prop_eval(baseRegion, base, match, d, cstat[thread_idx]);
 		}
 
 		short ndisparity = min_idx(temp_results[thread_idx], baseRegion.disparity - dispMin) + dispMin;
