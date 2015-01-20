@@ -58,3 +58,9 @@ cv::Mat_<unsigned char> get_region_gt_error_image(const region_container& contai
 
 	return diff_image;
 }
+
+std::ostream& operator<<(std::ostream& stream, const result_eps_calculator& res)
+{
+	res.print_to_stream(stream);
+	return stream;
+}

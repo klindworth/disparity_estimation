@@ -224,6 +224,25 @@ std::size_t min_idx(const cv::Mat_<T>& src, std::size_t preferred = 0)
 	return idx;
 }
 
+template<typename T>
+std::size_t min_idx(const std::vector<T>& src, std::size_t preferred = 0)
+{
+	std::size_t idx = preferred;
+	T value = src[preferred];
+
+	const std::size_t size = src.size();
+	for(std::size_t i = 0; i < size; ++i)
+	{
+		if(src[i] < value)
+		{
+			value = src[i];
+			idx = i;
+		}
+	}
+
+	return idx;
+}
+
 cv::Mat cutImageBorder(const cv::Mat &input, int windowsize);
 cv::Mat lowerDimensionality(const cv::Mat &input);
 

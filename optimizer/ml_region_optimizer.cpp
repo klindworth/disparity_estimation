@@ -133,12 +133,6 @@ void ml_region_optimizer::optimize_ml(region_container& base, const region_conta
 	refresh_warped_regions(base);
 }
 
-std::ostream& operator<<(std::ostream& stream, const result_eps_calculator& res)
-{
-	res.print_to_stream(stream);
-	return stream;
-}
-
 void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta)
 {
 	dst_gt.reserve(dst_gt.size() + base.regions.size());
@@ -199,9 +193,7 @@ void ml_region_optimizer::run(region_container& left, region_container& right, c
 		region_ground_truth(left.regions, left.task.groundTruth, std::back_inserter(gt));
 
 		result_eps_calculator diff_calc = get_region_comparision(left.regions, gt);
-		cv::Mat_<unsigned char> diff_image = get_region_gt_error_image(left, gt);
-
-		matstore.add_mat(diff_image, "gt_diff");
+		matstore.add_mat(get_region_gt_error_image(left, gt), "gt_diff");
 
 		total_diff_calc += diff_calc;
 

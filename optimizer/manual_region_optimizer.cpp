@@ -43,24 +43,25 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 	std::uniform_int_distribution<> random_dist(0, 1);
 
 	const int dispMin = base.task.dispMin;
-	const int crange = base.task.range_size();
-	cv::Mat_<float> temp_results(crange, 1, 100.0f);
+
+	std::vector<std::vector<float>> temp_results(omp_get_max_threads(), std::vector<float>(base.task.range_size()));
 
 	const std::size_t regions_count = base.regions.size();
-	//pragma omp parallel for default(none) shared(base, match, prop_eval, delta) private(random_dist, random_gen, temp_results)
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
+		int thread_idx = omp_get_thread_num();
+		std::fill(temp_results[thread_idx].begin(), temp_results[thread_idx].end(), 100.0f);
+
 		disparity_region& baseRegion = base.regions[j];
-		temp_results = cv::Mat_<float>(crange, 1, 5500.0f); //TODO: try another mt safe with less memory allocations...
 		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
 
 		for(short d = drange.start(); d <= drange.end(); ++d)
 		{
 			if(!baseRegion.corresponding_regions[d-dispMin].empty())
-				temp_results(d-dispMin) = prop_eval(baseRegion, base, match, d);
+				temp_results[thread_idx][d-dispMin] = prop_eval(baseRegion, base, match, d);
 		}
 
-		short ndisparity = min_idx(temp_results, baseRegion.disparity - dispMin) + dispMin;
+		short ndisparity = min_idx(temp_results[thread_idx], baseRegion.disparity - dispMin) + dispMin;
 
 		//damping
 		if(ndisparity != baseRegion.disparity)

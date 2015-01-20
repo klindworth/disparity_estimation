@@ -48,4 +48,6 @@ void region_ground_truth(const std::vector<region_type>& regions, const cv::Mat_
 result_eps_calculator get_region_comparision(const std::vector<disparity_region>& regions, const std::vector<short>& gt);
 cv::Mat_<unsigned char> get_region_gt_error_image(const region_container& container, const std::vector<short>& gt);
 
+std::ostream& operator<<(std::ostream& stream, const result_eps_calculator& res);
+
 #endif

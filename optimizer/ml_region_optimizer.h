@@ -77,6 +77,4 @@ private:
 	result_eps_calculator total_diff_calc;
 };
 
-//void gather_region_optimization_vector(double *dst_ptr, const DisparityRegion& baseRegion, const std::vector<float>& optimization_vector_base, const std::vector<std::vector<float>>& optimization_vectors_match, const RegionContainer& match, int delta, const StereoSingleTask& task);
-
 #endif
