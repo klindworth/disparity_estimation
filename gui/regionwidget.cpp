@@ -216,8 +216,10 @@ void RegionWidget::setData(std::shared_ptr<region_container>& base, std::shared_
 	std::vector<disparity_region>& regionsBase = m_base->regions;
 	std::vector<disparity_region>& regionsMatch = m_match->regions;
 
-	stat_t* pixelAnalysis = &(regionsBase[index].stats);
-	QString info = QString("min: %1, max: %2, mean: %3, stddev: %4, range: %5,\n disparity: %6, confidence2: %7, sdilate: %8,\n confidence_range: %9, minima_variance: %10,base_disp: %11").arg(pixelAnalysis->min).arg(pixelAnalysis->max).arg(pixelAnalysis->mean).arg(pixelAnalysis->stddev).arg(pixelAnalysis->max-pixelAnalysis->min).arg(pixelAnalysis->disparity_idx).arg(pixelAnalysis->confidence2).arg(regionsBase[index].dilation).arg(pixelAnalysis->confidence_range).arg(pixelAnalysis->confidence_variance).arg(regionsBase[index].base_disparity);
+	stat_t cstat;
+	generate_stats(regionsBase[index], cstat);
+	stat_t* pixelAnalysis = &(cstat);
+	QString info = QString("min: %1, max: %2, mean: %3, stddev: %4, range: %5,\n disparity: %6, confidence2: %7, \n confidence_range: %8, minima_variance: %9,base_disp: %10").arg(pixelAnalysis->min).arg(pixelAnalysis->max).arg(pixelAnalysis->mean).arg(pixelAnalysis->stddev).arg(pixelAnalysis->max-pixelAnalysis->min).arg(pixelAnalysis->disparity_idx).arg(pixelAnalysis->confidence2).arg(pixelAnalysis->confidence_range).arg(pixelAnalysis->confidence_variance).arg(regionsBase[index].base_disparity);
 	ui->stat->setText(info);
 
 	if(!delta)

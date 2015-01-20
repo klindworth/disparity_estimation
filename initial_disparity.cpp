@@ -117,7 +117,9 @@ void calculate_region_disparity_regionwise(single_stereo_task& task, const cv::M
 	cost_type cost_agg(base, match, it->size() * 3);
 	typename cost_type::thread_type cost_thread;
 
-	#pragma omp parallel for default(none) shared(task, regions, base, match, delta, cost_agg, dilate_step, dilate_max) private(cost_thread)
+	stat_t cstat;
+
+	#pragma omp parallel for default(none) shared(task, regions, base, match, delta, cost_agg, dilate_step, dilate_max) private(cost_thread, cstat)
 	for(std::size_t i = 0; i < regions_count; ++i)
 	{
 		disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
@@ -130,9 +132,9 @@ void calculate_region_disparity_regionwise(single_stereo_task& task, const cv::M
 			region_disparity_internal(actual_pixel_idx, cost_agg, cost_thread, regions[i], base, match, drange.start(), drange.end());
 
 			//dilateLR stuff
-			generate_stats(regions[i], task, delta);
+			generate_stats(regions[i], cstat);
 
-			if ( !(regions[i].stats.confidence_range == 0 || regions[i].stats.confidence_range > 2 || regions[i].stats.confidence_variance > 0.2) )
+			if ( !(cstat.confidence_range == 0 || cstat.confidence_range > 2 || cstat.confidence_variance > 0.2) )
 				break;
 		}
 	}
@@ -205,16 +207,6 @@ std::vector<region_interval> exposureVector(const cv::Mat& occlusionMap)
 	return exposure;
 }
 
-void dilateLR(single_stereo_task& task, std::vector<disparity_region>& regions_base, int dilate_step, int delta)
-{
-	parallel_region(regions_base, [&](disparity_region& cregion) {
-		generate_stats(cregion, task, delta);
-
-		if(cregion.stats.confidence_range == 0 || cregion.stats.confidence_range > 2 || cregion.stats.confidence_variance > 0.2)
-			cregion.dilation += dilate_step;
-	});
-}
-
 void single_pass_region_disparity(stereo_task& task, region_container& left, region_container& right, const initial_disparity_config& config, bool b_refinement, disparity_region_func disparity_calculator, region_optimizer& optimizer)
 {
 	int refinement = 0;
@@ -231,27 +223,13 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 	std::cout << "init disp" << std::endl;
 
 	for(disparity_region& cregion : left.regions)
-	{
-		cregion.dilation = 0;
-		cregion.old_dilation = -1;
 		cregion.disparity_offset = task.forward.dispMin;
-	}
 	for(disparity_region& cregion : right.regions)
-	{
-		cregion.dilation = 0;
-		cregion.old_dilation = -1;
 		cregion.disparity_offset = task.backward.dispMin;
-	}
-	//for(unsigned int i = 0; i <= config.dilate; i+= config.dilate_step)
-	//{
-		//std::cout << i << std::endl;
-		disparity_calculator(task.forward,  task.algoLeft,  task.algoRight, left.regions, refinement);
-		disparity_calculator(task.backward, task.algoRight, task.algoLeft, right.regions, refinement);
 
-		/*std::cout << "dilation" << std::endl;
-		dilateLR(task.forward,  left.regions,  config.dilate_step, refinement);
-		dilateLR(task.backward, right.regions, config.dilate_step, refinement);*/
-	//}
+	disparity_calculator(task.forward,  task.algoLeft,  task.algoRight, left.regions, refinement);
+	disparity_calculator(task.backward, task.algoRight, task.algoLeft, right.regions, refinement);
+
 	std::cout << "fin" << std::endl;
 
 	if(config.verbose)
@@ -264,8 +242,8 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 	}
 
 	generate_region_information(left, right);
-	generate_stats(left.regions, task.forward, refinement);
-	generate_stats(right.regions, task.backward, refinement);
+	generate_stats(left.regions);
+	generate_stats(right.regions);
 
 	optimizer.run(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);
 	//run_optimization(left, right, config.optimizer, b_refinement ? config.region_refinement_delta : 0);

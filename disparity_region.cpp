@@ -35,12 +35,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "disparity_region_algorithms.h"
 
-disparity_region::disparity_region()
-{
-	old_dilation = -1;
-	dilation = 0;
-}
-
 std::vector<region_interval> filtered_region(int width, const std::vector<region_interval> &old_region, int d)
 {
 	std::vector<region_interval> filtered;
@@ -147,22 +141,22 @@ void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t o
 	}
 }
 
-void generate_stats(std::vector<disparity_region>& regions, const single_stereo_task& task, const int delta)
+void generate_stats(std::vector<disparity_region>& regions)
 {
 	parallel_region(regions, [&](disparity_region& region) {
-		generate_stats(region, task, delta);
+		generate_stats(region, region.stats);
 	});
 }
 
-void generate_stats(disparity_region& region, const single_stereo_task& task, int delta)
+void generate_stats(const disparity_region& region, stat_t& stats)
 {
-	int len = task_subrange(task, region.base_disparity, delta).size();
+	int len = region.disparity_costs.total();
 	std::vector<float> derived(len);
 	const float *costs = region.disparity_costs[0];
 	derivePartialCostmap(costs, derived.data(), len);
 
-	analyzeDisparityRange(region.stats, costs, derived.data(), len);
-	analyzeDisparityRange2(region);
+	analyzeDisparityRange(stats, costs, derived.data(), len);
+	analyzeDisparityRange2(region, stats);
 }
 
 cv::Mat disparity_by_segments(const region_container& container)

@@ -62,7 +62,6 @@ public:
 class disparity_region : public region_descriptor
 {
 public:
-	disparity_region();
 	std::vector<region_interval> warped_interval;
 	std::vector<std::vector< corresponding_region >> corresponding_regions;
 	cv::Mat_<float> disparity_costs;
@@ -72,8 +71,6 @@ public:
 	short disparity;
 	short base_disparity;
 	short disparity_offset;
-	unsigned char dilation;
-	char old_dilation;
 
 	//std::vector<EstimationStep> results;
 	corresponding_region get_corresponding_region(std::size_t idx, std::size_t disparity_idx);
@@ -92,8 +89,8 @@ void fill_region_container(std::shared_ptr<region_container>& result, single_ste
 int reenumerate(cv::Mat& labels, int old_count);
 void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t old_idx, std::size_t new_idx);
 
-void generate_stats(std::vector<disparity_region>& regions, const single_stereo_task& task, const int delta);
-void generate_stats(disparity_region& region, const single_stereo_task& task, int delta);
+void generate_stats(std::vector<disparity_region>& regions);
+void generate_stats(const disparity_region& region, stat_t& stats);
 
 void determine_corresponding_regions(region_container& base, const region_container& match, int delta);
 void refresh_warped_regions(region_container& container);

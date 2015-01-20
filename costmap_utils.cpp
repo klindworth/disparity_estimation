@@ -50,18 +50,18 @@ void convert_minima_ranges(const cv::Mat_<value_type>& values, InserterIterator 
 	intervals::convert_generic<value_type>(values, factory, cmp_func);
 }
 
-void analyzeDisparityRange2(disparity_region& region)
+void analyzeDisparityRange2(const disparity_region& region, stat_t& stats)
 {
 	cv::Mat temp = region.disparity_costs.reshape(0,1);
 	std::vector<region_interval> minima_ranges;
-	convert_minima_ranges<float>(temp, std::back_inserter(minima_ranges), region.stats.mean - region.stats.stddev);
+	convert_minima_ranges<float>(temp, std::back_inserter(minima_ranges), stats.mean - stats.stddev);
 
 	int minima_width = 0;
 	for(const region_interval& interval : minima_ranges)
 		minima_width += interval.length();
 
-	region.stats.confidence_range = minima_ranges.size();
-	region.stats.confidence_variance = (float)minima_width/region.disparity_costs.total();
+	stats.confidence_range = minima_ranges.size();
+	stats.confidence_variance = (float)minima_width/region.disparity_costs.total();
 }
 
 void analyzeDisparityRange(stat_t& cstat, const float* src_ptr, const float* derived_ptr, int range)
