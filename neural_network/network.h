@@ -242,7 +242,7 @@ public:
 		float best_res = 0;
 		std::stringstream weightstream;
 
-		for(int j = 0; j < 25; ++j)
+		for(int j = 0; j < 10; ++j)
 		{
 			float old_res = 0;
 			int nothing_learned = 0;
@@ -257,10 +257,10 @@ public:
 					{
 						//std::cout << "epoch: " << i << std::endl;
 						float res = test(data, gt);
-						if(res - old_res < 0.03)
+						if(res - old_res < 0.01)
 							nothing_learned++;
 
-						if(nothing_learned > 4)
+						if(nothing_learned >= 4)
 							break;
 						else
 							old_res = res;

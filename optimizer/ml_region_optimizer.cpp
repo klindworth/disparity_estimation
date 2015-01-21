@@ -177,9 +177,9 @@ void ml_region_optimizer::prepare_per_disp_training_sample(std::vector<short>& d
 	const std::size_t regions_count = base.regions.size();
 	dst_data.reserve(dst_data.size() + base_optimization_vectors.size());
 
-	int draw_eps = 1;
+	int draw_eps = 4;
 	std::mt19937 rng;
-	std::uniform_int_distribution<> dist(0, crange - draw_eps - 1);
+	std::uniform_int_distribution<> dist(0, crange - 2*draw_eps - 1);
 
 	assert(gt.size() == regions_count);
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
@@ -205,8 +205,10 @@ void ml_region_optimizer::prepare_per_disp_training_sample(std::vector<short>& d
 
 			auto draw_neg_sample = [&]() {
 				int neg_disp_sample_idx = dist(rng);
-				if(std::abs(neg_disp_sample_idx) <= draw_eps)
+				if(std::abs(gt[j]) - draw_eps < neg_disp_sample_idx)
 					neg_disp_sample_idx += 2*draw_eps+1;
+
+				assert(neg_disp_sample_idx >= 0 && neg_disp_sample_idx < crange);
 
 				copy_sample(neg_disp_sample_idx, false);
 			};
@@ -220,16 +222,19 @@ void ml_region_optimizer::prepare_per_disp_training_sample(std::vector<short>& d
 				copy_sample(base.regions[j].disparity, false);
 				copy_sample(gt[j], true);
 
-				hardcase_advance++;
-			}
-			/*else if(hardcase_advance > 0)
-			{
 				draw_neg_sample();
 
-				copy_sample(gt[j]);
+				hardcase_advance++;
+			}
+			else if(hardcase_advance > 0)
+			{
+				draw_neg_sample();
+				draw_neg_sample();
+
+				copy_sample(gt[j], true);
 
 				hardcase_advance--;
-			}*/
+			}
 			//else
 				//draw_neg_sample();
 
@@ -426,8 +431,8 @@ void per_disp_training_internal(std::vector<std::vector<double>>& samples, std::
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(nvector);
 	net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(4);
-	net.emplace_layer<relu_layer>();
+	//net.emplace_layer<fully_connected_layer>(4);
+	//net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(2);
 	net.emplace_layer<softmax_output_layer>();
 
@@ -462,8 +467,12 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 
 	short left_neighbor_disp  = neigh.left.disparity;
 	short right_neighbor_disp = neigh.right.disparity;
+	short top_neighbor_disp = neigh.top.disparity;
+	short bottom_neighbor_disp = neigh.bottom.disparity;
 	float left_color_dev = neigh.left.color_dev;
 	float right_color_dev = neigh.right.color_dev;
+	float top_color_dev = neigh.top.color_dev;
+	float bottom_color_dev = neigh.bottom.color_dev;
 
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
 	result_vector.resize(range*ml_region_optimizer::vector_size_per_disp+ml_region_optimizer::vector_size);
@@ -481,16 +490,16 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 		int hyp_disp = dispMin + i;
 		*result_ptr++ = left_neighbor_disp - hyp_disp;
 		*result_ptr++ = right_neighbor_disp - hyp_disp;
-		//*result_ptr++ = top_neighbor_disp - hyp_disp;
-		//*result_ptr++ = bottom_neighbor_disp - hyp_disp;
+		*result_ptr++ = top_neighbor_disp - hyp_disp;
+		*result_ptr++ = bottom_neighbor_disp - hyp_disp;
 		*result_ptr++ = warp_costs_values[i];
 	}
 	//*result_ptr = baseRegion.disparity;
 	*result_ptr++ = *std::min_element(cost_values.begin(), cost_values.end());
 	*result_ptr++ = left_color_dev;
 	*result_ptr++ = right_color_dev;
-	//*result_ptr++ = top_color_dev;
-	//*result_ptr++ = bottom_color_dev;
+	*result_ptr++ = top_color_dev;
+	*result_ptr++ = bottom_color_dev;
 }
 
 float create_min_version(std::vector<float>::iterator start, std::vector<float>::iterator end, std::vector<float>::iterator ins)
