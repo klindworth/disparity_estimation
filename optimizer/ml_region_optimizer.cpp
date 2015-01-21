@@ -88,8 +88,8 @@ void merge_with_corresponding_optimization_vector(dst_type *dst_ptr, const dispa
 		const src_type *base_ptr = optimization_vector_base.data() + (d-drange.start())*ml_region_optimizer::vector_size_per_disp;
 		const dst_type *other_ptr = disp_optimization_vector.data();
 
-		dst_type *ndst_ptr = dst_ptr + (d-drange.start())*ml_region_optimizer::vector_size_per_disp*2;
-		//dst_type *ndst_ptr = dst_ptr + ml_region_optimizer::vector_size_per_disp*2*(int)std::abs(d);
+		//dst_type *ndst_ptr = dst_ptr + (d-drange.start())*ml_region_optimizer::vector_size_per_disp*2;
+		dst_type *ndst_ptr = dst_ptr + ml_region_optimizer::vector_size_per_disp*2*(int)std::abs(d);
 
 		for(int j = 0; j < ml_region_optimizer::vector_size_per_disp; ++j)
 			*ndst_ptr++ = *base_ptr++;

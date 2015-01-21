@@ -242,7 +242,7 @@ public:
 		float best_res = 0;
 		std::stringstream weightstream;
 
-		for(int j = 0; j < 10; ++j)
+		for(int j = 0; j < 25; ++j)
 		{
 			float old_res = 0;
 			int nothing_learned = 0;
