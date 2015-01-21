@@ -35,6 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <iostream>
 #include <iterator>
+#include <sstream>
 
 #include <omp.h>
 #include <neural_network/blas_wrapper.h>
@@ -108,7 +109,7 @@ public:
 				++approx_correct2;
 		}
 
-		std::cout << "result: " << (float)correct/data.size() << ", approx5: " << (float)approx_correct/data.size() << ", approx10: " << (float)approx_correct2/data.size() << std::endl;
+		//std::cout << "result: " << (float)correct/data.size() << ", approx5: " << (float)approx_correct/data.size() << ", approx10: " << (float)approx_correct2/data.size() << std::endl;
 		return (float)correct/data.size();
 	}
 
@@ -234,6 +235,51 @@ public:
 				}
 			}
 		}
+	}
+
+	void multi_training(const std::vector<std::vector<T>>& data, const std::vector<short>& gt, std::size_t batch_size, std::size_t epochs, std::size_t training_error_calculation)
+	{
+		float best_res = 0;
+		std::stringstream weightstream;
+
+		for(int j = 0; j < 10; ++j)
+		{
+			float old_res = 0;
+			int nothing_learned = 0;
+			this->reset_weights();
+
+			for(std::size_t i = 0; i < epochs; ++i)
+			{
+				training(data, gt, batch_size);
+				if(training_error_calculation != 0)
+				{
+					if(i % training_error_calculation == 0)
+					{
+						//std::cout << "epoch: " << i << std::endl;
+						float res = test(data, gt);
+						if(res - old_res < 0.03)
+							nothing_learned++;
+
+						if(nothing_learned > 4)
+							break;
+						else
+							old_res = res;
+					}
+				}
+			}
+
+			float res = test(data, gt);
+			if(res > best_res)
+			{
+				weightstream.str("");
+				this->save_weights(weightstream);
+				best_res = res;
+			}
+		}
+
+		this->load_weights(weightstream);
+		std::cout << "----------------final---------------------" << std::endl;
+		std::cout << "result: " << test(data, gt) << std::endl;
 	}
 
 	void forward_propagation(const T* bottom_data)

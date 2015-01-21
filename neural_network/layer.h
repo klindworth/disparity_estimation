@@ -184,7 +184,7 @@ public:
 
 	void save_weights(std::ostream& stream) const
 	{
-		std::cout << "weights: " << this->weights.size() << ", bias: " << this->bias.size() << std::endl;
+		//std::cout << "weights: " << this->weights.size() << ", bias: " << this->bias.size() << std::endl;
 		stream << this->name() << " " << this->weights.size() << " " << this->bias.size() << " ";
 		std::copy(this->weights.begin(), this->weights.end(), std::ostream_iterator<T>(stream, " "));
 		std::copy(this->bias.begin(), this->bias.end(), std::ostream_iterator<T>(stream, " "));

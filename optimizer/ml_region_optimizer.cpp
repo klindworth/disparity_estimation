@@ -183,6 +183,7 @@ void ml_region_optimizer::prepare_per_disp_training_sample(std::vector<short>& d
 
 	assert(gt.size() == regions_count);
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
+	int hardcase_advance = 0;
 	std::vector<double> temp_vector(vector_size_per_disp*2*crange+vector_size);
 	result_eps_calculator diff_calc;
 	for(std::size_t j = 0; j < regions_count; ++j)
@@ -193,11 +194,13 @@ void ml_region_optimizer::prepare_per_disp_training_sample(std::vector<short>& d
 			double *temp_ptr = temp_vector.data();
 			merge_with_corresponding_optimization_vector(temp_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task);
 
-			auto copy_sample = [&](int disp) {
+			auto copy_sample = [&](int disp, bool correct) {
 				dst_data.emplace_back(sample_size);
 				int per_disp = vector_size_per_disp*2;
 				std::copy(temp_ptr + std::abs(disp)*per_disp, temp_ptr + (std::abs(disp)+1)*per_disp, dst_data.back().data());
 				std::copy(temp_ptr + crange*per_disp, temp_ptr + crange*per_disp+vector_size, dst_data.back().data() + per_disp);
+
+				dst_gt.push_back(correct ? 1 : 0);
 			};
 
 			auto draw_neg_sample = [&]() {
@@ -205,14 +208,31 @@ void ml_region_optimizer::prepare_per_disp_training_sample(std::vector<short>& d
 				if(std::abs(neg_disp_sample_idx) <= draw_eps)
 					neg_disp_sample_idx += 2*draw_eps+1;
 
-				copy_sample(neg_disp_sample_idx);
-				dst_gt.push_back(0);
+				copy_sample(neg_disp_sample_idx, false);
 			};
 
-			copy_sample(gt[j]);
-			dst_gt.push_back(1);
+			//copy_sample(gt[j], true);
 
-			draw_neg_sample();
+			//draw_neg_sample();
+
+			if(std::abs(base.regions[j].disparity - gt[j]) > 5)
+			{
+				copy_sample(base.regions[j].disparity, false);
+				copy_sample(gt[j], true);
+
+				hardcase_advance++;
+			}
+			/*else if(hardcase_advance > 0)
+			{
+				draw_neg_sample();
+
+				copy_sample(gt[j]);
+
+				hardcase_advance--;
+			}*/
+			//else
+				//draw_neg_sample();
+
 
 			//std::cout << base.regions[j].disparity << " vs " << gt[j] << std::endl;
 			diff_calc(base.regions[j].disparity, gt[j]);
@@ -385,26 +405,33 @@ void per_disp_training_internal(std::vector<std::vector<double>>& samples, std::
 	int dims = samples.front().size();
 	network<double> net(dims);
 
+	std::vector<unsigned int> stats(2, 0);
+	for(std::size_t i = 0; i < samples_gt.size(); ++i)
+		++(stats[std::abs(samples_gt[i])]);
+	for(std::size_t i = 0; i < stats.size(); ++i)
+		std::cout << "[" << i << "] " << (float)stats[i]/samples_gt.size() << "\n";
+	std::cout << std::endl;
+
 	//int nvector = ml_region_optimizer::vector_size_per_disp + ml_region_optimizer::vector_size;
 	int nvector = ml_region_optimizer::vector_size_per_disp;
 	int pass = ml_region_optimizer::vector_size;
 	//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
 	//net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
 	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(nvector, nvector, pass);
+	net.emplace_layer<vector_connected_layer>(nvector*2, nvector, pass);
 	net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(nvector, nvector, pass);
+	net.emplace_layer<vector_connected_layer>(nvector, nvector*2, pass);
 	net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(4, nvector*2, pass);
+	net.emplace_layer<fully_connected_layer>(nvector);
 	net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(4);
+	net.emplace_layer<fully_connected_layer>(nvector);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(4);
 	net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(2);
 	net.emplace_layer<softmax_output_layer>();
 
-	net.training(samples, samples_gt, 16, 61, 4);
+	net.multi_training(samples, samples_gt, 16, 61, 4);
 
 	std::ofstream ostream(filename);
 	ostream.precision(17);
@@ -419,6 +446,7 @@ void per_disp_training_internal(std::vector<std::vector<double>>& samples, std::
 void ml_region_optimizer::training()
 {
 	per_disp_training_internal(per_disp_samples_left, per_disp_samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + "-disp.txt");
+	std::cout << "\n\n ------------------------------------------- next side --------------------------------------------" << std::endl;
 	per_disp_training_internal(per_disp_samples_right, per_disp_samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + "-disp.txt");
 
 	//training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + ".txt");
