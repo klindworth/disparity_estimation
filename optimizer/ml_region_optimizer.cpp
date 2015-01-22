@@ -223,11 +223,13 @@ void ml_region_optimizer::prepare_per_disp_training_sample(std::vector<short>& d
 				copy_sample(gt[j], true);
 
 				draw_neg_sample();
+				draw_neg_sample();
 
 				hardcase_advance++;
 			}
 			else if(hardcase_advance > 0)
 			{
+				draw_neg_sample();
 				draw_neg_sample();
 				draw_neg_sample();
 

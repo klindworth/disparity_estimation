@@ -151,7 +151,7 @@ public:
 
 	int predict(const std::vector<T>& data)
 	{
-		assert(data.size() == layers.front().input_dimension());
+		assert((int)data.size() == layers.front()->input_dimension());
 		return this->predict(data.data());
 	}
 
@@ -242,7 +242,7 @@ public:
 		float best_res = 0;
 		std::stringstream weightstream;
 
-		for(int j = 0; j < 10; ++j)
+		for(int j = 0; j < 7; ++j)
 		{
 			float old_res = 0;
 			int nothing_learned = 0;

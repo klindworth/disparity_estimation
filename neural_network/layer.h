@@ -527,6 +527,55 @@ private:
 };
 
 template<typename T>
+class tanh_output_layer : public layer_base<T>
+{
+public:
+	tanh_output_layer(bool propagate_down, int in_dim) : layer_base<T>(propagate_down, in_dim, in_dim, 0, 0)
+	{}
+
+	void forward_propagation(const T* bottom_data) override
+	{
+		layer_thread_data<T>& cdata = this->thread_data();
+
+		for(int i = 0; i < this->out_dim; ++i)
+		{
+			const T exp2 = std::exp(2*std::min(static_cast<T>(300),bottom_data[i]));
+			cdata.output_data[i] = (exp2 - 1)/(exp2 + 1);
+		}
+	}
+
+	void backward_propagation(const T*, const T* gt) override
+	{
+		layer_thread_data<T>& cdata = this->thread_data();
+
+		//T error_sum = 0;
+		//std::cout << "backprop tanh" << std::endl;
+		for(int i = 0; i < this->out_dim; ++i)
+		{
+			//std::cout << cdata.output_data[i] << " vs " << gt[i] << std::endl;
+			cdata.gradient_data[i] = (cdata.output_data[i] - gt[i]) * (1- cdata.output_data[i]*cdata.output_data[i]);
+			//std::cout << i << ": " << (cdata.output_data[i] - gt[i]) * (1- cdata.output_data[i]*cdata.output_data[i]) << std::endl;
+			//error_sum += std::abs(cdata.gradient_data[i]);
+		}
+
+		//std::cout << "error_sum: " << error_sum << std::endl;
+
+		//std::copy(this->gradient_data.begin(), this->gradient_data.end(), std::ostream_iterator<T>(std::cout, ", "));
+		//std::cout << std::endl;
+	}
+
+	bool trainable() const override
+	{
+		return false;
+	}
+
+	std::string name() const override
+	{
+		return "tanh_output_layer";
+	}
+};
+
+template<typename T>
 class transpose_vector_connected_layer : public layer_base<T>
 {
 public:
