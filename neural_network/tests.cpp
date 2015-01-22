@@ -13,11 +13,11 @@ T get_loss(const std::vector<T>& output, const std::vector<T>& gt)
 	{
 		//std::cout << "loss_calc: " << output[i] << " vs " << gt[i] << std::endl;
 		//std::cout << "loss[" << i << "] " << gt[i]*output[i] << std::endl;
-		//error_sum += -gt[i]*std::log(output[i]);
-		T temp = gt[i]-output[i];
+		error_sum += -gt[i]*std::log(output[i]);
+		//T temp = gt[i]-output[i];
 
 		//std::cout << i << ": " << 0.5*temp*temp << std::endl;
-		error_sum += 0.5*temp*temp;
+		//error_sum += 0.5*temp*temp;
 	}
 
 	return error_sum;
@@ -63,11 +63,11 @@ T calc_numeric_gradient(network<T>& net, const std::vector<std::vector<T> >& in,
 	return delta_by_numerical;
 }
 
-template<typename T>
-bool gradient_check(network<T>& net, const std::vector<std::vector<T>>& in, const std::vector<short>& t, T eps, T delta)
+template<typename T, typename loss_type>
+bool gradient_check(network<T>& net, const std::vector<std::vector<T>>& in, const std::vector<short>& t, T eps, T delta, loss_type loss_func)
 {
-	//std::vector<std::vector<T> > v(t.size(), std::vector<T>(net.output_dimension(), 0.0));
-	std::vector<std::vector<T> > v(t.size(), std::vector<T>(net.output_dimension(), -1.0));
+	std::vector<std::vector<T> > v(t.size(), std::vector<T>(net.output_dimension(), 0.0));
+	//std::vector<std::vector<T> > v(t.size(), std::vector<T>(net.output_dimension(), -1.0));
 	for(std::size_t i = 0; i < t.size(); ++i)
 		v[i][t[i]] = 1.0;
 
@@ -92,7 +92,7 @@ bool gradient_check(network<T>& net, const std::vector<std::vector<T>>& in, cons
 
 		for (std::size_t i = 0; i < w.size(); i++)
 		{
-			T delta_by_numeric = calc_numeric_gradient(net, in, v, w[i], delta, get_loss<T>);
+			T delta_by_numeric = calc_numeric_gradient(net, in, v, w[i], delta, loss_func);
 			T diff = std::abs(delta_by_numeric - dw[i]);
 			bool res = diff < eps;
 			if(!res)
@@ -105,7 +105,7 @@ bool gradient_check(network<T>& net, const std::vector<std::vector<T>>& in, cons
 		}
 
 		for (std::size_t i = 0; i < b.size(); i++) {
-			assert(std::abs(calc_numeric_gradient(net, in, v, b[i], delta, get_loss<T>) - db[i]) < eps);
+			assert(std::abs(calc_numeric_gradient(net, in, v, b[i], delta, loss_func) - db[i]) < eps);
 		}
 	}
 	return true;
@@ -132,38 +132,8 @@ bool test_gradient_check_internal(data_type delta, data_type eps)
 	std::vector<std::vector<data_type>> input {input1, input2, input3, input4, input5, input6};
 	std::vector<short> output {output1, output2, output3, output4, output5, output6};
 
-	return gradient_check(net, input, output, eps, delta);
+	return gradient_check(net, input, output, eps, delta, get_loss<data_type>);
 }
-
-/*template<typename data_type>
-bool test_gradient_check_internal_tanh(data_type delta, data_type eps)
-{
-	network<data_type> net(2);
-	net.emplace_layer<fully_connected_layer>(12);
-	net.emplace_layer<relu_layer>(12);
-	net.emplace_layer<fully_connected_layer>(12);
-	net.emplace_layer<relu_layer>(12);
-	net.emplace_layer<fully_connected_layer>(2);
-	net.emplace_layer<tanh_output_layer>();
-
-	std::vector<data_type> input1 {-0.8, 0.8};
-	std::vector<data_type> input2 {0.7, -0.7};
-	std::vector<data_type> input3 {-0.2, 0.2};
-	std::vector<data_type> input4 {0.2, -0.3};
-	std::vector<data_type> input5 {-0.5, 0.6};
-	std::vector<data_type> input6 {0.5, -0.6};
-	short output1 = 0;
-	short output2 = 1;
-	short output3 = 0;
-	short output4 = 1;
-	short output5 = 0;
-	short output6 = 1;
-
-	std::vector<std::vector<data_type>> input {input1, input2, input3, input4, input5, input6};
-	std::vector<short> output {output1, output2, output3, output4, output5, output6};
-
-	return gradient_check(net, input, output, eps, delta);
-}*/
 
 bool test_gradient_check_internal_tanh(double delta, double eps)
 {
@@ -191,7 +161,7 @@ bool test_gradient_check_internal_tanh(double delta, double eps)
 	std::vector<std::vector<double>> input {input1, input2, input3, input4, input5, input6};
 	std::vector<short> output {output1, output2, output3, output4, output5, output6};
 
-	return gradient_check(net, input, output, eps, delta);
+	return gradient_check(net, input, output, eps, delta, get_loss_mse<double>);
 }
 
 void compare_double_vector(const std::vector<double>& actual, const std::vector<double>& desired)
@@ -201,7 +171,7 @@ void compare_double_vector(const std::vector<double>& actual, const std::vector<
 		ASSERT_DOUBLE_EQ(desired[i], actual[i]);
 }
 
-/*TEST(SimpleNN, GradientDouble)
+TEST(SimpleNN, GradientDouble)
 {
 	ASSERT_TRUE(test_gradient_check_internal<double>(1e-8, 1e-6));
 }
@@ -209,11 +179,11 @@ void compare_double_vector(const std::vector<double>& actual, const std::vector<
 TEST(SimpleNN, GradientFloat)
 {
 	ASSERT_TRUE(test_gradient_check_internal<float>(1e-3, 1e-3));
-}*/
+}
 
 TEST(SimpleNN, GradientDoubleTanh)
 {
-	ASSERT_TRUE(test_gradient_check_internal_tanh(1e-3, 1e-3));
+	ASSERT_TRUE(test_gradient_check_internal_tanh(1e-8, 1e-6));
 }
 
 /*TEST(SimpleNN, GradientFloatTanh)
@@ -299,7 +269,7 @@ TEST(SimpleNN, GradientDoubleVectorLayer)
 		net.test(input, output);
 	}
 
-	ASSERT_TRUE(gradient_check(net, input, output, 1e-5, 1e-5));
+	ASSERT_TRUE(gradient_check(net, input, output, 1e-5, 1e-5, get_loss<data_type>));
 }
 
 TEST(SimpleNN, GradientDoubleVectorLayer2)
@@ -330,7 +300,7 @@ TEST(SimpleNN, GradientDoubleVectorLayer2)
 	net.emplace_layer<fully_connected_layer>(2);
 	net.emplace_layer<softmax_output_layer>();
 
-	ASSERT_TRUE(gradient_check(net, input, output, 1e-5, 1e-5));
+	ASSERT_TRUE(gradient_check(net, input, output, 1e-5, 1e-5, get_loss<data_type>));
 }
 
 //void vector_connected_layer_test()
