@@ -133,6 +133,83 @@ void ml_region_optimizer::optimize_ml(region_container& base, const region_conta
 	refresh_warped_regions(base);
 }
 
+void ml_region_optimizer::optimize_ml_disp(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename)
+{
+	int crange = 164;
+	std::cout << "optimize_dsip" << std::endl;
+
+	std::ifstream istream(filename);
+
+	if(!istream.is_open())
+		throw std::runtime_error("file not found: " + filename);
+
+	int sample_size = vector_size_per_disp*2+vector_size;
+
+	network<double> net(sample_size);
+
+	int nvector = ml_region_optimizer::vector_size_per_disp;
+	int pass = ml_region_optimizer::vector_size;
+	//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	//net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
+	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(nvector*2, nvector, pass);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(nvector, nvector*2, pass);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(nvector);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(nvector);
+	net.emplace_layer<relu_layer>();
+	//net.emplace_layer<fully_connected_layer>(4);
+	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(2);
+	net.emplace_layer<softmax_output_layer>();
+
+	data_normalizer<double> normalizer(istream);
+	istream >> net;
+
+	const std::size_t regions_count = base.regions.size();
+	const short sign = (base.task.dispMin < 0) ? -1 : 1;
+
+	std::vector<std::vector<double>> region_optimization_vectors(omp_get_max_threads(), std::vector<double>(base.task.range_size()*vector_size_per_disp*2+vector_size));
+	//#pragma omp parallel for
+	std::vector<double> temp(sample_size);
+	for(std::size_t j = 0; j < regions_count; ++j)
+	{
+		std::vector<double>& optimization_vector = region_optimization_vectors[omp_get_thread_num()];
+		merge_with_corresponding_optimization_vector(optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
+
+
+		const double* temp_ptr = optimization_vector.data();
+
+		double best_output = -1;
+		int best_idx = -1;
+
+		for(int i = 0; i < crange; ++i)
+		{
+
+			auto copy_sample = [&](int disp) {
+				int per_disp = vector_size_per_disp*2;
+				std::copy(temp_ptr + std::abs(disp)*per_disp, temp_ptr + (std::abs(disp)+1)*per_disp, temp.data());
+				std::copy(temp_ptr + crange*per_disp, temp_ptr + crange*per_disp+vector_size, temp.data() + per_disp);
+			};
+
+			copy_sample(i);
+			normalizer.apply(temp);
+			double res = net.output(temp.data())[1];
+
+			if(res > best_output)
+			{
+				best_idx = i;
+				best_output = res;
+			}
+		}
+		base.regions[j].disparity = best_idx * sign;
+	}
+
+	refresh_warped_regions(base);
+}
+
 void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta)
 {
 	dst_gt.reserve(dst_gt.size() + base.regions.size());
@@ -179,7 +256,7 @@ void ml_region_optimizer::prepare_per_disp_training_sample(std::vector<short>& d
 
 	int draw_eps = 4;
 	std::mt19937 rng;
-	std::uniform_int_distribution<> dist(0, crange - 2*draw_eps - 1);
+	std::uniform_int_distribution<> dist(0, crange - 2*draw_eps - 2);
 
 	assert(gt.size() == regions_count);
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
@@ -270,8 +347,12 @@ void ml_region_optimizer::run(region_container& left, region_container& right, c
 	{
 		for(int i = 0; i <= training_iteration; ++i)
 		{
-			optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + ".txt");
-			optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + ".txt");
+			//optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + ".txt");
+			//optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + ".txt");
+
+			optimize_ml_disp(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + "-disp.txt");
+			optimize_ml_disp(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + "-disp.txt");
+
 			refresh_base_optimization_vector(left, right, refinement);
 		}
 
@@ -329,20 +410,6 @@ ml_region_optimizer::~ml_region_optimizer()
 void ml_region_optimizer::reset(const region_container& /*left*/, const region_container& /*right*/)
 {
 	reset_internal();
-}
-
-template<typename T>
-void randomize_dataset(std::vector<T>& samples, std::vector<short>& samples_gt)
-{
-	assert(samples.size() == samples_gt.size());
-	std::mt19937 rng;
-	std::uniform_int_distribution<> dist(0, samples.size() - 1);
-	for(std::size_t i = 0; i < samples.size(); ++i)
-	{
-		std::size_t exchange_idx = dist(rng);
-		std::swap(samples[i], samples[exchange_idx]);
-		std::swap(samples_gt[i], samples_gt[exchange_idx]);
-	}
 }
 
 void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename)
@@ -437,6 +504,7 @@ void per_disp_training_internal(std::vector<std::vector<double>>& samples, std::
 	//net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(2);
 	net.emplace_layer<softmax_output_layer>();
+	//net.emplace_layer<tanh_output_layer>();
 
 	net.multi_training(samples, samples_gt, 16, 61, 4);
 

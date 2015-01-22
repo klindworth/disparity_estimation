@@ -167,6 +167,20 @@ public:
 	std::vector<T> mean_normalizers, stddev_normalizers;
 };
 
+template<typename T>
+void randomize_dataset(std::vector<T>& samples, std::vector<short>& samples_gt)
+{
+	assert(samples.size() == samples_gt.size());
+	std::mt19937 rng;
+	std::uniform_int_distribution<> dist(0, samples.size() - 1);
+	for(std::size_t i = 0; i < samples.size(); ++i)
+	{
+		std::size_t exchange_idx = dist(rng);
+		std::swap(samples[i], samples[exchange_idx]);
+		std::swap(samples_gt[i], samples_gt[exchange_idx]);
+	}
+}
+
 }
 
 #endif

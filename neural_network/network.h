@@ -175,7 +175,8 @@ public:
 		assert(gt_idx >= 0 && gt_idx < out_dim);
 		if(gt_idx < 0 || gt_idx >= out_dim)
 			throw std::runtime_error("invalid ground truth value");
-		std::vector<T> gt(out_dim, 0.0);
+		std::vector<T> gt(out_dim, 0.0); //for softmax
+		//std::vector<T> gt(out_dim, -1.0); //for tanh
 		gt[gt_idx] = 1.0;
 
 		training_sample(data, gt.data());

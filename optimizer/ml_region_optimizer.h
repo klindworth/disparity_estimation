@@ -66,6 +66,7 @@ private:
 	void optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename);
 	void reset_internal();
 	void prepare_per_disp_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta);
+	void optimize_ml_disp(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename);
 	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
 
 	std::vector<std::vector<double>> samples_left, samples_right;
