@@ -332,8 +332,12 @@ void ml_region_optimizer::run(region_container& left, region_container& right, c
 	{
 		for(int i = 0; i < training_iteration; ++i)
 		{
-			optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + ".txt");
-			optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + ".txt");
+			//optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + ".txt");
+			//optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + ".txt");
+
+			optimize_ml_disp(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + "-disp.txt");
+			optimize_ml_disp(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + "-disp.txt");
+
 			refresh_base_optimization_vector(left, right, refinement);
 		}
 
@@ -398,7 +402,7 @@ void ml_region_optimizer::reset_internal()
 ml_region_optimizer::ml_region_optimizer()
 {
 	reset_internal();
-	training_iteration = 0;
+	training_iteration = 1;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
 }
@@ -570,6 +574,9 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 	*result_ptr++ = right_color_dev;
 	*result_ptr++ = top_color_dev;
 	*result_ptr++ = bottom_color_dev;
+	*result_ptr++ = *std::min_element(warp_costs_values.begin(), warp_costs_values.end());
+	*result_ptr++ = *std::min_element(lr_pot_values.begin(), lr_pot_values.end());
+	*result_ptr++ = *std::min_element(neighbor_color_pot_values.begin(), neighbor_color_pot_values.end());
 }
 
 float create_min_version(std::vector<float>::iterator start, std::vector<float>::iterator end, std::vector<float>::iterator ins)

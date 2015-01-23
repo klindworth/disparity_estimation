@@ -35,7 +35,7 @@ class MiniPlot : public QWidget
 	Q_OBJECT
 public:
 	explicit MiniPlot(QWidget *parent = 0);
-	void setValues(float *values, stat_t *analysis, int len, int offset);
+	void setValues(float *values, const stat_t& analysis, int len, int offset);
 	void setInverted(bool inverted);
 	void setMarker(int x);
 	void clear();
@@ -50,7 +50,7 @@ private:
 	int getDisparity(int x);
 
 	float *m_values;
-	stat_t *m_analysis;
+	stat_t m_analysis;
 	int m_len;
 	bool m_ready;
 	int m_perdatapoint;

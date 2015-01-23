@@ -36,7 +36,6 @@ MiniPlot::MiniPlot(QWidget *parent) :
 {
 	m_ready = false;
 	m_values = nullptr;
-	m_analysis = nullptr;
 	m_perdatapoint = 0;
 	m_len = 0;
 	m_margin = 3;
@@ -46,7 +45,7 @@ MiniPlot::MiniPlot(QWidget *parent) :
 	setMouseTracking(true);
 }
 
-void MiniPlot::setValues(float *values, stat_t *analysis, int len, int offset)
+void MiniPlot::setValues(float *values, const stat_t& analysis, int len, int offset)
 {
 	m_offset = offset;
 	m_analysis = analysis;
@@ -86,8 +85,8 @@ void MiniPlot::paintEvent(QPaintEvent *)
 		pen.setColor(penColor);
 		painter.setPen(pen);
 
-		float min = m_analysis->min;
-		float max = m_analysis->max;
+		float min = m_analysis.min;
+		float max = m_analysis.max;
 
 		//calculate dimensions
 		m_perdatapoint = (this->width() - 2*m_margin) / (m_len-1);
@@ -144,9 +143,9 @@ void MiniPlot::paintEvent(QPaintEvent *)
 		pen.setColor(penColor);
 		painter.setPen(pen);
 
-		int meanpos = offset-(m_analysis->mean-min)*perval;
+		int meanpos = offset-(m_analysis.mean-min)*perval;
 		painter.drawLine(QPoint(m_margin, meanpos), QPoint(this->width()-2*m_margin, meanpos));
-		int stddevDelta = m_analysis->stddev*perval;
+		int stddevDelta = m_analysis.stddev*perval;
 		pen.setStyle(Qt::DotLine);
 		painter.setPen(pen);
 		painter.drawLine(QPoint(m_margin, meanpos-stddevDelta), QPoint(this->width()-2*m_margin, meanpos-stddevDelta));

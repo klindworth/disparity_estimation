@@ -221,16 +221,15 @@ void RegionWidget::setData(std::shared_ptr<region_container>& base, std::shared_
 
 	stat_t cstat;
 	generate_stats(regionsBase[index], cstat);
-	stat_t* pixelAnalysis = &(cstat);
-	QString info = QString("min: %1, max: %2, mean: %3, stddev: %4, range: %5,\n disparity: %6, confidence2: %7, \n confidence_range: %8, minima_variance: %9,base_disp: %10").arg(pixelAnalysis->min).arg(pixelAnalysis->max).arg(pixelAnalysis->mean).arg(pixelAnalysis->stddev).arg(pixelAnalysis->max-pixelAnalysis->min).arg(pixelAnalysis->disparity_idx).arg(pixelAnalysis->confidence2).arg(pixelAnalysis->confidence_range).arg(pixelAnalysis->confidence_variance).arg(regionsBase[index].base_disparity);
+	QString info = QString("min: %1, max: %2, mean: %3, stddev: %4, range: %5,\n disparity: %6, confidence2: %7, \n confidence_range: %8, minima_variance: %9,base_disp: %10").arg(cstat.min).arg(cstat.max).arg(cstat.mean).arg(cstat.stddev).arg(cstat.max-cstat.min).arg(cstat.disparity_idx).arg(cstat.confidence2).arg(cstat.confidence_range).arg(cstat.confidence_variance).arg(regionsBase[index].base_disparity);
 	ui->stat->setText(info);
 
 	if(!delta)
-		ui->plot->setValues(regionsBase[index].disparity_costs.ptr<float>(0), &(cstat), regionsBase[index].disparity_costs.size[0], regionsBase[index].disparity_offset);
+		ui->plot->setValues(regionsBase[index].disparity_costs.ptr<float>(0), cstat, regionsBase[index].disparity_costs.size[0], regionsBase[index].disparity_offset);
 	else
 	{
 		disparity_range drange = task_subrange(m_base->task, regionsBase[index].base_disparity, config->region_refinement_delta);
-		ui->plot->setValues(regionsBase[index].disparity_costs.ptr<float>(0), &(cstat), drange.size(), regionsBase[index].disparity_offset);
+		ui->plot->setValues(regionsBase[index].disparity_costs.ptr<float>(0), cstat, drange.size(), regionsBase[index].disparity_offset);
 	}
 
 	ui->lblIndex->setText("Index: " + QString::number(index));

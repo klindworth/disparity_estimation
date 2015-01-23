@@ -199,7 +199,7 @@ int main(int argc, char *argv[])
 	config.optimizer.prop_eval = prop_eval;
 	config.optimizer.prop_eval2 = prop_eval2;
 	//config.optimization_rounds = 3;
-	//config.verbose = true;
+	config.verbose = true;
 
 	refinement_config refconfig;
 	fs >> refconfig;
