@@ -38,7 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <omp.h>
 
 single_neighbor_values::single_neighbor_values(const std::vector<short>& disparities, const std::vector<cv::Vec3d>& colors, const disparity_region& baseRegion, int neigh_idx) {
-	disparity = neigh_idx >= 0 ? disparities[neigh_idx] : baseRegion.disparity;
+	disparity = neigh_idx >= 0 ? std::abs(disparities[neigh_idx]) : std::abs(baseRegion.disparity);
 	color_dev = neigh_idx >= 0 ? cv::norm(colors[neigh_idx] - baseRegion.average_color) : 0;
 }
 

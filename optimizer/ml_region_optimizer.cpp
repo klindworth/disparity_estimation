@@ -265,7 +265,7 @@ void ml_region_optimizer::prepare_per_disp_training_sample(std::vector<short>& d
 	result_eps_calculator diff_calc;
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		if(gt[j] != 0)
+		if(gt[j] != 0 && gt[j] < crange)
 		{
 			int sample_size = vector_size_per_disp*2+vector_size;
 			double *temp_ptr = temp_vector.data();
@@ -402,7 +402,7 @@ void ml_region_optimizer::reset_internal()
 ml_region_optimizer::ml_region_optimizer()
 {
 	reset_internal();
-	training_iteration = 1;
+	training_iteration = 0;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
 }
@@ -561,7 +561,7 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 		*result_ptr++ = neighbor_color_pot_values[i];
 		*result_ptr++ = (float)occ_temp[i].first / org_size;
 		//*result_ptr++ = rel_cost_values[i];
-		int hyp_disp = dispMin + i;
+		int hyp_disp = std::abs(dispMin + i);
 		*result_ptr++ = left_neighbor_disp - hyp_disp;
 		*result_ptr++ = right_neighbor_disp - hyp_disp;
 		*result_ptr++ = top_neighbor_disp - hyp_disp;
