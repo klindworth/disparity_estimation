@@ -57,23 +57,16 @@ void ImageStore::showTask(int idx)
 void ImageStore::refreshList(debug_store &store)
 {
 	m_store = &store;
-	for(auto it = store.tasks.begin(); it != store.tasks.end(); ++it)
-	{
-		qDebug(it->name.c_str());
-		ui->cbTasklist->addItem(it->name.c_str());
-	}
+	for(const auto& it : store.tasks)
+		ui->cbTasklist->addItem(it.name.c_str());
 }
 
 void ImageStore::refreshList(debug_task_store &store)
 {
-	qDebug("settask");
 	m_taskStore = &store;
-
 	ui->imagelist->clear();
-	for(std::vector<std::pair<cv::Mat, std::string> >::iterator it = store.simpleMatrices.begin(); it != store.simpleMatrices.end(); ++it)
-	{
-		ui->imagelist->addItem(it->second.c_str());
-	}
+	for(const auto& it : store.simpleMatrices)
+		ui->imagelist->addItem(it.second.c_str());
 }
 
 void ImageStore::on_pbClone_clicked()

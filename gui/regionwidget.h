@@ -66,8 +66,6 @@ private slots:
 private:
 	std::shared_ptr<region_container> m_base, m_match;
 	int m_index;
-	int m_baseDispMin;
-	int m_matchDispMin;
 	initial_disparity_config *m_config;
 	Ui::RegionWidget *ui;
 };

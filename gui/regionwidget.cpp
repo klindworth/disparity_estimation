@@ -67,11 +67,10 @@ void RegionWidget::warpTree(int index, disparity_region& baseRegion, std::vector
 	double disp_lr_norm = 0.0f;
 	double disp_non_lr_average = 0.0f;
 	std::vector<std::pair<double,double>> non_lr_regions;
-	//for(auto it = baseRegion.other_labels.begin(); it != baseRegion.other_labels.end(); ++it)
-	for(corresponding_region& cregion : baseRegion.corresponding_regions[currentDisparity-dispMin])
+	for(const corresponding_region& cregion : baseRegion.corresponding_regions[currentDisparity-dispMin])
 	{
 		disparity_region& matchRegion = other_regions[cregion.index];
-		double mutual_percent = cregion.percent;//(double)it->second / baseRegion.other_labels.total();
+		double mutual_percent = cregion.percent;
 		disp_average += mutual_percent * matchRegion.disparity;
 		if(std::abs(matchRegion.disparity + currentDisparity) < 4)
 			disp_lr_norm += mutual_percent;
@@ -86,11 +85,11 @@ void RegionWidget::warpTree(int index, disparity_region& baseRegion, std::vector
 		matchItem << QString::number(matchRegion.disparity);
 		matchItem << QString::number(matchRegion.m_size);
 		matchItem << QString::number(mutual_percent*100, 'f', 2) + "%";
-		matchItem << QString::number(matchRegion.get_corresponding_region(index, -currentDisparity-m_matchDispMin).percent*100, 'f', 2) + "%";
+		matchItem << QString::number(matchRegion.get_corresponding_region(index, -currentDisparity- m_match->task.dispMin).percent*100, 'f', 2) + "%";
 		//matchItem << QString::number(matchRegion.stats.stddev/baseRegion.stats.stddev);
 		matchItem << "-";
 		if(matchRegion.optimization_energy.data)
-			matchItem << QString::number(matchRegion.optimization_energy(-currentDisparity-m_matchDispMin));
+			matchItem << QString::number(matchRegion.optimization_energy(-currentDisparity-m_match->task.dispMin));
 		matchItem << "noop";
 
 		tree->addTopLevelItem(new QTreeWidgetItem(matchItem));
@@ -130,7 +129,7 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 		short currentDisp = i + dispMin;
 
 		float avg_disp = corresponding_regions_average(other_regions, *it, [](const disparity_region& cregion){return (float)cregion.disparity;});
-		float e_other = baseRegion.optimization_energy.data ? corresponding_regions_average(other_regions, *it, [&](const disparity_region& cregion){return cregion.optimization_energy(-currentDisp-m_matchDispMin);}) : 0;
+		float e_other = baseRegion.optimization_energy.data ? corresponding_regions_average(other_regions, *it, [&](const disparity_region& cregion){return cregion.optimization_energy(-currentDisp-m_match->task.dispMin);}) : 0;
 
 		//ratings
 		//float stddev_dev = baseRegion.stats.stddev-stddev;
@@ -165,35 +164,16 @@ void RegionWidget::neighborTree(std::vector<disparity_region>& regionsBase, int 
 {
 	ui->treeNeighbors->clear();
 	QStringList headers2;
-	headers2 << "Nr" << "Borderlength" << "Disparity" << "color_diff" << "entropy_diff" << "Acc(base)" << "Acc(match)" << "Acc(base)2" << "Acc(match)2";;
+	headers2 << "Nr" << "Borderlength" << "Disparity" << "color_diff";
 	ui->treeNeighbors->setHeaderLabels(headers2);
-	/*cv::Mat& base_costs = regionsBase[index].disparity_costs;
-	int base_disparity_idx = regionsBase[index].disparity-dispMin;
-	stat_t* base_stat = &(regionsBase[index].stats);*/
-	for(const std::pair<std::size_t, std::size_t>& cpair : regionsBase[index].neighbors)
+	for(const auto& cpair : regionsBase[index].neighbors)
 	{
 		int cidx = cpair.first;
-		/*cv::Mat& match_costs = regionsBase[cidx].disparity_costs;
-		int match_disparity_idx = regionsBase[cidx].disparity-dispMin;
-		stat_t* match_stat = &(regionsBase[cidx].stats);*/
-
-		/*float accost_base_diff = base_costs.at<float>(match_disparity_idx)-base_costs.at<float>(base_disparity_idx);
-		float accost_match_diff = match_costs.at<float>(base_disparity_idx)-match_costs.at<float>(match_disparity_idx);
-
-		float range_base = base_stat->max - base_stat->min;
-		float range_match = match_stat->max - match_stat->min;*/
-
 		QStringList item;
 		item << QString::number(cidx);
 		item << QString::number(cpair.second);
 		item << QString::number(regionsBase[cidx].disparity);
 		item << QString::number(cv::norm(regionsBase[index].average_color - regionsBase[cidx].average_color));
-		//item << QString::number(std::abs(regionsBase[cidx].entropy - regionsBase[index].entropy));
-		//item << QString::number(m_regionsLeft[cidx]);
-		//item << QString::number(accost_base_diff/range_base*100, 'f', 2) + "%";
-		//item << QString::number(accost_match_diff/range_match*100, 'f', 2) + "%";
-		//item << QString::number(accost_base_diff/base_costs.at<float>(base_disparity_idx)*100, 'f', 2) + "%";
-		//item << QString::number(accost_match_diff/match_costs.at<float>(match_disparity_idx)*100, 'f', 2) + "%";
 
 		ui->treeNeighbors->addTopLevelItem(new QTreeWidgetItem(item));
 	}
@@ -213,8 +193,6 @@ void RegionWidget::setData(std::shared_ptr<region_container>& base, std::shared_
 	m_index = index;
 
 	int dispMin = m_base->task.dispMin;
-	m_baseDispMin = m_base->task.dispMin;
-	m_matchDispMin = m_match->task.dispMin;
 
 	std::vector<disparity_region>& regionsBase = m_base->regions;
 	std::vector<disparity_region>& regionsMatch = m_match->regions;
@@ -234,7 +212,6 @@ void RegionWidget::setData(std::shared_ptr<region_container>& base, std::shared_
 
 	ui->lblIndex->setText("Index: " + QString::number(index));
 	ui->lblDisparity->setText("Disparity: " + QString::number(regionsBase[index].disparity));
-	//ui->lblEntropy->setText("Entropy: " + QString::number(regionsBase[index].entropy));
 	ui->lblPixelcount->setText("Pixelcount: " + QString::number(regionsBase[index].m_size));
 
 
@@ -268,7 +245,7 @@ RegionWidget::~RegionWidget()
 
 void RegionWidget::on_twMutualDisparity_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
 {
-	warpTree(m_index, m_base->regions[m_index], m_match->regions, ui->treeConnected, m_baseDispMin, item->text(0).toInt());
+	warpTree(m_index, m_base->regions[m_index], m_match->regions, ui->treeConnected, m_base->task.dispMin, item->text(0).toInt());
 }
 
 void RegionWidget::on_treeConnected_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)

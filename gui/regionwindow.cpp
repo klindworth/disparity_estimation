@@ -198,19 +198,6 @@ void RegionWindow::refreshImages(std::vector<disparity_region> markLeft, bool ma
 	ui->warpedRight->setCVMat(colorWarpedRight);
 }
 
-/*void RegionViewer::showAboutToChangeRegions()
-{
-	std::vector<SegRegion> regions;
-
-	for(SegRegion& cregion : m_left)
-	{
-		for(int i = 0; i < cregion.optimization_energy.total(); ++i)
-		{
-			float e_base = cregion.optimization_energy(i);
-			float e_other =
-	}
-}*/
-
 void RegionWindow::selectLeftRegion(int index)
 {
 	std::vector<disparity_region> regions{m_left->regions[index]};
