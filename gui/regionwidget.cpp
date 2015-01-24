@@ -41,6 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/highgui/highgui.hpp>
 
 #include "manual_region_optimizer.h"
+#include "ml_region_optimizer.h"
 
 RegionWidget::RegionWidget(QWidget *parent) :
 	QWidget(parent),
@@ -160,6 +161,49 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 	}
 }
 
+void RegionWidget::optimizationViewer(disparity_region& baseRegion, region_container& base, region_container& match, QTreeWidget *tree, int dispMin)
+{
+	std::vector<disparity_region>& other_regions = match.regions;
+
+	tree->clear();
+	QStringList header;
+	header << "Disp";
+	for(int i = 0; i < ml_region_optimizer::vector_size_per_disp; ++i)
+		header << QString::number(i);
+	tree->setColumnCount(header.size());
+	tree->setHeaderLabels(header);
+
+	int pot_trunc = 15;
+
+	ml_feature_calculator dhv(base, match);
+	int dispMax = dispMin + baseRegion.corresponding_regions.size()-1;
+	disparity_range range(dispMin, dispMax);
+	//dhv.update(pot_trunc, baseRegion, range);
+	//void operator()(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector);
+	//void update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange);
+	std::vector<float> optimization_vector(ml_region_optimizer::vector_size_per_disp * range.size() + ml_region_optimizer::vector_size);
+
+	dhv.operator ()(baseRegion, pot_trunc, range, optimization_vector);
+	stat_t cstat;
+	generate_stats(baseRegion, cstat);
+
+	int i = 0;
+	for(auto it = baseRegion.corresponding_regions.begin(); it != baseRegion.corresponding_regions.end(); ++it)
+	{
+		QStringList item;
+		item << QString::number(i+dispMin);
+
+		for(int j = 0; j < ml_region_optimizer::vector_size_per_disp; ++j)
+		{
+			int idx = i*ml_region_optimizer::vector_size_per_disp+j;
+			item << QString::number(optimization_vector[idx]);
+		}
+
+		tree->addTopLevelItem(new QTreeWidgetItem(item));
+		i++;
+	}
+}
+
 void RegionWidget::neighborTree(std::vector<disparity_region>& regionsBase, int index, int /*dispMin*/)
 {
 	ui->treeNeighbors->clear();
@@ -217,6 +261,7 @@ void RegionWidget::setData(std::shared_ptr<region_container>& base, std::shared_
 
 	warpTree(index, regionsBase[index], regionsMatch, ui->treeConnected, dispMin, regionsBase[index].disparity);
 	mutualDisparity(regionsBase[index], *m_base, *m_match, ui->twMutualDisparity, dispMin);
+	optimizationViewer(regionsBase[index], *m_base, *m_match, ui->twOpt, dispMin);
 	neighborTree(regionsBase, index, dispMin);
 
 	//fill occlusion tree
@@ -234,6 +279,7 @@ void RegionWidget::setData(std::shared_ptr<region_container>& base, std::shared_
 	optimizeWidth(ui->treeConnected);
 	optimizeWidth(ui->twOcc);
 	optimizeWidth(ui->twMutualDisparity);
+	optimizeWidth(ui->twOpt);
 
 	showResultHistory(regionsBase[index]);
 }

@@ -47,6 +47,7 @@ public:
 	void showResultHistory(disparity_region& region);
 	void warpTree(int index, disparity_region& baseRegion, std::vector<disparity_region>& other_regions , QTreeWidget *tree, int dispMin, int currentDisparity);
 	void mutualDisparity(disparity_region& baseRegion, region_container &base, region_container& match, QTreeWidget *tree, int dispMin);
+	void optimizationViewer(disparity_region& baseRegion, region_container &base, region_container& match, QTreeWidget *tree, int dispMin);
 	void neighborTree(std::vector<disparity_region>& regionsBase, int index, int dispMin);
 	void setData(std::shared_ptr<region_container>& base, std::shared_ptr<region_container>& match, int index, initial_disparity_config *config, bool delta);
 	void setInverted(bool inverted);
