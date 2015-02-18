@@ -154,7 +154,7 @@ inline float gather_neighbor_color_weights_from_cache(std::vector<float>& weight
 	float sum_weight = 0.0f;
 	for(std::size_t i = 0; i < nsize; ++i)
 	{
-		float diff = color_trunc - std::min(cv::norm(base_color - color_cache[neighbors[i].first]), color_trunc);
+		float diff = color_trunc - std::min(cv::norm(base_color - color_cache[neighbors[i].first]), color_trunc) + 0.001f;
 
 		weights[i] = diff;
 		sum_weight += diff;

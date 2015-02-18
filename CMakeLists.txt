@@ -103,7 +103,7 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-    Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} cvwidgets cvsegmentation_lib openblas
+    Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} cvio cvsegmentation_lib openblas
 )
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++11 -O0 -fsanitize=address -fsanitize=undefined")
@@ -150,5 +150,5 @@ set_target_properties(${PROJECT_NAME}_loganalyzer PROPERTIES AUTOMOC TRUE)
 #set_target_properties(${PROJECT_NAME}_loganalyzer PROPERTIES AUTOUIC TRUE)
 
 target_link_libraries(${PROJECT_NAME}_loganalyzer
-    Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} cvwidgets cvsegmentation_lib
+    Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} cvio cvsegmentation_lib
 )

@@ -56,8 +56,8 @@ public:
 
 	void training() override;
 
-	const static int vector_size_per_disp = 11;
-	const static int vector_size = 8;
+	const static int vector_size_per_disp = 11 +8+2;
+	const static int vector_size = 0;//8;
 	const static int normalizer_size = vector_size+vector_size_per_disp;
 
 private:

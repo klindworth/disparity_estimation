@@ -285,7 +285,7 @@ void RegionWindow::on_pbOptimize_clicked()
 
 	double pot_factor = ui->spDispFinal->value();
 
-	auto prop_eval = [=](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity, const stat_t& cstat) {
+	auto prop_eval = [=](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity, const stat_t& cstat, const std::vector<stat_t>&) {
 		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.dispMin];
 		float disp_pot = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
 		//float stddev = getOtherRegionsAverage(match.regions, other_regions, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
@@ -316,6 +316,10 @@ void RegionWindow::on_pbOptimize_clicked()
 
 	std::vector<unsigned char> left_damping_history(m_left->regions.size(), 0);
 	std::vector<unsigned char> right_damping_history(m_right->regions.size(), 0);
+
+	/*std::vector<stat_t> other_stat(match.regions.size());
+	for(std::size_t i = 0; i < match.regions.size(); ++i)
+		generate_stats(match.regions[i], other_stat[i]);*/
 
 	std::cout << "optimization" << std::endl;
 	optimizer->optimize(left_damping_history, *m_left, *m_right, wv, prop_eval, 0);

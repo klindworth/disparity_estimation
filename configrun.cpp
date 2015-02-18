@@ -38,6 +38,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "refinement.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <functional>
+#include <cvio/hdf5wrapper.h>
+#include <cvio-b/hdf5internals.h>
 
 std::string dateString()
 {
@@ -82,6 +84,10 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 
 		mat_to_file(disparity.first, filename + "-left.cvmat");
 		mat_to_file(disparity.second, filename + "-right.cvmat");
+
+		cvio::hdf5file hfile(filename + ".hdf5");
+		hfile.save(disparity.first, "/results/left_disparity", false);
+		hfile.save(disparity.second, "/results/right_disparity", false);
 
 		cv::imwrite(filename + "-left.png",  disp_left);
 		cv::imwrite(filename + "-right.png", disp_right);

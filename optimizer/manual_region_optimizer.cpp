@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparity_utils.h"
 #include "costmap_utils.h"
 
-void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, region_container& base, region_container& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const disparity_region&, const region_container&, const region_container&, int, const stat_t&)> prop_eval, int delta)
+void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, region_container& base, region_container& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const disparity_region&, const region_container&, const region_container&, int, const stat_t&, const std::vector<stat_t>&)> prop_eval, int delta)
 {
 	//std::cout << "base" << std::endl;
 	refreshOptimizationBaseValues(base, match, base_eval, delta);
@@ -48,6 +48,10 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 	std::vector<std::vector<float>> temp_results(omp_get_max_threads(), std::vector<float>(base.task.range_size()));
 	std::vector<stat_t> cstat(omp_get_max_threads());
 
+	std::vector<stat_t> other_stat(match.regions.size());
+	for(std::size_t i = 0; i < match.regions.size(); ++i)
+		generate_stats(match.regions[i], other_stat[i]);
+
 	const std::size_t regions_count = base.regions.size();
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
@@ -57,10 +61,11 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 		disparity_region& baseRegion = base.regions[j];
 		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
 
+		generate_stats(baseRegion, cstat[thread_idx]);
 		for(short d = drange.start(); d <= drange.end(); ++d)
 		{
 			if(!baseRegion.corresponding_regions[d-dispMin].empty())
-				temp_results[thread_idx][d-dispMin] = prop_eval(baseRegion, base, match, d, cstat[thread_idx]);
+				temp_results[thread_idx][d-dispMin] = prop_eval(baseRegion, base, match, d, cstat[thread_idx], other_stat);
 		}
 
 		short ndisparity = min_idx(temp_results[thread_idx], baseRegion.disparity - dispMin) + dispMin;

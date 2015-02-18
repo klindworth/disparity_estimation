@@ -116,6 +116,10 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 
 	int pot_trunc = 15;
 
+	std::vector<stat_t> other_stat(match.regions.size());
+	for(std::size_t i = 0; i < match.regions.size(); ++i)
+		generate_stats(match.regions[i], other_stat[i]);
+
 	manual_optimizer_feature_calculator dhv(base, match);
 	int dispMax = dispMin + baseRegion.corresponding_regions.size()-1;
 	disparity_range range(dispMin, dispMax);
@@ -139,7 +143,7 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 		//float e_base = m_config->base_eval(hyp, current);
 		float e_base = baseRegion.optimization_energy.data ? baseRegion.optimization_energy(i) : 0;
 		//float rating = (disp_pot/5.0f -2.0f) * baseRegion.stats.stddev/stddev + e_base;
-		float rating = baseRegion.optimization_energy.data ? m_config->optimizer.prop_eval(baseRegion, base, match, currentDisp, cstat) : 0;
+		float rating = baseRegion.optimization_energy.data ? m_config->optimizer.prop_eval(baseRegion, base, match, currentDisp, cstat, other_stat) : 0;
 		//output
 		QStringList item;
 		item << QString::number(i+dispMin);

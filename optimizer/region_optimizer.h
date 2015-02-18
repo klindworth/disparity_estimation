@@ -28,6 +28,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "disparity_range.h"
 
+#include "costmap_utils.h"
+
 #include <vector>
 #include <functional>
 #include <memory>
@@ -109,6 +111,7 @@ protected:
 	std::vector<short> neighbor_disparities;
 	std::vector<float> neighbor_color_weights;
 	std::vector<std::pair<int, float> > cost_temp;
+	stat_t stats;
 
 	//end results
 	std::vector<float> occ_avg_values, neighbor_pot_values, neighbor_color_pot_values, lr_pot_values, cost_values, rel_cost_values, warp_costs_values;
@@ -131,7 +134,7 @@ public:
 	bool enable_damping;
 	std::string optimizer_type;
 
-	std::function<float(const disparity_region&, const region_container&, const region_container&, int, const stat_t&)> prop_eval, prop_eval2;
+	std::function<float(const disparity_region&, const region_container&, const region_container&, int, const stat_t&, const std::vector<stat_t>&)> prop_eval, prop_eval2;
 	disparity_hypothesis_weight_vector base_eval, base_eval2;
 };
 

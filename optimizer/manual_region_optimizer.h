@@ -57,7 +57,7 @@ class manual_region_optimizer : public region_optimizer
 {
 public:
 	void run(region_container& left, region_container& right, const optimizer_settings& config, int refinement= 0) override;
-	void optimize(std::vector<unsigned char>& damping_history, region_container& base, region_container& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const disparity_region&, const region_container&, const region_container&, int, const stat_t&)> prop_eval, int delta);
+	void optimize(std::vector<unsigned char>& damping_history, region_container& base, region_container& match, const disparity_hypothesis_weight_vector& stat_eval, std::function<float(const disparity_region&, const region_container&, const region_container&, int, const stat_t&, const std::vector<stat_t>&)> prop_eval, int delta);
 	void reset(const region_container& left, const region_container& right) override;
 
 	void training() override;

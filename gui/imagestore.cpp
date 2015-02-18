@@ -46,7 +46,7 @@ ImageStore::~ImageStore()
 void ImageStore::showMat(int idx)
 {
 	if(idx >= 0)
-		ui->imgviewer->setCVMat(m_taskStore->simpleMatrices.at(idx).first);
+		ui->imgviewer->setCVMat(m_taskStore->simpleMatrices.at(idx).first, true);
 }
 
 void ImageStore::showTask(int idx)

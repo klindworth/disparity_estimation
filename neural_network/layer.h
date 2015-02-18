@@ -539,8 +539,9 @@ public:
 
 		for(int i = 0; i < this->out_dim; ++i)
 		{
-			const T exp2 = std::exp(2*std::min(static_cast<T>(300),bottom_data[i]));
-			cdata.output_data[i] = (exp2 - 1)/(exp2 + 1);
+			//const T exp2 = std::exp(2*std::min(static_cast<T>(300),bottom_data[i]));
+			//cdata.output_data[i] = (exp2 - 1)/(exp2 + 1);
+			cdata.output_data[i] = std::tanh(bottom_data[i]);
 		}
 	}
 

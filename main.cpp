@@ -117,23 +117,25 @@ int main(int argc, char *argv[])
 
 	QApplication app(argc, argv);
 
-	auto prop_eval = [](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity, const stat_t& cstat) {
+	auto prop_eval = [](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity, const stat_t& cstat, const std::vector<stat_t>& other_stats) {
 		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.dispMin];
 		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
 		float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
-		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cstat.confidence2;}), std::numeric_limits<float>::min());
+		//float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cstat.confidence2;}), std::numeric_limits<float>::min());
+		float confidence = std::max(corresponding_regions_average_by_index(other_regions, [&](std::size_t idx){ return other_stats[idx].confidence2;}), std::numeric_limits<float>::min());
 
 		return (cstat.confidence2 *e_base+confidence*e_other) / (confidence + cstat.confidence2);
 	};
 
-	auto prop_eval2 = [](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity, const stat_t& cstat) {
+	auto prop_eval2 = [](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity, const stat_t& cstat, const std::vector<stat_t>& other_stats) {
 		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.dispMin];
 		float disp_pot = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
 
 		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
 		float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
 
-		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cstat.confidence2;}), std::numeric_limits<float>::min());
+		//float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cstat.confidence2;}), std::numeric_limits<float>::min());
+		float confidence = std::max(corresponding_regions_average_by_index(other_regions, [&](std::size_t idx){ return other_stats[idx].confidence2;}), std::numeric_limits<float>::min());
 
 		return (cstat.confidence2 *e_base+confidence*e_other) / (confidence + cstat.confidence2) + disp_pot/2.5f;
 	};
@@ -141,12 +143,14 @@ int main(int argc, char *argv[])
 	//RGB tasks
 	//StereoTask testset("tasks/im2rgb");
 	//folder_testset testset("tasks/kitti-training_small");
+	//folder_testset testset("tasks/kitti-training1");
+	//folder_testset testset("tasks/kitti-training1-valid");
 	//folder_testset testset("tasks/kitti-training_small-valid");
-	folder_testset testset("tasks/kitti-training_debug");
+	//folder_testset testset("tasks/kitti-training_debug");
 	//StereoTask testset("tasks/kit3"); //5, 3 neuer problemfall?
 
 	//simulated (hard) tasks
-	//stereo_task testset("tasks/2im2");
+	stereo_task testset("tasks/2im2");
 
 	//vl/ir
 	//StereoTask testset("tasks/ir-vl");
@@ -165,11 +169,11 @@ int main(int argc, char *argv[])
 	//std::string configfile = "tasks/config-irvl.yml";
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";
 	//std::string configfile = "tasks/config-big-msslic.yml";
-	//std::string configfile = "tasks/config-small-msslic-refine.yml";
+	std::string configfile = "tasks/config-small-msslic-refine.yml";
 	//std::string configfile = "tasks/config-debug.yml";
 	//std::string configfile = "tasks/config-rgbl-msslic.yml";
 	//std::string configfile = "tasks/config-kit-refine2.yml";
-	std::string configfile = "tasks/config-kit3.yml";
+	//std::string configfile = "tasks/config-kit2.yml";
 	//std::string configfile = "tasks/config-kit-it.yml";
 	//std::string configfile = "tasks/config-rgb-slic.yml";
 	//std::string configfile = "tasks/config-small-woopt.yml";
@@ -215,7 +219,7 @@ int main(int argc, char *argv[])
 		optimizer = std::make_shared<ml_region_optimizer>();
 	initial_disparity_algo algo(config, refconfig, optimizer);
 
-	bool training = false;
+	/*bool training = true;
 	if(training)
 	{
 		algo.train(testset.tasks);
@@ -224,9 +228,9 @@ int main(int argc, char *argv[])
 	{
 		for(stereo_task& ctask : testset.tasks)
 			algo(ctask);
-	}
+	}*/
 
-	//algo(testset);
+	algo(testset);
 
 	ImageStore imviewer;
 	imviewer.refreshList(matstore);

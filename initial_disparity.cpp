@@ -193,14 +193,14 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 
 	std::cout << "fin" << std::endl;
 
-	if(config.verbose)
+	/*if(config.verbose)
 	{
 		cv::Mat initial_disp_left  = disparity_by_segments(left);
 		cv::Mat initial_disp_right = disparity_by_segments(right);
 
 		matstore.add_mat(disparity::create_image(initial_disp_left), "init_left");
 		matstore.add_mat(disparity::create_image(initial_disp_right), "right_left");
-	}
+	}*/
 
 	generate_region_information(left, right);
 
@@ -228,7 +228,7 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 
 		cv::Mat warped = disparity::warp_disparity<short>(opt_disp_left);
 		cv::Mat occ_mat = disparity::occlusion_map<short>(opt_disp_left, warped);
-		matstore.add_mat(value_scaled_image<unsigned char, unsigned char>(occ_mat), "occ");
+		//matstore.add_mat(value_scaled_image<unsigned char, unsigned char>(occ_mat), "occ");
 	}
 }
 

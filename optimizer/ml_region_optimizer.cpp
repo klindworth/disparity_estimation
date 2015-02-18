@@ -38,7 +38,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/lexical_cast.hpp>
 #include <neural_network/network.h>
 #include <neural_network/data_normalizer.h>
-
+#include "costmap_utils.h"
 #include "debugmatstore.h"
 
 using namespace neural_network;
@@ -567,7 +567,7 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 		*result_ptr++ = top_neighbor_disp - hyp_disp;
 		*result_ptr++ = bottom_neighbor_disp - hyp_disp;
 		*result_ptr++ = warp_costs_values[i];
-	}
+	//}
 	//*result_ptr = baseRegion.disparity;
 	*result_ptr++ = *std::min_element(cost_values.begin(), cost_values.end());
 	*result_ptr++ = left_color_dev;
@@ -577,6 +577,10 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 	*result_ptr++ = *std::min_element(warp_costs_values.begin(), warp_costs_values.end());
 	*result_ptr++ = *std::min_element(lr_pot_values.begin(), lr_pot_values.end());
 	*result_ptr++ = *std::min_element(neighbor_color_pot_values.begin(), neighbor_color_pot_values.end());
+
+	*result_ptr++ = stats.mean;
+	*result_ptr++ = stats.stddev;
+}
 }
 
 float create_min_version(std::vector<float>::iterator start, std::vector<float>::iterator end, std::vector<float>::iterator ins)
@@ -601,6 +605,7 @@ void ml_feature_calculator::operator()(const disparity_region& baseRegion, short
 	update_occ_avg(baseRegion, pot_trunc, drange);
 	update_average_neighbor_values(baseRegion, pot_trunc, drange);
 	update_lr_pot(baseRegion, pot_trunc, drange);
+	generate_stats(baseRegion, stats);
 
 	for(int i = 0; i < range; ++i)
 		cost_values[i] = baseRegion.disparity_costs((drange.start()+i)-baseRegion.disparity_offset);
