@@ -73,6 +73,17 @@ float corresponding_regions_average_by_index(const std::vector<corresponding_reg
 	return result;
 }
 
+template<typename T>
+float corresponding_regions_average_by_vector(const std::vector<corresponding_region>& cdisp, const std::vector<T>& vec)
+{
+	float result = 0.0f;
+	for(const corresponding_region& cval : cdisp)
+	{
+		result += cval.percent * vec[cval.index];
+	}
+	return result;
+}
+
 template<typename lambda_type>
 void foreach_corresponding_region(const std::vector<corresponding_region>& cdisp, lambda_type func)
 {

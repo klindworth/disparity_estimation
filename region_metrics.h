@@ -44,19 +44,21 @@ public:
 template<typename T, int bins, typename counter, typename joint_counter, typename entropy_type>
 std::tuple<T, T, T> entropies_calculator(joint_counter& counter_joint, counter& counter_array, const entropy_type& entropy_table, const cv::Mat& base_region, const cv::Mat& match_region)
 {
+	using entropy_style = costmap_creators::entropy::soft<T>;
 	using namespace costmap_creators::entropy;
-	calculate_joint_soft_histogramm(counter_joint, base_region.data, match_region.data, base_region.total());
+
+	entropy_style::calculate_joint_histogramm(counter_joint, base_region.data, match_region.data, base_region.total());
 	T joint_entropy;
 	if(base_region.total()*6 > bins*bins)
-		joint_entropy = calculate_joint_entropy_unnormalized<T>(counter_joint, entropy_table, bins);
+		joint_entropy = entropy_style::calculate_joint_entropy(counter_joint, entropy_table, bins);
 	else
-		joint_entropy = calculate_joint_entropy_unnormalized_sparse<T>(counter_joint, entropy_table, bins, base_region.total(), base_region.data, match_region.data);
+		joint_entropy = entropy_style::calculate_joint_entropy_sparse(counter_joint, entropy_table, bins, base_region.total(), base_region.data, match_region.data);
 
-	calculate_soft_histogramm(counter_array, base_region.data, base_region.total());
-	T base_entropy = calculate_entropy_unnormalized<T>(counter_array, entropy_table, bins);
+	entropy_style::calculate_histogramm(counter_array, base_region.data, base_region.total());
+	T base_entropy = entropy_style::calculate_entropy(counter_array, entropy_table, bins);
 
-	calculate_soft_histogramm(counter_array, match_region.data, match_region.total());
-	T match_entropy = calculate_entropy_unnormalized<T>(counter_array, entropy_table, bins);
+	entropy_style::calculate_histogramm(counter_array, match_region.data, match_region.total());
+	T match_entropy = entropy_style::calculate_entropy(counter_array, entropy_table, bins);
 
 	return std::make_tuple(joint_entropy, base_entropy, match_entropy);
 }
@@ -73,9 +75,11 @@ public:
 	cost_calc calculator;
 	cv::Mat m_base, m_match;
 
+	using entropy_style = costmap_creators::entropy::soft<float>;
+
 	region_info_disparity(const cv::Mat& base, const cv::Mat& match, int size) : m_base(base), m_match(match)
 	{
-		costmap_creators::entropy::fill_entropytable_unnormalized(entropy_table, size*9);
+		entropy_style::fill_entropytable(entropy_table, size*9);
 	}
 
 	static float normalization_value()
