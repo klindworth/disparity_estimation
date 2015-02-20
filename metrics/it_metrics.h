@@ -54,8 +54,8 @@ public:
 	std::string metric;
 };
 
-template<int quantizer>
-costmap_creators::entropy::entropies calculate_entropies(const single_stereo_task& task, bool soft, unsigned int windowsize)
+template<int quantizer, bool soft>
+costmap_creators::entropy::entropies calculate_entropies(const single_stereo_task& task, unsigned int windowsize)
 {
 	using namespace costmap_creators;
 
@@ -63,18 +63,9 @@ costmap_creators::entropy::entropies calculate_entropies(const single_stereo_tas
 	cv::Mat_<unsigned char> base  = quantize_image(task.baseGray, quantizer);
 	cv::Mat_<unsigned char> match = quantize_image(task.matchGray, quantizer);
 
-	if(!soft)
-	{
-		result.XY = sliding_window::joint_fixed_size<entropy::joint_fixed_windowsize<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
-		result.X  = slidingWindow<entropy::single_fixed_windowsize<quantizer> >(base,  windowsize);
-		result.Y  = slidingWindow<entropy::single_fixed_windowsize<quantizer> >(match, windowsize);
-	}
-	else
-	{
-		result.XY = sliding_window::joint_fixed_size<entropy::joint_fixed_windowsize_soft<quantizer> >(base, match, task.dispMin, task.dispMax, windowsize);
-		result.X  = slidingWindow<entropy::single_fixed_windowsize_soft<quantizer> >(base,  windowsize);
-		result.Y  = slidingWindow<entropy::single_fixed_windowsize_soft<quantizer> >(match, windowsize);
-	}
+	result.XY = sliding_window::joint_fixed_size<entropy::joint_fixed_windowsize<quantizer, soft> >(base, match, task.dispMin, task.dispMax, windowsize);
+	result.X  = slidingWindow<entropy::single_fixed_windowsize<quantizer, soft> >(base,  windowsize);
+	result.Y  = slidingWindow<entropy::single_fixed_windowsize<quantizer, soft> >(match, windowsize);
 
 	return result;
 }

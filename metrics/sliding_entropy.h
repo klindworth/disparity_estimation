@@ -39,7 +39,7 @@ namespace costmap_creators
 namespace entropy
 {
 
-template<int quantizer>
+template<int quantizer, bool soft>
 class single_fixed_windowsize
 {
 private:
@@ -47,42 +47,15 @@ private:
 	cv::Mat_<float> entropy_table;
 	unsigned int windowsize;
 
-	using entropy_style = classic<float>;
+	using entropy_style = get_entropy_style<float>::type;
 public:
 	typedef fast_array<unsigned short, bins> thread_type;
 
 	single_fixed_windowsize(unsigned int pwindowsize) : windowsize(pwindowsize) {
-		entropy_style::fill_entropytable(entropy_table, windowsize*windowsize);
+		entropy_style::fill_entropytable(entropy_table, windowsize*windowsize*entropy_style::counter_factor());
 	}
 
 	inline float increm(thread_type& thread, cv::Mat& window)
-	{
-		cv::Mat serWindow = window.clone();
-		//creating histogramm
-		entropy_style::calculate_histogramm(thread, serWindow.data, windowsize*windowsize);
-
-		//compute probability and log-proability
-		return entropy_style::calculate_entropy(thread, entropy_table, bins);
-	}
-};
-
-template<int quantizer>
-class single_fixed_windowsize_soft
-{
-private:
-	using entropy_style = soft<float>;
-	static const int bins = 256/quantizer + entropy_style::additional_bins();
-	cv::Mat_<float> entropy_table;
-	const unsigned int windowsize;
-
-public:
-	typedef fast_array<unsigned short, bins> thread_type;
-
-	single_fixed_windowsize_soft(unsigned int pwindowsize) : windowsize(pwindowsize) {
-		entropy_style::fill_entropytable(entropy_table, windowsize*windowsize*7);
-	}
-
-	inline float increm(thread_type& thread, const cv::Mat& window)
 	{
 		cv::Mat serWindow = window.clone();
 		//creating histogramm
@@ -102,58 +75,13 @@ public:
 	fast_array2d<unsigned short, bins, bins> counter_array;
 };
 
-template<int quantizer>
+template<int quantizer, bool soft>
 class joint_fixed_windowsize
 {
 public:
 	typedef float prob_table_type;
-	static const int bins = 256/quantizer;
-	typedef joint_fixed_windowsize_threaddata<bins> thread_type;
-	const unsigned int windowsize;
+	using entropy_style = typename get_entropy_style<prob_table_type, soft>::type;
 
-	using entropy_style = classic<float>;
-
-private:
-	cv::Mat_<prob_table_type> entropy_table;
-
-public:
-	joint_fixed_windowsize(const cv::Mat& /*match*/, int pwindowsize) : windowsize(pwindowsize)
-	{
-		fill_entropytable_normalized(entropy_table, windowsize*windowsize);
-	}
-
-	//prepares a row for calculation
-	inline void prepare_row(thread_type& thread, const cv::Mat& match, int y)
-	{
-		thread.m_match_table = serializeRow<unsigned char>(match, y, windowsize, false);
-	}
-
-	inline void prepare_window(thread_type& thread, const cv::Mat& base)
-	{
-		//copy the window for L1 Cache friendlieness
-		thread.m_base = base.clone();
-	}
-
-	//calculates the histogramms for mutual information
-	inline prob_table_type increm(thread_type& thread, int x)
-	{
-		//creating histogramm
-		entropy_style::calculate_joint_histogramm(thread.counter_array, thread.m_base[0], thread.m_match_table[x], windowsize*windowsize);
-
-		//compute entropy
-		if(windowsize*windowsize < bins*bins)
-			return entropy_style::calculate_joint_entropy_sparse(thread.counter_array, entropy_table, windowsize*windowsize, thread.m_base[0], thread.m_match_table[x]);
-		else
-			return entropy_style::calculate_entropy(thread.counter_array, entropy_table, bins*bins);
-	}
-};
-
-template<int quantizer>
-class joint_fixed_windowsize_soft
-{
-public:
-	using entropy_style = soft<float>;
-	typedef float prob_table_type;
 	static const int bins = 256/quantizer + entropy_style::additional_bins();
 	typedef joint_fixed_windowsize_threaddata<bins> thread_type;
 	const unsigned int windowsize;
@@ -162,9 +90,9 @@ private:
 	cv::Mat_<prob_table_type> entropy_table;
 
 public:
-	joint_fixed_windowsize_soft(const cv::Mat& /*match*/, unsigned int pwindowsize) : windowsize(pwindowsize)
+	joint_fixed_windowsize(const cv::Mat& /*match*/, int pwindowsize) : windowsize(pwindowsize)
 	{
-		entropy_style::fill_entropytable(entropy_table, windowsize*windowsize*9);
+		entropy_style::fill_entropytable(entropy_table, windowsize*windowsize*entropy_style::counter_factor());
 	}
 
 	//prepares a row for calculation
@@ -182,16 +110,14 @@ public:
 	//calculates the histogramms for mutual information
 	inline prob_table_type increm(thread_type& thread, int x)
 	{
-
 		//creating histogramm
 		entropy_style::calculate_joint_histogramm(thread.counter_array, thread.m_base[0], thread.m_match_table[x], windowsize*windowsize);
 
 		//compute entropy
-		//return calculate_joint_entropy_unnormalized<float>(thread.counter_array, entropy_table, bins);
-		if(windowsize*windowsize*6 <= bins*bins)
+		if(windowsize*windowsize*entropy_style::counter_factor() < bins*bins)
 			return entropy_style::calculate_joint_entropy_sparse(thread.counter_array, entropy_table, bins, windowsize*windowsize, thread.m_base[0], thread.m_match_table[x]);
 		else
-			return entropy_style::calculate_joint_entropy(thread.counter_array, entropy_table, bins);
+			return entropy_style::calculate_entropy(thread.counter_array, entropy_table, bins*bins);
 	}
 };
 
@@ -212,7 +138,7 @@ class flexible_windowsize
 {
 public:
 	typedef float prob_table_type;
-	using entropy_style = soft<float>;
+	using entropy_style = soft_entropy<float>;
 	static const int bins = 256/quantizer + entropy_style::additional_bins();
 	typedef flexible_windowsize_threaddata<bins> thread_type;
 
@@ -226,7 +152,7 @@ private:
 public:
 	flexible_windowsize(const cv::Mat& match, unsigned int max_windowsize) : m_match(match), windowsize(max_windowsize)
 	{
-		entropy_style::fill_entropytable(entropy_table, windowsize*windowsize*9);
+		entropy_style::fill_entropytable(entropy_table, windowsize*windowsize*entropy_style::counter_factor());
 	}
 
 	//prepares a row for calculation

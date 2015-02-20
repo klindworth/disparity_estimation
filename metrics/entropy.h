@@ -48,9 +48,10 @@ inline void joint_entropy_result_reset(result_type& result, unsigned int& normal
 }
 
 template<typename result_type>
-struct soft
+struct soft_entropy
 {
 	static constexpr int additional_bins() { return 2; }
+	static constexpr int counter_factor() { return 7; }
 
 	static inline result_type normalize(result_type result, result_type n)
 	{
@@ -164,9 +165,10 @@ template<typename result_type>
 struct classic
 {
 	static constexpr int additional_bins() { return 0; }
+	static constexpr int counter_factor() { return 1; }
 
 	template<typename counter_type, typename entropytable_type, typename data_type>
-	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, int len, const data_type* dataLeft, const data_type* dataRight)
+	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, int, int len, const data_type* dataLeft, const data_type* dataRight)
 	{
 		result_type result = 0.0f;
 		for(int i = 0; i < len; ++i)
@@ -220,47 +222,19 @@ struct classic
 	}
 };
 
+template<typename result_type, bool soft = true>
+struct get_entropy_style
+{
+	typedef soft_entropy<result_type> type;
+};
+
+template<typename result_type>
+struct get_entropy_style<result_type, false>
+{
+	typedef classic<result_type> type;
+};
+
 //TODO: check bins boundaries in non-soft case: likely to be broken
-
-
-inline void fill_entropytable_normalized(cv::Mat_<float>& entropy_table, int size)
-{
-	entropy_table = cv::Mat(size, 1, CV_32FC1);
-	float *entropy_table_ptr = entropy_table[0];
-	float n = 1.0f/size;
-
-	*entropy_table_ptr++ = 0.0f;
-	for(int i = 1; i < size; ++i)
-		*entropy_table_ptr++ = -i*n*std::log(i*n);
-}
-
-inline void fill_entropytable_unnormalized(cv::Mat_<float>& entropy_table, int size)
-{
-	assert(size > 0);
-	entropy_table = cv::Mat(size, 1, CV_32FC1);
-	/*float *entropy_table_ptr = entropy_table[0];
-
-	*entropy_table_ptr++ = 0.0f;
-	for(int i = 1; i < size; ++i)
-		*entropy_table_ptr++ = i*std::log(i);*/
-
-	entropy_table(0) = 0.0f;
-	#pragma omp parallel for
-	for(int i = 1; i < size; ++i)
-		entropy_table(i) = i*std::log(i);
-}
-
-inline void fill_entropytable_unnormalized(cv::Mat_<double>& entropy_table, int size)
-{
-	assert(size > 0);
-
-	entropy_table = cv::Mat(size, 1, CV_64FC1);
-	double *entropy_table_ptr = entropy_table[0];
-
-	*entropy_table_ptr++ = 0.0f;
-	for(int i = 1; i < size; ++i)
-		*entropy_table_ptr++ = i*std::log(i);
-}
 
 }
 

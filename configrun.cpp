@@ -215,7 +215,7 @@ std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(const single_stereo
 {
 	typedef std::pair<cv::Mat, cv::Mat> data_type;
 	long long start = cv::getCPUTickCount();
-	auto entropy = calculate_entropies<quantizer>(task, soft, windowsize);
+	costmap_creators::entropy::entropies entropy = soft ? calculate_entropies<quantizer, true>(task, windowsize) : calculate_entropies<quantizer, false>(task, windowsize);
 
 	start = cv::getCPUTickCount() - start;
 	std::cout << "entropy " << start << std::endl;

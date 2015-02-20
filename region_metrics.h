@@ -44,7 +44,7 @@ public:
 template<typename T, int bins, typename counter, typename joint_counter, typename entropy_type>
 std::tuple<T, T, T> entropies_calculator(joint_counter& counter_joint, counter& counter_array, const entropy_type& entropy_table, const cv::Mat& base_region, const cv::Mat& match_region)
 {
-	using entropy_style = costmap_creators::entropy::soft<T>;
+	using entropy_style = costmap_creators::entropy::soft_entropy<T>;
 	using namespace costmap_creators::entropy;
 
 	entropy_style::calculate_joint_histogramm(counter_joint, base_region.data, match_region.data, base_region.total());
@@ -75,7 +75,7 @@ public:
 	cost_calc calculator;
 	cv::Mat m_base, m_match;
 
-	using entropy_style = costmap_creators::entropy::soft<float>;
+	using entropy_style = costmap_creators::entropy::soft_entropy<float>;
 
 	region_info_disparity(const cv::Mat& base, const cv::Mat& match, int size) : m_base(base), m_match(match)
 	{
