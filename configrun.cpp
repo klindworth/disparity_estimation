@@ -44,6 +44,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "optimizer/ml_region_optimizer.h"
 #include "optimizer/manual_region_optimizer.h"
 
+#include "metrics/pixelwise/gradient_disparitywise.h"
+
 std::string dateString()
 {
 	time_t rawtime;
@@ -219,19 +221,19 @@ void logged_run(task_collection& testset, initial_disparity_config& config, refi
 template<int quantizer>
 std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(const single_stereo_task& task, bool soft, unsigned int windowsize)
 {
-	typedef std::pair<cv::Mat, cv::Mat> data_type;
+	typedef double calc_type;
 	long long start = cv::getCPUTickCount();
-	costmap_creators::entropy::entropies entropy = soft ? calculate_entropies<quantizer, true>(task, windowsize) : calculate_entropies<quantizer, false>(task, windowsize);
+	costmap_creators::entropy::entropies<calc_type> entropy = soft ? calculate_entropies<calc_type, quantizer, true>(task, windowsize) : calculate_entropies<calc_type, quantizer, false>(task, windowsize);
 
 	start = cv::getCPUTickCount() - start;
 	std::cout << "entropy " << start << std::endl;
 
 	auto data_single = std::make_pair(entropy.X, entropy.Y);
 
-	return std::vector<cv::Mat_<short>> {disparity::wta_disparity<entropy_agg<mutual_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										disparity::wta_disparity<entropy_agg<variation_of_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										disparity::wta_disparity<entropy_agg<normalized_variation_of_information_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										disparity::wta_disparity<entropy_agg<normalized_information_distance_calc<float>>, data_type>(entropy.XY, data_single, task.dispMin, task.dispMax)};
+	return std::vector<cv::Mat_<short>> {disparity::wta_disparity<entropy_agg<calc_type, mutual_information_calc>>(entropy.XY, data_single, task.dispMin, task.dispMax),
+										disparity::wta_disparity<entropy_agg<calc_type, variation_of_information_calc>>(entropy.XY, data_single, task.dispMin, task.dispMax),
+										disparity::wta_disparity<entropy_agg<calc_type, normalized_variation_of_information_calc>>(entropy.XY, data_single, task.dispMin, task.dispMax),
+										disparity::wta_disparity<entropy_agg<calc_type, normalized_information_distance_calc>>(entropy.XY, data_single, task.dispMin, task.dispMax)};
 }
 
 template<int quantizer>
@@ -241,7 +243,13 @@ void it_both_sides(std::vector<cv::Mat_<short>>& resultLeft, std::vector<cv::Mat
 	resultRight = AllInformationTheoreticDistance<quantizer>(task.backward, config.soft, config.windowsize);
 }
 
-void singleClassicRun(const stereo_task& task, const classic_search_config& config, const std::string& filename, std::vector<std::unique_ptr<cv::FileStorage>>& fs)
+/*std::pair<cv::Mat_<short>> gradient_both(const stereo_task& task, int windowsize)
+{
+	disparity::create_from_costmap(sliding_gradient(task.forward, windowsize), task.forward.range.start(), 1);
+	disparity::create_from_costmap(sliding_gradient(task.backward, windowsize), task.backward.range.start(), 1);
+}*/
+
+void singleClassicRun(const stereo_task& task, const classic_search_config& config, const std::string& filename, std::vector<std::unique_ptr<cv::FileStorage>>& fs, const std::vector<std::string>& names)
 {
 	std::vector<cv::Mat_<short> > resultLeft, resultRight;
 
@@ -261,11 +269,12 @@ void singleClassicRun(const stereo_task& task, const classic_search_config& conf
 	else
 		std::cerr << "invalid quantizer" << std::endl;
 
+	//resultLeft.push_back(disparity::create_from_costmap(sliding_gradient(task.forward, config.windowsize), task.forward.range.start(), 1));
+	//resultRight.push_back(disparity::create_from_costmap(sliding_gradient(task.backward, config.windowsize), task.backward.range.start(), 1));
+
 	std::time_t endtime;
 	std::time(&endtime);
 	int total_runtime = std::difftime(endtime, starttime);
-
-	std::vector<std::string> names {"_mi", "_vi", "_nvi", "_ndi"};
 
 	for(std::size_t i = 0; i < resultLeft.size(); ++i)
 	{
@@ -278,7 +287,7 @@ void singleClassicRun(const stereo_task& task, const classic_search_config& conf
 
 void classicLoggedRun(task_collection& taskset, classic_search_config& config)
 {
-	std::vector<std::string> names {"_mi", "_vi", "_nvi", "_ndi"};
+	std::vector<std::string> names {"_mi", "_vi", "_nvi", "_ndi"/*, "_grad"*/};
 
 	std::vector<std::unique_ptr<cv::FileStorage>> fs;
 	std::string filename = "results/" + dateString() + "_" + timestampString();
@@ -301,7 +310,7 @@ void classicLoggedRun(task_collection& taskset, classic_search_config& config)
 		matstore.start_new_task(ctask.name, ctask);
 		for(std::unique_ptr<cv::FileStorage>& cfs : fs)
 			*cfs << "{:";
-		singleClassicRun(ctask, config, filename, fs);
+		singleClassicRun(ctask, config, filename, fs, names);
 		for(std::unique_ptr<cv::FileStorage>& cfs : fs)
 			*cfs << "}";
 	}

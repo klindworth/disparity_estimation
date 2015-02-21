@@ -213,7 +213,9 @@ cv::Mat slidingWindow(const cv::Mat_<T>& image, unsigned int windowsize)
 	const int x_min = windowsize/2;
 	const int x_max = image.cols - windowsize/2;
 
-	cv::Mat_<float> result = cv::Mat(image.size(), CV_32FC1, cv::Scalar(0));
+	using prob_table_type = typename cost_class::result_type;
+
+	cv::Mat_<prob_table_type> result = cv::Mat_<prob_table_type>(image.size(), static_cast<prob_table_type>(0));
 	cost_class cost_agg(windowsize);
 	typename cost_class::thread_type thread_data;
 

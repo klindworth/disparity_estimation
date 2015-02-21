@@ -54,48 +54,49 @@ public:
 	std::string metric;
 };
 
-template<int quantizer, bool soft>
-costmap_creators::entropy::entropies calculate_entropies(const single_stereo_task& task, unsigned int windowsize)
+template<typename T, int quantizer, bool soft>
+costmap_creators::entropy::entropies<T> calculate_entropies(const single_stereo_task& task, unsigned int windowsize)
 {
 	using namespace costmap_creators;
 
-	entropy::entropies result;
+	entropy::entropies<T> result;
 	cv::Mat_<unsigned char> base  = quantize_image(task.baseGray, quantizer);
 	cv::Mat_<unsigned char> match = quantize_image(task.matchGray, quantizer);
 
-	result.XY = sliding_window::joint_fixed_size<entropy::joint_fixed_windowsize<quantizer, soft> >(base, match, task.dispMin, task.dispMax, windowsize);
-	result.X  = slidingWindow<entropy::single_fixed_windowsize<quantizer, soft> >(base,  windowsize);
-	result.Y  = slidingWindow<entropy::single_fixed_windowsize<quantizer, soft> >(match, windowsize);
+	result.XY = sliding_window::joint_fixed_size<entropy::joint_fixed_windowsize<T, quantizer, soft> >(base, match, task.dispMin, task.dispMax, windowsize);
+	result.X  = slidingWindow<entropy::single_fixed_windowsize<T, quantizer, soft> >(base,  windowsize);
+	result.Y  = slidingWindow<entropy::single_fixed_windowsize<T, quantizer, soft> >(match, windowsize);
 
 	return result;
 }
 
-template<typename T>
+template<typename data_type, template<typename datatype_type> class calc_type>
 class entropy_agg
 {
 private:
-	cv::Mat_<float> m_joint_entropy, m_entropy_x, m_entropy_y;
+	cv::Mat_<data_type> m_joint_entropy, m_entropy_x, m_entropy_y;
 	int m_dispMin;
-	T calculator;
+
 public:
-	entropy_agg(cv::Mat& joint_entropy, std::pair<cv::Mat, cv::Mat> data, int dispMin) : m_joint_entropy(joint_entropy), m_entropy_x(data.first), m_entropy_y(data.second), m_dispMin(dispMin)
+	typedef data_type result_type;
+
+	entropy_agg(cv::Mat& joint_entropy, std::pair<cv::Mat_<data_type>, cv::Mat_<data_type>> data, int dispMin) : m_joint_entropy(joint_entropy), m_entropy_x(data.first), m_entropy_y(data.second), m_dispMin(dispMin)
 	{
 	}
 
-	inline float operator()(int y, int x, int d)
+	inline data_type operator()(int y, int x, int d)
 	{
 		//return m_entropy_x(y,x) + m_entropy_y(y,x+d) - m_joint_entropy(y, x, d);
-		return calculator(m_joint_entropy(y, x, d-m_dispMin), m_entropy_x(y,x), m_entropy_y(y,x+d));
+		return calc_type<data_type>::calculate(m_joint_entropy(y, x, d-m_dispMin), m_entropy_x(y,x), m_entropy_y(y,x+d));
 	}
 };
 
 template<typename T>
-class mutual_information_calc
+struct mutual_information_calc
 {
-public:
-	inline T operator()(T joint_entropy, T base_entropy, T match_entropy) const
+	static inline T calculate(T joint_entropy, T base_entropy, T match_entropy)
 	{
-		return -std::max(base_entropy + match_entropy - joint_entropy,0.0f);
+		return -std::max(base_entropy + match_entropy - joint_entropy, static_cast<T>(0));
 	}
 
 	static inline T upper_bound() {
@@ -104,10 +105,9 @@ public:
 };
 
 template<typename T>
-class variation_of_information_calc
+struct variation_of_information_calc
 {
-public:
-	inline T operator()(T joint_entropy, T base_entropy, T match_entropy) const
+	static inline T calculate(T joint_entropy, T base_entropy, T match_entropy)
 	{
 		return 2*joint_entropy-base_entropy-match_entropy;
 	}
@@ -118,10 +118,9 @@ public:
 };
 
 template<typename T>
-class normalized_variation_of_information_calc
+struct normalized_variation_of_information_calc
 {
-public:
-	inline T operator()(T joint_entropy, T base_entropy, T match_entropy) const
+	static inline T calculate(T joint_entropy, T base_entropy, T match_entropy)
 	{
 		return 1.0f-(base_entropy+match_entropy-joint_entropy)/std::max(joint_entropy, std::numeric_limits<T>::min());
 	}
@@ -133,10 +132,9 @@ public:
 };
 
 template<typename T>
-class normalized_information_distance_calc
+struct normalized_information_distance_calc
 {
-public:
-	inline T operator()(T joint_entropy, T base_entropy, T match_entropy) const
+	static inline T calculate(T joint_entropy, T base_entropy, T match_entropy)
 	{
 		return 1-(base_entropy+match_entropy-joint_entropy)/std::max(std::max(base_entropy, match_entropy), std::numeric_limits<T>::min());
 	}

@@ -40,9 +40,9 @@ cv::Mat joint_fixed_size(const cv::Mat& base, const cv::Mat& match, int dispMin,
 {
 	int disparityRange = dispMax - dispMin + 1;
 
-	typedef float prob_table_type;
+	using prob_table_type = typename cost_class::result_type;
 	int sz[] = {base.rows, base.cols, disparityRange};
-	cv::Mat cost_map(3, sz, CV_32FC1, cv::Scalar(std::numeric_limits<float>::max()/3));
+	cv::Mat cost_map = cv::Mat_<prob_table_type>(3, sz, static_cast<prob_table_type>(std::numeric_limits<prob_table_type>::max()/3));
 
 	const int y_min = windowsize/2;
 	const int y_max = base.rows - windowsize/2;

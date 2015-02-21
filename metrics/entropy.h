@@ -32,10 +32,11 @@ namespace costmap_creators
 namespace entropy
 {
 
+template<typename T>
 class entropies
 {
 public:
-	cv::Mat X, Y, XY;
+	cv::Mat_<T> X, Y, XY;
 };
 
 template<typename data_type, typename result_type, typename counter_type, typename entropytable_type>
@@ -157,6 +158,133 @@ struct soft_entropy
 			counter(cdata) += 1;
 			counter(cdata+1) += 5;
 			counter(cdata+2) += 1;
+		}
+	}
+};
+
+template<typename result_type>
+struct verysoft_entropy
+{
+	static constexpr int additional_bins() { return 2; }
+	static constexpr int counter_factor() { return 7; }
+
+	static inline result_type normalize(result_type result, result_type n)
+	{
+		result /= n;
+		result = std::log(n) - result;
+		return result;
+	}
+
+	template<typename counter_type, typename entropytable_type>
+	static inline result_type calculate_entropy(counter_type& counter, const entropytable_type& entropy_table, int bins)
+	{
+		auto *counter_ptr = counter.ptr(1);
+		result_type result = 0.0f;
+		unsigned int normalize_counter = 0;
+		for(int i = 1; i < bins-1; ++i)
+		{
+			normalize_counter += *counter_ptr;
+			result += entropy_table(*counter_ptr++);
+		}
+		return normalize(result, normalize_counter);
+	}
+
+	template<typename counter_type, typename entropytable_type>
+	static inline result_type calculate_joint_entropy(counter_type& counter, const entropytable_type& entropy_table, int bins)
+	{
+		result_type result = 0.0f;
+		unsigned int normalize_counter = 0;
+		for(int i = 1; i < bins-1; ++i)
+		{
+			for(int j = 1; j < bins-1; ++j)
+			{
+				auto ccounter = counter(i,j);
+				normalize_counter += ccounter;
+				result += entropy_table(ccounter);
+			}
+		}
+		return normalize(result, normalize_counter);
+	}
+
+	template<typename counter_type, typename entropytable_type, typename data_type>
+	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, int bins, int len, const data_type* dataLeft, const data_type* dataRight)
+	{
+		result_type result = 0.0f;
+		unsigned int normalize_counter = 0;
+
+		//reset borders
+		for(int i = 0; i < bins; ++i)
+		{
+			counter(0, i) = 0;
+			counter(i, 0) = 0;
+			counter(bins-1, i) = 0;
+			counter(i, bins-1) = 0;
+		}
+
+		for(int i = 0; i < len; ++i)
+		{
+			const data_type cleft  = *dataLeft++;
+			const data_type cright = *dataRight++;
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft, cright+1);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+1, cright);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+1, cright+1);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+1, cright+2);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright+1);
+
+
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft, cright);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft, cright+2);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright+2);
+		}
+
+		return normalize(result, normalize_counter);
+	}
+
+	static inline void fill_entropytable(cv::Mat_<result_type>& entropy_table, int size)
+	{
+		assert(size > 0);
+		entropy_table = cv::Mat_<result_type>(size, 1);
+		result_type *entropy_table_ptr = entropy_table[0];
+
+		*entropy_table_ptr++ = 0.0f;
+		for(int i = 1; i < size; ++i)
+			*entropy_table_ptr++ = i*std::log(i);
+	}
+
+	template<typename counter_type, typename data_type>
+	inline static void calculate_joint_histogramm(counter_type& counter, const data_type* dataLeft, const data_type* dataRight, int len)
+	{
+		counter.reset();
+		for(int i = 0; i < len; ++i)
+		{
+			const data_type cleft  = *dataLeft++;
+			const data_type cright = *dataRight++;
+
+			counter(cleft,   cright  ) += 1;
+			counter(cleft,   cright+1) += 2;
+			counter(cleft,   cright+2) += 1;
+
+			counter(cleft+1, cright)   += 2;
+			counter(cleft+1, cright+1) += 7;
+			counter(cleft+1, cright+2) += 2;
+
+			counter(cleft+2, cright  ) += 1;
+			counter(cleft+2, cright+1) += 2;
+			counter(cleft+2, cright+2) += 1;
+		}
+	}
+
+	template<typename counter_type, typename data_type>
+	static inline void calculate_histogramm(counter_type& counter, const data_type* data, int len)
+	{
+		counter.reset();
+		for(int i = 0; i < len; ++i)
+		{
+			data_type cdata = *data++;
+			counter(cdata) += 2;
+			counter(cdata+1) += 7;
+			counter(cdata+2) += 2;
 		}
 	}
 };

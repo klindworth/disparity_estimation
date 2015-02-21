@@ -142,7 +142,7 @@ cv::Mat_<float> gradient_calculator::operator()(int d)
 	return gradient_image(gradLeftX, gradLeftY, gradRightX, gradRightY, d);
 }
 
-cv::Mat sliding_gradient(single_stereo_task& task, int windowsize)
+cv::Mat sliding_gradient(const single_stereo_task& task, int windowsize)
 {
 	gradient_calculator calc(task.baseGray, task.matchGray);
 

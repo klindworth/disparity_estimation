@@ -271,7 +271,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 		typedef region_info_disparity<it_metric, quantizer> disparity_metric;
 
 		//IT
-		typedef costmap_creators::entropy::flexible_windowsize<it_metric, quantizer> refinement_metric;
+		typedef costmap_creators::entropy::flexible_windowsize<float, it_metric, quantizer> refinement_metric;
 		disparity_function = calculate_region_disparity_regionwise<disparity_metric>;
 		task.algoLeft  = quantize_image(task.leftGray, quantizer);
 		task.algoRight = quantize_image(task.rightGray, quantizer);

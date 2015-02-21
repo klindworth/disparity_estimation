@@ -141,24 +141,25 @@ int main(int argc, char *argv[])
 	};
 
 	//RGB tasks
-	//StereoTask testset("tasks/im2rgb");
+	//stereo_task testset("tasks/im2rgb");
 	//folder_testset testset("tasks/kitti-training_small");
 	//folder_testset testset("tasks/kitti-training1");
 	//folder_testset testset("tasks/kitti-training1-valid");
 	//folder_testset testset("tasks/kitti-training_small-valid");
 	//folder_testset testset("tasks/kitti-training_debug");
-	//StereoTask testset("tasks/kit3"); //5, 3 neuer problemfall?
+	//stereo_task testset("tasks/kit3"); //5, 3 neuer problemfall?
 
 	//simulated (hard) tasks
 	//stereo_task testset("tasks/2im2");
 	TaskTestSet testset("tasks/smallset2");
 
 	//vl/ir
-	//StereoTask testset("tasks/ir-vl");
+	//stereo_task testset("tasks/ir-vl");
+	//stereo_task testset("tasks/bb");
 
 	//multispectral
-	//StereoTask testset("tasks/multi1-big");
-	//StereoTask testset("tasks/multi2-big");
+	//stereo_task testset("tasks/multi1-big");
+	//stereo_task testset("tasks/multi2-big");
 	//TaskTestSet testset("tasks/debugset");
 	//TaskTestSet testset("tasks/smallset2");
 	//TaskTestSet testset("tasks/bigset");
@@ -186,9 +187,9 @@ int main(int argc, char *argv[])
 	}*/
 
 	classic_search_config clas_config;
-	clas_config.windowsize = 17;
+	clas_config.windowsize = 11;
 	clas_config.soft = true;
-	clas_config.quantizer = 4;
+	clas_config.quantizer = 8;
 
 	classicLoggedRun(testset, clas_config);
 
@@ -239,13 +240,13 @@ int main(int argc, char *argv[])
 	imviewer.show();
 
 
-	/*if(config.verbose)
+	if(config.verbose)
 	{
 		RegionWindow *viewer = new RegionWindow();
 		viewer->setStore(&matstore, &config);
 		viewer->setData(matstore.tasks.back().left, matstore.tasks.back().right);
 		viewer->show();
-	}*/
+	}
 
 	return app.exec();
 }

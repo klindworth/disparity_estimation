@@ -47,6 +47,6 @@ protected:
 };
 
 //! Calulates a dense costmap for the disparity with gradients as metric
-cv::Mat sliding_gradient(single_stereo_task& task, int windowsize);
+cv::Mat sliding_gradient(const single_stereo_task &task, int windowsize);
 
 #endif // SLIDINGGRADIENT_H

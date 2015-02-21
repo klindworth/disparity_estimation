@@ -95,7 +95,7 @@ public:
 
 		auto result = entropies_calculator<float, bins>(thread.counter_joint, thread.counter_array, entropy_table, base_region, match_region);
 
-		return calculator(std::get<0>(result), std::get<1>(result), std::get<2>(result));
+		return cost_calc::calculate(std::get<0>(result), std::get<1>(result), std::get<2>(result));
 	}
 };
 

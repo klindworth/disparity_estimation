@@ -175,6 +175,7 @@ cv::Mat_<short> wta_disparity(cv::Mat base, data_type data, int dispMin, int dis
 	cv::Mat_<short> result = cv::Mat_<short>(base.size(), 0);
 
 	cost_class cost_agg(base, data, dispMin);
+	using cost_type = typename cost_class::result_type;
 
 	#pragma omp parallel for
 	for(int y = 0; y< base.size[0]; ++y)
@@ -190,11 +191,11 @@ cv::Mat_<short> wta_disparity(cv::Mat base, data_type data, int dispMin, int dis
 			assert(disp_end-disp_start >= 0);
 
 			short cdisp = 0;
-			float min_cost = std::numeric_limits<float>::max();
+			cost_type min_cost = std::numeric_limits<cost_type>::max();
 
 			for(int d = disp_start; d <= disp_end; ++d)
 			{
-				float cost = cost_agg(y,x,d);
+				cost_type cost = cost_agg(y,x,d);
 				if(cost < min_cost)
 				{
 					min_cost = cost;
