@@ -192,6 +192,18 @@ void foreign_threshold(cv::Mat_<data_type>& image, const cv::Mat_<thres_type>& t
 	}
 }
 
+template<typename data_type, typename thres_type>
+void foreign_null(cv::Mat_<data_type>& image, const cv::Mat_<thres_type>& thresValues)
+{
+	assert(image.size == thresValues.size);
+	thres_type threshold = 0;
+
+	foreign_threshold_internal<data_type, thres_type>(image, thresValues, [=](thres_type val, data_type* data) {
+		if(val == threshold)
+			*data = 0;
+	});
+}
+
 template<typename cost_class, typename T>
 cv::Mat slidingWindow(const cv::Mat_<T>& image, unsigned int windowsize)
 {
