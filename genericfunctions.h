@@ -133,8 +133,23 @@ void foreign_threshold_internal(cv::Mat& image, const cv::Mat& thresValues, func
 	}
 }
 
+/*template<typename data_type, typename thres_type, typename func_type>
+void foreign_threshold_internal(cv::Mat_<data_type>& image, const cv::Mat_<thres_type>& thresValues, func_type func)
+{
+	for(int i = 0; i < image.rows; ++i)
+	{
+		data_type* data = image.ptr<data_type>(i);
+		const thres_type* dataThres = thresValues.ptr<thres_type>(i);
+		for(int j = 0; j < image.cols; ++j)
+		{
+			func(*dataThres++, data);
+			++data;
+		}
+	}
+}*/
+
 //sets all points of a foreign matrix to zero, when the value is above the threshold
-template<typename data_type, typename thres_type>
+/*template<typename data_type, typename thres_type>
 void foreign_threshold(cv::Mat& image, const cv::Mat& thresValues, thres_type threshold, bool inverted)
 {
 	assert(image.size == thresValues.size);
@@ -153,7 +168,7 @@ void foreign_threshold(cv::Mat& image, const cv::Mat& thresValues, thres_type th
 				*data = 0;
 		});
 	}
-}
+}*/
 
 //sets all points of a foreign matrix to zero, when the value is above the threshold
 template<typename data_type, typename thres_type>

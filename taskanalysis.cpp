@@ -109,7 +109,7 @@ void task_analysis::create_internal(const single_stereo_task& task, const cv::Ma
 		error_mat_temp.convertTo(error_mat, CV_8UC1);
 		if(task.occ.data)
 			foreign_threshold(error_mat, task.occ, (unsigned char)128, true);
-		foreign_threshold(error_mat, task.groundTruth, (short)1, true);
+		//foreign_threshold(error_mat, task.groundTruth, (short)1, true); //doesn't work with signed gt
 		//if(ignore_border > 0)
 			//resetBorder<unsigned char>(error_mat, ignore_border);
 

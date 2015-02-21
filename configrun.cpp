@@ -97,6 +97,7 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 	}
 
 	matstore.add_mat(disp_left,  "disp_left");
+	matstore.add_mat(disparity.first, "disp_left_org");
 	matstore.add_mat(disp_right, "disp_right");
 
 	if(task.groundLeft.data)
@@ -106,6 +107,7 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 			cv::imwrite(filename + "_error-left.png", err_image);
 		matstore.add_mat(err_image, "ground-diff-left");
 		matstore.add_mat(task.groundLeft, "groundLeft");
+		matstore.add_mat(task.occLeft, "occLeft");
 	}
 	if(task.groundRight.data)
 	{
@@ -113,6 +115,8 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 		if(logging)
 			cv::imwrite(filename + "_error-right.png", err_image);
 		matstore.add_mat(err_image, "ground-diff-right");
+		matstore.add_mat(task.groundRight, "groundRight");
+		matstore.add_mat(task.occRight, "occRight");
 	}
 }
 

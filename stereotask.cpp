@@ -34,20 +34,20 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "disparity_utils.h"
 
-cv::Mat estimated_occlusion_map(const cv::Mat& disparity, int subsample, bool invert = false)
+cv::Mat estimated_occlusion_map(const cv::Mat_<short>& disparity, int subsample, bool invert = false)
 {
 	cv::Mat occ;
 	if(!invert)
-		occ = disparity::occlusion_stat<unsigned char>(disparity / subsample);
+		occ = disparity::occlusion_stat<short>(disparity / subsample);
 	else
 	{
-		cv::Mat dispN = cv::Mat(disparity.size(), CV_16SC1);
-		const unsigned char* src = disparity.data;
+		cv::Mat_<short> dispN = cv::Mat(disparity.size(), CV_16SC1);
+		const short* src = disparity[0];
 		short* dst = dispN.ptr<short>(0);
 		for(unsigned int i = 0; i < dispN.total(); ++i)
 			*dst++ = - *src++ / subsample;
 
-		occ  = disparity::occlusion_stat<short>(dispN);
+		occ  = disparity::occlusion_stat(dispN);
 	}
 
 	unsigned char* ptr = occ.data;
