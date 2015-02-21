@@ -88,7 +88,7 @@ void resetBorder(cv::Mat& input, int borderwidth, T value = 0)
 
 //takes an image and saves all possible windows in a row of the given image in a 3d matrix
 template<typename T>
-cv::Mat serializeRow(const cv::Mat& input, int y, int windowsize, bool enable_padding = true)
+cv::Mat_<T> serializeRow(const cv::Mat& input, int y, int windowsize, bool enable_padding = true)
 {
 	int padding = (windowsize*windowsize)%4;
 	padding = padding == 0 ? 0 : 4-padding;

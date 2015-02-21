@@ -150,7 +150,8 @@ int main(int argc, char *argv[])
 	//StereoTask testset("tasks/kit3"); //5, 3 neuer problemfall?
 
 	//simulated (hard) tasks
-	stereo_task testset("tasks/2im2");
+	//stereo_task testset("tasks/2im2");
+	TaskTestSet testset("tasks/smallset2");
 
 	//vl/ir
 	//StereoTask testset("tasks/ir-vl");
@@ -185,11 +186,11 @@ int main(int argc, char *argv[])
 	}*/
 
 	classic_search_config clas_config;
-	clas_config.windowsize = 11;
-	clas_config.soft = false;
-	clas_config.quantizer = 8;
+	clas_config.windowsize = 17;
+	clas_config.soft = true;
+	clas_config.quantizer = 4;
 
-	//classicLoggedRun(testset, clas_config);
+	classicLoggedRun(testset, clas_config);
 
 	cv::FileStorage fs(configfile, cv::FileStorage::READ);
 	if(!fs.isOpened())
@@ -231,20 +232,20 @@ int main(int argc, char *argv[])
 	}*/
 
 	//algo(testset);
-	logged_run(testset, config, refconfig);
+	//logged_run(testset, config, refconfig);
 
 	ImageStore imviewer;
 	imviewer.refreshList(matstore);
 	imviewer.show();
 
 
-	if(config.verbose)
+	/*if(config.verbose)
 	{
 		RegionWindow *viewer = new RegionWindow();
 		viewer->setStore(&matstore, &config);
 		viewer->setData(matstore.tasks.back().left, matstore.tasks.back().right);
 		viewer->show();
-	}
+	}*/
 
 	return app.exec();
 }

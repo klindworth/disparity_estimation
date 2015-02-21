@@ -43,11 +43,13 @@ template<int quantizer, bool soft>
 class single_fixed_windowsize
 {
 private:
-	static const int bins = 256/quantizer;
+	using entropy_style = get_entropy_style<float>::type;
+
+	static const int bins = 256/quantizer+entropy_style::additional_bins();
 	cv::Mat_<float> entropy_table;
 	unsigned int windowsize;
 
-	using entropy_style = get_entropy_style<float>::type;
+
 public:
 	typedef fast_array<unsigned short, bins> thread_type;
 

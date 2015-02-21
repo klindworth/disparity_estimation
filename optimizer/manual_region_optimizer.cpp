@@ -70,10 +70,14 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 
 		short ndisparity = min_idx(temp_results[thread_idx], baseRegion.disparity - dispMin) + dispMin;
 
+
+		//baseRegion.disparity = ndisparity;
+
 		//damping
 		if(ndisparity != baseRegion.disparity)
 			damping_history[j] += 1;
-		if(damping_history[j] < 2)
+
+		if(damping_history[j] < 4)
 		{
 			baseRegion.disparity = ndisparity;
 			/*EstimationStep step;

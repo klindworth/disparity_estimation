@@ -51,7 +51,7 @@ template<typename result_type>
 struct soft_entropy
 {
 	static constexpr int additional_bins() { return 2; }
-	static constexpr int counter_factor() { return 7; }
+	static constexpr int counter_factor() { return 5; }
 
 	static inline result_type normalize(result_type result, result_type n)
 	{
@@ -155,7 +155,7 @@ struct soft_entropy
 		{
 			data_type cdata = *data++;
 			counter(cdata) += 1;
-			counter(cdata+1) += 7;
+			counter(cdata+1) += 5;
 			counter(cdata+2) += 1;
 		}
 	}

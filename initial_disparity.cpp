@@ -239,7 +239,7 @@ cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, c
 
 std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const initial_disparity_config& config , const refinement_config& refconfig, int subsampling, region_optimizer& optimizer)
 {
-	const int quantizer = 4;
+	const int quantizer = 8;
 
 	disparity_region_func disparity_function;
 	refinement_func_type ref_func;

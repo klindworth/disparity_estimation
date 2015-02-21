@@ -97,7 +97,7 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 	}
 
 	matstore.add_mat(disp_left,  "disp_left");
-	matstore.add_mat(disparity.first, "disp_left_org");
+	//matstore.add_mat(disparity.first, "disp_left_org");
 	matstore.add_mat(disp_right, "disp_right");
 
 	if(task.groundLeft.data)
@@ -106,8 +106,8 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 		if(logging)
 			cv::imwrite(filename + "_error-left.png", err_image);
 		matstore.add_mat(err_image, "ground-diff-left");
-		matstore.add_mat(task.groundLeft, "groundLeft");
-		matstore.add_mat(task.occLeft, "occLeft");
+		//matstore.add_mat(task.groundLeft, "groundLeft");
+		//matstore.add_mat(task.occLeft, "occLeft");
 	}
 	if(task.groundRight.data)
 	{
@@ -115,8 +115,8 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 		if(logging)
 			cv::imwrite(filename + "_error-right.png", err_image);
 		matstore.add_mat(err_image, "ground-diff-right");
-		matstore.add_mat(task.groundRight, "groundRight");
-		matstore.add_mat(task.occRight, "occRight");
+		//matstore.add_mat(task.groundRight, "groundRight");
+		//matstore.add_mat(task.occRight, "occRight");
 	}
 }
 
@@ -205,14 +205,6 @@ void logged_run(task_collection& testset, disparity_estimator_algo& disparity_es
 
 void logged_run(task_collection& testset, initial_disparity_config& config, refinement_config& refconfig)
 {
-	/*std::shared_ptr<region_optimizer> optimizer;
-	if(config.optimizer.optimizer_type == "manual")
-		optimizer = std::make_shared<manual_region_optimizer>();
-	else
-		optimizer = std::make_shared<ml_region_optimizer>();
-	initial_disparity_algo algo(config, refconfig, optimizer);*/
-
-	//FIXME
 	std::shared_ptr<region_optimizer> optimizer;
 	if(config.optimizer.optimizer_type == "manual")
 		optimizer = std::make_shared<manual_region_optimizer>();
@@ -249,7 +241,7 @@ void it_both_sides(std::vector<cv::Mat_<short>>& resultLeft, std::vector<cv::Mat
 	resultRight = AllInformationTheoreticDistance<quantizer>(task.backward, config.soft, config.windowsize);
 }
 
-void singleClassicRun(const stereo_task& task, const classic_search_config& config, const std::string& filename, std::vector<cv::FileStorage*>& fs)
+void singleClassicRun(const stereo_task& task, const classic_search_config& config, const std::string& filename, std::vector<std::unique_ptr<cv::FileStorage>>& fs)
 {
 	std::vector<cv::Mat_<short> > resultLeft, resultRight;
 
@@ -288,11 +280,11 @@ void classicLoggedRun(task_collection& taskset, classic_search_config& config)
 {
 	std::vector<std::string> names {"_mi", "_vi", "_nvi", "_ndi"};
 
-	std::vector<cv::FileStorage*> fs;
+	std::vector<std::unique_ptr<cv::FileStorage>> fs;
 	std::string filename = "results/" + dateString() + "_" + timestampString();
 	for(std::string& cname : names)
 	{
-		fs.push_back(new cv::FileStorage (filename + cname + ".yml", cv::FileStorage::WRITE));
+		fs.push_back(std::unique_ptr<cv::FileStorage>(new cv::FileStorage (filename + cname + ".yml", cv::FileStorage::WRITE)));
 		*(fs.back()) << "testset" << taskset.name;
 		*(fs.back()) << "analysis" << "[";
 	}
@@ -307,21 +299,21 @@ void classicLoggedRun(task_collection& taskset, classic_search_config& config)
 		}
 
 		matstore.start_new_task(ctask.name, ctask);
-		for(cv::FileStorage *cfs : fs)
+		for(std::unique_ptr<cv::FileStorage>& cfs : fs)
 			*cfs << "{:";
 		singleClassicRun(ctask, config, filename, fs);
-		for(cv::FileStorage *cfs : fs)
+		for(std::unique_ptr<cv::FileStorage>& cfs : fs)
 			*cfs << "}";
 	}
 
-	for(cv::FileStorage *cfs : fs)
+	for(std::unique_ptr<cv::FileStorage>& cfs : fs)
 	{
 		*cfs << "]";
 		*cfs << "windowsize" << config.windowsize;
 		*cfs << "quantizer" << config.quantizer;
 		*cfs << "soft_hist" << config.soft;
-		cfs->release();
-		delete cfs;
+		//cfs->release();
+		//delete cfs;
 	}
 }
 
