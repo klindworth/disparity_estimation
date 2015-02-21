@@ -230,7 +230,8 @@ int main(int argc, char *argv[])
 			algo(ctask);
 	}*/
 
-	algo(testset);
+	//algo(testset);
+	logged_run(testset, config, refconfig);
 
 	ImageStore imviewer;
 	imviewer.refreshList(matstore);

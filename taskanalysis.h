@@ -39,9 +39,9 @@ public:
 	//void write(cv::FileNode& node) const;
 	static const int maxdiff = 15;
 	std::array<int, maxdiff> error_hist_left, error_hist_right;
-	cv::Mat diff_mat_left, diff_mat_right;
+	cv::Mat_<unsigned char> diff_mat_left, diff_mat_right;
 private:
-	void create_internal(const single_stereo_task& task, const cv::Mat& disparity, cv::Mat& error_mat, std::array<int, maxdiff>& hist,  int subsamplingDisparity, unsigned int ignore_border = 0);
+	void create_internal(const single_stereo_task& task, const cv::Mat_<short>& disparity, cv::Mat_<unsigned char>& error_mat, std::array<int, maxdiff>& hist,  int subsamplingDisparity, unsigned int ignore_border = 0);
 };
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const task_analysis& analysis);

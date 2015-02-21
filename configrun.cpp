@@ -41,6 +41,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cvio/hdf5wrapper.h>
 #include <cvio-b/hdf5internals.h>
 
+#include "optimizer/ml_region_optimizer.h"
+#include "optimizer/manual_region_optimizer.h"
+
 std::string dateString()
 {
 	time_t rawtime;
@@ -198,16 +201,23 @@ void logged_run(task_collection& testset, disparity_estimator_algo& disparity_es
 
 void logged_run(task_collection& testset, initial_disparity_config& config, refinement_config& refconfig)
 {
-	//FIXME
-	assert(false);
-	/*if(config.optimizer.optimizer_type == "manual")
-		m_optimizer = std::make_shared<manual_region_optimizer>();
+	/*std::shared_ptr<region_optimizer> optimizer;
+	if(config.optimizer.optimizer_type == "manual")
+		optimizer = std::make_shared<manual_region_optimizer>();
 	else
-		m_optimizer = std::make_shared<ml_region_optimizer>();
+		optimizer = std::make_shared<ml_region_optimizer>();
+	initial_disparity_algo algo(config, refconfig, optimizer);*/
 
-	initial_disparity_algo algo(config, refconfig);
+	//FIXME
+	std::shared_ptr<region_optimizer> optimizer;
+	if(config.optimizer.optimizer_type == "manual")
+		optimizer = std::make_shared<manual_region_optimizer>();
+	else
+		optimizer = std::make_shared<ml_region_optimizer>();
 
-	loggedRun(testset, algo);*/
+	initial_disparity_algo algo(config, refconfig, optimizer);
+
+	logged_run(testset, algo);
 }
 
 template<int quantizer>

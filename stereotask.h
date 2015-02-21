@@ -34,7 +34,9 @@ class single_stereo_task
 {
 public:
 	std::string name, fullname;
-	cv::Mat base, match, baseGray, matchGray, groundTruth, occ;
+	cv::Mat base, match, baseGray, matchGray;
+	cv::Mat_<short> groundTruth;
+	cv::Mat_<unsigned char> occ;
 	int dispMin, dispMax;
 	disparity_range range;
 	unsigned char groundTruthSampling;
@@ -54,7 +56,8 @@ public:
 	//void write(cv::FileNode& node) const;
 	bool valid() const;
 
-	cv::Mat left, right, leftGray, rightGray, groundLeft, groundRight, occLeft, occRight, algoLeft, algoRight;
+	cv::Mat left, right, leftGray, rightGray, occLeft, occRight, algoLeft, algoRight;
+	cv::Mat_<short> groundLeft, groundRight;
 	int dispRange;
 	unsigned char groundTruthSubsampling;
 	std::string name, filenameLeft, filenameRight, filenameGroundLeft, filenameGroundRight, filenameOccLeft, filenameOccRight;

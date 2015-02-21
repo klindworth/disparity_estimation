@@ -32,13 +32,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "costmap_utils.h"
 
 
-template<int quantizer>
+template<int bins>
 class region_info_thread
 {
 public:
-	static const int bins = 256/quantizer;
-	fast_array2d<unsigned int, bins+2, bins+2> counter_joint;
-	fast_array<unsigned int, bins+2> counter_array;
+	fast_array2d<unsigned int, bins, bins> counter_joint;
+	fast_array<unsigned int, bins> counter_array;
 };
 
 template<typename T, int bins, typename counter, typename joint_counter, typename entropy_type>
@@ -66,20 +65,20 @@ std::tuple<T, T, T> entropies_calculator(joint_counter& counter_joint, counter& 
 template<typename cost_calc, int quantizer>
 class region_info_disparity
 {
-public:
-	typedef region_info_thread<quantizer> thread_type;
-	static const int bins = 256/quantizer;
-
+private:
 	cv::Mat_<float> entropy_table;
 
 	cost_calc calculator;
 	cv::Mat m_base, m_match;
 
+public:
 	using entropy_style = costmap_creators::entropy::soft_entropy<float>;
+	static const int bins = 256/quantizer;
+	typedef region_info_thread<bins+entropy_style::additional_bins()> thread_type;
 
 	region_info_disparity(const cv::Mat& base, const cv::Mat& match, int size) : m_base(base), m_match(match)
 	{
-		entropy_style::fill_entropytable(entropy_table, size*9);
+		entropy_style::fill_entropytable(entropy_table, size*entropy_style::counter_factor());
 	}
 
 	static float normalization_value()

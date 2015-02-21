@@ -33,7 +33,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdexcept>
 
+#ifdef USE_CRSLIC
 #include "segmentation_cr.h"
+#endif
+
 #ifdef USE_MEANSHIFT
 #include "segmentation_ms.h"
 #endif
@@ -156,8 +159,10 @@ std::shared_ptr<segmentation_algorithm> create_segmentation_instance(const segme
 	if(settings.algorithm == "ms_superpixel")
 		return std::make_shared<mssuperpixel_segmentation>(settings);
 #endif
+#ifdef USE_CRSLIC
 	if(settings.algorithm == "cr_superpixel")
 		return std::make_shared<crslic_segmentation>(settings);
+#endif
 
 	throw std::invalid_argument("unknown segmentation algorithm");
 }

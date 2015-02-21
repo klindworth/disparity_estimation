@@ -234,8 +234,6 @@ struct get_entropy_style<result_type, false>
 	typedef classic<result_type> type;
 };
 
-//TODO: check bins boundaries in non-soft case: likely to be broken
-
 }
 
 }

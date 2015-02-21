@@ -3,12 +3,11 @@ cmake_minimum_required(VERSION 2.8)
 project(cvsegmentation_lib)
 
 find_package(OpenCV REQUIRED)
-find_package(OpenMP)
+find_package(OpenMP REQUIRED)
 
 set(SOURCES
     region_descriptor.cpp
     segmentation.cpp
-    segmentation_cr.cpp
     segmentation_refinement.cpp
 )
 
@@ -19,13 +18,13 @@ set(HEADERS
     intervals.h
     segmentation_algorithms.h
     segmentation.h
-    segmentation_cr.h
     segmentation_image.h
     segmentation_refinement.h
 )
 
 option(ENABLE_SLIC "Enables SLIC. Forces you to use the GPL as license" ON)
 option(ENABLE_MEANSHIFT "Enables the original meanshift implementation of the EDISON library" ON)
+option(ENABLE_CRSLIC "Enables contour relaxed slic" ON)
 
 if(ENABLE_SLIC)
     set(SOURCES ${SOURCES}
@@ -69,6 +68,18 @@ if(ENABLE_MEANSHIFT)
     )
 
     add_definitions(-DUSE_MEANSHIFT)
+endif()
+
+if(ENABLE_CRSLIC)
+    set(SOURCES ${SOURCES}
+        segmentation_cr.cpp
+    )
+
+    set(HEADERS ${HEADERS}
+        segmentation_cr.h
+    )
+
+    add_definitions(-DUSE_CRSLIC)
 endif()
 
 if(ENABLE_SLIC AND ENABLE_MEANSHIFT)

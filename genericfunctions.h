@@ -155,6 +155,28 @@ void foreign_threshold(cv::Mat& image, const cv::Mat& thresValues, thres_type th
 	}
 }
 
+//sets all points of a foreign matrix to zero, when the value is above the threshold
+template<typename data_type, typename thres_type>
+void foreign_threshold(cv::Mat_<data_type>& image, const cv::Mat_<thres_type>& thresValues, thres_type threshold, bool inverted)
+{
+	assert(image.size == thresValues.size);
+
+	if(!inverted)
+	{
+		foreign_threshold_internal<data_type, thres_type>(image, thresValues, [=](thres_type val, data_type* data) {
+			if(val > threshold)
+				*data = 0;
+		});
+	}
+	else
+	{
+		foreign_threshold_internal<data_type, thres_type>(image, thresValues, [=](thres_type val, data_type* data) {
+			if(val < threshold)
+				*data = 0;
+		});
+	}
+}
+
 template<typename cost_class, typename T>
 cv::Mat slidingWindow(const cv::Mat_<T>& image, unsigned int windowsize)
 {

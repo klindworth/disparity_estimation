@@ -83,11 +83,11 @@ task_analysis::task_analysis()
 	std::fill(error_hist_right.begin(), error_hist_right.end(), 0);
 }
 
-void task_analysis::create_internal(const single_stereo_task& task, const cv::Mat& disparity, cv::Mat& error_mat, std::array<int, maxdiff>& hist, int subsamplingDisparity, unsigned int ignore_border)
+void task_analysis::create_internal(const single_stereo_task& task, const cv::Mat_<short>& disparity, cv::Mat_<unsigned char>& error_mat, std::array<int, maxdiff>& hist, int subsamplingDisparity, unsigned int ignore_border)
 {
 	if(task.groundTruth.data)
 	{
-		cv::Mat scaledDisp, scaledGround;
+		cv::Mat_<short> scaledDisp, scaledGround;
 		int commonSubsampling = 1;
 		if(subsamplingDisparity != task.groundTruthSampling)
 		{
@@ -101,13 +101,15 @@ void task_analysis::create_internal(const single_stereo_task& task, const cv::Ma
 			commonSubsampling = subsamplingDisparity;
 		}
 
-		cv::Mat ndisp = createFixedDisparity(scaledDisp, 1.0f);
+		cv::Mat ndisp = scaledDisp; //createFixedDisparity(scaledDisp, 1.0f);
 		//cv::imshow("ndisp", ndisp);
 		//cv::imshow("ground", scaledGround);
-		cv::absdiff(ndisp, scaledGround, error_mat);
+		cv::Mat error_mat_temp;
+		cv::absdiff(ndisp, scaledGround, error_mat_temp);
+		error_mat_temp.convertTo(error_mat, CV_8UC1);
 		if(task.occ.data)
-			foreign_threshold<unsigned char, unsigned char>(error_mat, task.occ, 128, true);
-		foreign_threshold<unsigned char, unsigned char>(error_mat, task.groundTruth, 1, true);
+			foreign_threshold(error_mat, task.occ, (unsigned char)128, true);
+		foreign_threshold(error_mat, task.groundTruth, (short)1, true);
 		//if(ignore_border > 0)
 			//resetBorder<unsigned char>(error_mat, ignore_border);
 
@@ -115,13 +117,13 @@ void task_analysis::create_internal(const single_stereo_task& task, const cv::Ma
 		{
 			for(unsigned int x = ignore_border; x < error_mat.cols - ignore_border; ++x)
 			{
-				unsigned char idx = std::min((maxdiff-1), error_mat.at<unsigned char>(y,x)/commonSubsampling);
-				if(task.occ.data && task.groundTruth.at<unsigned char>(y,x) != 0)
+				unsigned char idx = std::min((maxdiff-1), error_mat(y,x)/commonSubsampling);
+				if(task.occ.data && task.groundTruth(y,x) != 0)
 				{
-					if(task.occ.at<unsigned char>(y,x) > 128)
+					if(task.occ(y,x) > 128)
 						++(hist[idx]);
 				}
-				else if(task.groundTruth.at<unsigned char>(y,x) != 0)
+				else if(task.groundTruth(y,x) != 0)
 					++(hist[idx]);
 			}
 		}

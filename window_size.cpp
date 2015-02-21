@@ -73,22 +73,25 @@ inline float countLabelsDisp(cv::Mat window, int clabel, const std::vector<dispa
 	return std::max(1.0f-disp_error/(float)total, 0.0f);
 }
 
-inline float compare_disparity(const cv::Mat& plabel_window, int clabel, const std::vector<disparity_region>& regions, const cv::Mat&)
+inline float compare_disparity(const cv::Mat& plabel_window, int clabel, const std::vector<short>& disparities)
 {
 	cv::Mat label_window = plabel_window.clone();
 	assert(label_window.isContinuous());
-	int cdisparity = regions[clabel].disparity;
+	short cdisparity = disparities[clabel];
 	const int* csubwindow_ptr = label_window.ptr<int>(0);
 	const unsigned short totalpixel = label_window.cols*label_window.rows;
+	const int* end_ptr = csubwindow_ptr + totalpixel;
 
 	const int trunc = 3;
 	std::array<int, trunc+1> label_counter;
 	std::fill(label_counter.begin(), label_counter.end(), 0);
 
-	for(unsigned short i = 0; i < totalpixel; ++i)
+	//for(unsigned short i = 0; i < totalpixel; ++i)
+	while(csubwindow_ptr != end_ptr)
 	{
 		int current_label = *csubwindow_ptr++;
-		unsigned char disp_dev = std::min(std::abs(regions[current_label].disparity - cdisparity), trunc);
+		//unsigned char disp_dev = std::min(std::abs(disparities[current_label] - cdisparity), trunc);
+		auto disp_dev = std::min(std::abs(disparities[current_label] - cdisparity), trunc);
 
 		assert(disp_dev <= trunc); //disp_dev >= 0
 		++(label_counter[disp_dev]);
@@ -105,10 +108,14 @@ cv::Mat_<cv::Vec2b> adaptive_window_size(const cv::Mat& image, const cv::Mat_<in
 	assert(minsize > 0);
 	assert(maxsize > 0);
 
+	std::vector<short> disparities(regions.size());
+	for(std::size_t i = 0; i < regions.size(); ++i)
+		disparities[i] = regions[i].disparity;
+
 	cv::Mat_<cv::Vec2b> result = cv::Mat::zeros(labels.size(), CV_8UC2);
 	const int onesidesizeMin = (minsize-1)/2;
 	const int onesidesizeMax = (maxsize-1)/2;
-	#pragma omp parallel for default(none) shared(labels, image, result, regions, threshold, func, minsize, maxsize)
+	#pragma omp parallel for default(none) shared(labels, image, result, disparities, threshold, func, minsize, maxsize)
 	for(int y = onesidesizeMin; y < labels.rows - onesidesizeMin; ++y)
 	{
 		int lastWindowSize = onesidesizeMin*2+1;
@@ -128,14 +135,14 @@ cv::Mat_<cv::Vec2b> adaptive_window_size(const cv::Mat& image, const cv::Mat_<in
 
 			while(true)
 			{
-				float measured = func(subwindow(labels, x,y, windowsizeX, windowsizeY), clabel, regions, subwindow(image, x,y, windowsizeX, windowsizeY));
+				float measured = func(subwindow(labels, x,y, windowsizeX, windowsizeY), clabel, disparities);
 				if(grow)
 				{
 					if(measured < threshold)
 					{
 						//shrink each direction seperatly
-						float measured_altY = func(subwindow(labels, x,y, windowsizeX, windowsizeY-2), clabel, regions, subwindow(image, x,y, windowsizeX, windowsizeY-2));
-						float measured_altX = func(subwindow(labels, x,y, windowsizeX-2, windowsizeY), clabel, regions, subwindow(image, x,y, windowsizeX-2, windowsizeY));
+						float measured_altY = func(subwindow(labels, x,y, windowsizeX, windowsizeY-2), clabel, disparities);
+						float measured_altX = func(subwindow(labels, x,y, windowsizeX-2, windowsizeY), clabel, disparities);
 
 						if(measured_altY > threshold)
 							windowsizeY -= 2;
