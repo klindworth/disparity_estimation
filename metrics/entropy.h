@@ -165,8 +165,8 @@ struct soft_entropy
 template<typename result_type>
 struct verysoft_entropy
 {
-	static constexpr int additional_bins() { return 2; }
-	static constexpr int counter_factor() { return 7; }
+	static constexpr int additional_bins() { return 4; }
+	static constexpr int counter_factor() { return 10; }
 
 	static inline result_type normalize(result_type result, result_type n)
 	{
@@ -181,7 +181,7 @@ struct verysoft_entropy
 		auto *counter_ptr = counter.ptr(1);
 		result_type result = 0.0f;
 		unsigned int normalize_counter = 0;
-		for(int i = 1; i < bins-1; ++i)
+		for(int i = 2; i < bins-2; ++i)
 		{
 			normalize_counter += *counter_ptr;
 			result += entropy_table(*counter_ptr++);
@@ -194,9 +194,9 @@ struct verysoft_entropy
 	{
 		result_type result = 0.0f;
 		unsigned int normalize_counter = 0;
-		for(int i = 1; i < bins-1; ++i)
+		for(int i = 2; i < bins-2; ++i)
 		{
-			for(int j = 1; j < bins-1; ++j)
+			for(int j = 2; j < bins-2; ++j)
 			{
 				auto ccounter = counter(i,j);
 				normalize_counter += ccounter;
@@ -217,25 +217,28 @@ struct verysoft_entropy
 		{
 			counter(0, i) = 0;
 			counter(i, 0) = 0;
+			counter(1, i) = 0;
+			counter(i, 1) = 0;
 			counter(bins-1, i) = 0;
 			counter(i, bins-1) = 0;
+			counter(bins-2, i) = 0;
+			counter(i, bins-2) = 0;
 		}
 
 		for(int i = 0; i < len; ++i)
 		{
 			const data_type cleft  = *dataLeft++;
 			const data_type cright = *dataRight++;
-			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft, cright+1);
-			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+1, cright);
-			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+1, cright+1);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft ,  cright+2);
 			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+1, cright+2);
-			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright+1);
-
-
-			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft, cright);
-			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft, cright+2);
-			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright);
 			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright+2);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+3, cright+2);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+4, cright+2);
+
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright+1);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright+3);
+			joint_entropy_result_reset<data_type>(result, normalize_counter, counter, entropy_table, cleft+2, cright+4);
 		}
 
 		return normalize(result, normalize_counter);
@@ -261,17 +264,17 @@ struct verysoft_entropy
 			const data_type cleft  = *dataLeft++;
 			const data_type cright = *dataRight++;
 
-			counter(cleft,   cright  ) += 1;
-			counter(cleft,   cright+1) += 2;
-			counter(cleft,   cright+2) += 1;
-
-			counter(cleft+1, cright)   += 2;
-			counter(cleft+1, cright+1) += 7;
+			counter(cleft, cright+2)   += 1;
 			counter(cleft+1, cright+2) += 2;
+			counter(cleft+2, cright+2) += 10;
+			counter(cleft+3, cright+2) += 2;
+			counter(cleft+4, cright+2) += 1;
 
 			counter(cleft+2, cright  ) += 1;
 			counter(cleft+2, cright+1) += 2;
-			counter(cleft+2, cright+2) += 1;
+
+			counter(cleft+2, cright+3) += 2;
+			counter(cleft+2, cright+4) += 4;
 		}
 	}
 
@@ -282,9 +285,11 @@ struct verysoft_entropy
 		for(int i = 0; i < len; ++i)
 		{
 			data_type cdata = *data++;
-			counter(cdata) += 2;
-			counter(cdata+1) += 7;
-			counter(cdata+2) += 2;
+			counter(cdata  ) += 1;
+			counter(cdata+1) += 2;
+			counter(cdata+2) += 10;
+			counter(cdata+3) += 2;
+			counter(cdata+4) += 1;
 		}
 	}
 };

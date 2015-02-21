@@ -87,15 +87,12 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 		fs << task;
 		fs << analysis;
 
-		mat_to_file(disparity.first, filename + "-left.cvmat");
-		mat_to_file(disparity.second, filename + "-right.cvmat");
-
 		cvio::hdf5file hfile(filename + ".hdf5");
 		hfile.save(disparity.first, "/results/left_disparity", false);
 		hfile.save(disparity.second, "/results/right_disparity", false);
 
-		cv::imwrite(filename + "-left.png",  disp_left);
-		cv::imwrite(filename + "-right.png", disp_right);
+		//cv::imwrite(filename + "-left.png",  disp_left);
+		//cv::imwrite(filename + "-right.png", disp_right);
 	}
 
 	matstore.add_mat(disp_left,  "disp_left");
@@ -105,8 +102,8 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 	if(task.groundLeft.data)
 	{
 		cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_left);
-		if(logging)
-			cv::imwrite(filename + "_error-left.png", err_image);
+		//if(logging)
+		//	cv::imwrite(filename + "_error-left.png", err_image);
 		matstore.add_mat(err_image, "ground-diff-left");
 		//matstore.add_mat(task.groundLeft, "groundLeft");
 		//matstore.add_mat(task.occLeft, "occLeft");
@@ -114,8 +111,8 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 	if(task.groundRight.data)
 	{
 		cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_right);
-		if(logging)
-			cv::imwrite(filename + "_error-right.png", err_image);
+		//if(logging)
+		//	cv::imwrite(filename + "_error-right.png", err_image);
 		matstore.add_mat(err_image, "ground-diff-right");
 		//matstore.add_mat(task.groundRight, "groundRight");
 		//matstore.add_mat(task.occRight, "occRight");
@@ -221,7 +218,7 @@ void logged_run(task_collection& testset, initial_disparity_config& config, refi
 template<int quantizer>
 std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(const single_stereo_task& task, bool soft, unsigned int windowsize)
 {
-	typedef double calc_type;
+	typedef float calc_type;
 	long long start = cv::getCPUTickCount();
 	costmap_creators::entropy::entropies<calc_type> entropy = soft ? calculate_entropies<calc_type, quantizer, true>(task, windowsize) : calculate_entropies<calc_type, quantizer, false>(task, windowsize);
 

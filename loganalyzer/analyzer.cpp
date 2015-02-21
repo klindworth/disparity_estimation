@@ -24,6 +24,8 @@
 #include "stereotask.h"
 #include "detailviewer.h"
 
+#include <cvio/hdf5internals.h>
+
 /*#include <Eigen/StdVector>
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
@@ -150,39 +152,6 @@ void addSubItem(QStringList& subitem, const cv::FileNode& node)
 
 	for(int j = 0; j < 4; ++j)
 		subitem << "";
-}
-
-//warps an image
-//TODO: useless since foreach_warped_pixel_unique?
-template<typename image_type, typename disparity_type>
-cv::Mat warpImageAdvanced(const cv::Mat& image, const cv::Mat& disparity, float scaling = 1.0f)
-{
-	cv::Mat warpedImage(image.size(), image.type(), cv::Scalar(0));
-	cv::Mat warpedDisparity(disparity.size(), disparity.type(), cv::Scalar(0));
-
-	#pragma omp parallel for
-	for(int i = 0; i < disparity.rows; ++i)
-	{
-		const image_type* dataRight = image.ptr<image_type>(i);
-		const disparity_type* dataDisp = disparity.ptr<disparity_type>(i);
-
-		for(int j = 0; j < disparity.cols; ++j)
-		{
-			disparity_type disp = *dataDisp++;
-			image_type data = *dataRight++;
-			int x = j + disp * scaling;
-
-			if(x >= 0 && x < disparity.cols && disp != 0)
-			{
-				if(std::abs(warpedDisparity.at<disparity_type>(i,x)) <= std::abs(disp))
-				{
-					warpedDisparity.at<disparity_type>(i, x) = disp;
-					warpedImage.at<image_type>(i, x) = data;
-				}
-			}
-		}
-	}
-	return warpedImage;
 }
 
 void Analyzer::on_pbRefresh_clicked()
@@ -320,13 +289,15 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 			stereo_task task(name.toStdString(), left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
 
 			std::cout << abs_prefix << std::endl;
-			cv::Mat disp_left = file_to_mat(abs_prefix + "-left.cvmat");
-			cv::Mat disp_right = file_to_mat(abs_prefix + "-right.cvmat");
+			cvio::hdf5file hfile(abs_prefix + ".hdf5");
+
+			cv::Mat_<short> disp_left = hfile.load("/results/left_disparity");//file_to_mat(abs_prefix + "-left.cvmat");
+			cv::Mat_<short> disp_right = hfile.load("/results/right_disparity");//file_to_mat(abs_prefix + "-right.cvmat");
 
 			task_analysis analysis(task, disp_left, disp_right, subsampling, windowsize/2);
 
-			cv::Mat warpedLeft  = warpImageAdvanced<cv::Vec3b, short>(task.left, disp_left, 1.0f/subsampling);
-			cv::Mat warpedRight = warpImageAdvanced<cv::Vec3b, short>(task.right, disp_right, 1.0f/subsampling);
+			cv::Mat warpedLeft  = disparity::warp_image<cv::Vec3b>(task.left, disp_left, cv::Vec3b(0,0,0), 1.0f/subsampling);
+			cv::Mat warpedRight  = disparity::warp_image<cv::Vec3b>(task.right, disp_right, cv::Vec3b(0,0,0), 1.0f/subsampling);
 
 			cv::Mat disp_left_img  = disparity::create_image(disp_left);
 			cv::Mat disp_right_img = disparity::create_image(disp_right);
@@ -531,8 +502,11 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 				stereo_task task(name.toStdString(), left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
 
 				std::cout << abs_prefix << std::endl;
-				cv::Mat disp_left = file_to_mat(abs_prefix + "-left.cvmat");
-				cv::Mat disp_right = file_to_mat(abs_prefix + "-right.cvmat");
+
+				cvio::hdf5file hfile(abs_prefix + ".hdf5");
+
+				cv::Mat_<short> disp_left = hfile.load("/results/left_disparity");//file_to_mat(abs_prefix + "-left.cvmat");
+				cv::Mat_<short> disp_right = hfile.load("/results/right_disparity");//file_to_mat(abs_prefix + "-right.cvmat");
 
 				task_analysis analysis(task, disp_left, disp_right, subsampling, windowsize/2);
 				hist_left = std::vector<int>(analysis.error_hist_left.begin(), analysis.error_hist_left.end());

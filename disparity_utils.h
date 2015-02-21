@@ -157,6 +157,19 @@ cv::Mat warp_image(const cv::Mat_<image_type>& image, const cv::Mat_<disparity_t
 	return warpedImage;
 }
 
+///warps an image
+template<typename image_type, typename disparity_type>
+cv::Mat warp_image(const cv::Mat_<image_type>& image, const cv::Mat_<disparity_type>& disparity, image_type init, float scaling = 1.0f)
+{
+	cv::Mat_<image_type> warpedImage(image.size(), init);
+
+	foreach_warped_pixel_unique<disparity_type>(disparity, scaling, [&](cv::Point pos, cv::Point warped_pos, disparity_type){
+		warpedImage(warped_pos) = image(pos);
+	});
+
+	return warpedImage;
+}
+
 template<typename disparity_type>
 cv::Mat_<disparity_type> warp_disparity(const cv::Mat_<disparity_type>& disparity, float scaling = 1.0f)
 {
