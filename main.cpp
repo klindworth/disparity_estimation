@@ -148,10 +148,11 @@ int main(int argc, char *argv[])
 	//folder_testset testset("tasks/kitti-training_small-valid");
 	//folder_testset testset("tasks/kitti-training_debug");
 	//stereo_task testset("tasks/kit3"); //5, 3 neuer problemfall?
+	TaskTestSet testset("tasks/rgbset");
 
 	//simulated (hard) tasks
 	//stereo_task testset("tasks/2im2");
-	TaskTestSet testset("tasks/smallset2");
+	//TaskTestSet testset("tasks/smallset2");
 
 	//vl/ir
 	//stereo_task testset("tasks/ir-vl");
@@ -164,20 +165,19 @@ int main(int argc, char *argv[])
 	//TaskTestSet testset("tasks/smallset2");
 	//TaskTestSet testset("tasks/bigset");
 	//TaskTestSet testset("tasks/localset");
-	//TaskTestSet testset("tasks/rgbset");
+
 
 
 
 	//std::string configfile = "tasks/config-irvl.yml";
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";
 	//std::string configfile = "tasks/config-big-msslic.yml";
-	std::string configfile = "tasks/config-small-msslic-refine.yml";
+	//std::string configfile = "tasks/config-small-msslic-current.yml";
 	//std::string configfile = "tasks/config-debug.yml";
-	//std::string configfile = "tasks/config-rgbl-msslic.yml";
 	//std::string configfile = "tasks/config-kit-refine2.yml";
 	//std::string configfile = "tasks/config-kit2.yml";
 	//std::string configfile = "tasks/config-kit-it.yml";
-	//std::string configfile = "tasks/config-rgb-slic.yml";
+	std::string configfile = "tasks/config-rgb-slic.yml";
 	//std::string configfile = "tasks/config-small-woopt.yml";
 
 	/*if(!task.valid())

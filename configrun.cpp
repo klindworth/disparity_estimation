@@ -90,9 +90,6 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 		cvio::hdf5file hfile(filename + ".hdf5");
 		hfile.save(disparity.first, "/results/left_disparity", false);
 		hfile.save(disparity.second, "/results/right_disparity", false);
-
-		//cv::imwrite(filename + "-left.png",  disp_left);
-		//cv::imwrite(filename + "-right.png", disp_right);
 	}
 
 	matstore.add_mat(disp_left,  "disp_left");
@@ -102,49 +99,14 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 	if(task.groundLeft.data)
 	{
 		cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_left);
-		//if(logging)
-		//	cv::imwrite(filename + "_error-left.png", err_image);
 		matstore.add_mat(err_image, "ground-diff-left");
-		//matstore.add_mat(task.groundLeft, "groundLeft");
-		//matstore.add_mat(task.occLeft, "occLeft");
 	}
 	if(task.groundRight.data)
 	{
 		cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_right);
-		//if(logging)
-		//	cv::imwrite(filename + "_error-right.png", err_image);
 		matstore.add_mat(err_image, "ground-diff-right");
-		//matstore.add_mat(task.groundRight, "groundRight");
-		//matstore.add_mat(task.occRight, "occRight");
 	}
 }
-
-/*
- * 		std::string fullfilename = filename + names[i] + "_" + task.name;
-		task_analysis analysis(task, resultLeft[i], resultRight[i], 1, config.windowsize/2);
-
-		*(fs[i]) << "taskname" << task.name;
-		*(fs[i]) << "total_runtime" << total_runtime;
-		*(fs[i]) << task;
-		*(fs[i]) << analysis;
-
-		mat_to_file(resultLeft[i], fullfilename + "-left.cvmat");
-		mat_to_file(resultRight[i], fullfilename + "-right.cvmat");
-		cv::imwrite(fullfilename + "-left.png",  disparity::create_image(resultLeft[i]));
-		cv::imwrite(fullfilename + "-right.png", disparity::create_image(resultRight[i]));
-		if(task.groundLeft.data)
-		{
-			cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_left);
-			cv::imwrite(fullfilename + "_error-left.png", err_image);
-			matstore.add_mat(err_image, "ground-diff-left");
-		}
-		if(task.groundRight.data)
-		{
-			cv::Mat err_image = value_scaled_image<unsigned char, unsigned char>(analysis.diff_mat_right);
-			cv::imwrite(fullfilename + "_error-right.png", err_image);
-			matstore.add_mat(err_image, "ground-diff-right");
-		}
-		*/
 
 std::pair<cv::Mat, cv::Mat> single_logged_run(stereo_task& task, disparity_estimator_algo& disparity_estimator, cv::FileStorage& fs, const std::string& filename)
 {

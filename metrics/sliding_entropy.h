@@ -46,7 +46,7 @@ private:
 	using entropy_style = typename get_entropy_style<T>::type;
 
 	static const int bins = 256/quantizer+entropy_style::additional_bins();
-	cv::Mat_<T> entropy_table;
+	std::vector<T> entropy_table;
 	unsigned int windowsize;
 
 
@@ -90,7 +90,7 @@ public:
 	const unsigned int windowsize;
 
 private:
-	cv::Mat_<T> entropy_table;
+	std::vector<T> entropy_table;
 
 public:
 	joint_fixed_windowsize(const cv::Mat& /*match*/, int pwindowsize) : windowsize(pwindowsize)
@@ -117,7 +117,7 @@ public:
 		entropy_style::calculate_joint_histogramm(thread.counter_array, thread.m_base[0], thread.m_match_table[x], windowsize*windowsize);
 
 		//compute entropy
-		if(windowsize*windowsize*entropy_style::counter_factor() < bins*bins)
+		if(windowsize*windowsize*entropy_style::kernel_size() < bins*bins)
 			return entropy_style::calculate_joint_entropy_sparse(thread.counter_array, entropy_table, bins, windowsize*windowsize, thread.m_base[0], thread.m_match_table[x]);
 		else
 			return entropy_style::calculate_entropy(thread.counter_array, entropy_table, bins*bins);
@@ -146,14 +146,13 @@ public:
 
 
 private:
-	cv::Mat_<T> entropy_table;
+	std::vector<T> entropy_table;
 	cv::Mat m_match;
-	const int windowsize;
 
 public:
-	flexible_windowsize(const cv::Mat& match, unsigned int max_windowsize) : m_match(match), windowsize(max_windowsize)
+	flexible_windowsize(const cv::Mat& match, unsigned int max_windowsize) : m_match(match)
 	{
-		entropy_style::fill_entropytable(entropy_table, windowsize*windowsize*entropy_style::counter_factor());
+		entropy_style::fill_entropytable(entropy_table, max_windowsize*max_windowsize*entropy_style::counter_factor());
 	}
 
 	//prepares a row for calculation
@@ -180,7 +179,7 @@ public:
 		//creating joint histogramm, compute joint entropy
 		entropy_style::calculate_joint_histogramm(thread.counter_array, thread.m_base[0], match_window[0], thread.cwindowsizeX*thread.cwindowsizeY);
 		T joint_entropy;
-		if(thread.cwindowsizeX*thread.cwindowsizeY*6 <= bins*bins)
+		if(thread.cwindowsizeX*thread.cwindowsizeY*entropy_style::kernel_size() <= bins*bins)
 			joint_entropy = entropy_style::calculate_joint_entropy_sparse(thread.counter_array, entropy_table, bins, thread.cwindowsizeX*thread.cwindowsizeY, thread.m_base[0], match_window[0]);
 		else
 			joint_entropy = entropy_style::calculate_joint_entropy(thread.counter_array, entropy_table, bins);

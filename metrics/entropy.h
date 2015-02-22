@@ -44,7 +44,7 @@ inline void joint_entropy_result_reset(result_type& result, unsigned int& normal
 {
 	auto ccounter = counter(cleft, cright);
 	counter(cleft, cright) = 0;
-	result += entropy_table(ccounter);
+	result += entropy_table[ccounter];
 	normalize_counter += ccounter;
 }
 
@@ -53,6 +53,7 @@ struct soft_entropy
 {
 	static constexpr int additional_bins() { return 2; }
 	static constexpr int counter_factor() { return 5; }
+	static constexpr int kernel_size() { return 5; }
 
 	static inline result_type normalize(result_type result, result_type n)
 	{
@@ -70,7 +71,7 @@ struct soft_entropy
 		for(int i = 1; i < bins-1; ++i)
 		{
 			normalize_counter += *counter_ptr;
-			result += entropy_table(*counter_ptr++);
+			result += entropy_table[*counter_ptr++];
 		}
 		return normalize(result, normalize_counter);
 	}
@@ -86,7 +87,7 @@ struct soft_entropy
 			{
 				auto ccounter = counter(i,j);
 				normalize_counter += ccounter;
-				result += entropy_table(ccounter);
+				result += entropy_table[ccounter];
 			}
 		}
 		return normalize(result, normalize_counter);
@@ -121,15 +122,14 @@ struct soft_entropy
 		return normalize(result, normalize_counter);
 	}
 
-	static inline void fill_entropytable(cv::Mat_<result_type>& entropy_table, int size)
+	static inline void fill_entropytable(std::vector<result_type>& entropy_table, int size)
 	{
 		assert(size > 0);
-		entropy_table = cv::Mat_<result_type>(size, 1);
-		result_type *entropy_table_ptr = entropy_table[0];
+		entropy_table.resize(size);
 
-		*entropy_table_ptr++ = 0.0f;
+		entropy_table[0] = 0;
 		for(int i = 1; i < size; ++i)
-			*entropy_table_ptr++ = i*std::log(i);
+			entropy_table[i] = i*std::log(i);
 	}
 
 	template<typename counter_type, typename data_type>
@@ -167,6 +167,7 @@ struct verysoft_entropy
 {
 	static constexpr int additional_bins() { return 4; }
 	static constexpr int counter_factor() { return 10; }
+	static constexpr int kernel_size() { return 9; }
 
 	static inline result_type normalize(result_type result, result_type n)
 	{
@@ -184,7 +185,7 @@ struct verysoft_entropy
 		for(int i = 2; i < bins-2; ++i)
 		{
 			normalize_counter += *counter_ptr;
-			result += entropy_table(*counter_ptr++);
+			result += entropy_table[*counter_ptr++];
 		}
 		return normalize(result, normalize_counter);
 	}
@@ -200,7 +201,7 @@ struct verysoft_entropy
 			{
 				auto ccounter = counter(i,j);
 				normalize_counter += ccounter;
-				result += entropy_table(ccounter);
+				result += entropy_table[ccounter];
 			}
 		}
 		return normalize(result, normalize_counter);
@@ -244,15 +245,14 @@ struct verysoft_entropy
 		return normalize(result, normalize_counter);
 	}
 
-	static inline void fill_entropytable(cv::Mat_<result_type>& entropy_table, int size)
+	static inline void fill_entropytable(std::vector<result_type>& entropy_table, int size)
 	{
 		assert(size > 0);
-		entropy_table = cv::Mat_<result_type>(size, 1);
-		result_type *entropy_table_ptr = entropy_table[0];
+		entropy_table.resize(size);
 
-		*entropy_table_ptr++ = 0.0f;
+		entropy_table[0] = 0;
 		for(int i = 1; i < size; ++i)
-			*entropy_table_ptr++ = i*std::log(i);
+			entropy_table[i] = i*std::log(i);
 	}
 
 	template<typename counter_type, typename data_type>
@@ -299,6 +299,7 @@ struct classic
 {
 	static constexpr int additional_bins() { return 0; }
 	static constexpr int counter_factor() { return 1; }
+	static constexpr int kernel_size() { return 1; }
 
 	template<typename counter_type, typename entropytable_type, typename data_type>
 	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, int, int len, const data_type* dataLeft, const data_type* dataRight)
@@ -308,7 +309,7 @@ struct classic
 		{
 			const data_type cleft  = *dataLeft++;
 			const data_type cright = *dataRight++;
-			result += entropy_table(counter(cleft,cright));
+			result += entropy_table[counter(cleft,cright)];
 			counter(cleft,cright) = 0;
 		}
 
@@ -321,7 +322,7 @@ struct classic
 		auto *counter_ptr = counter.ptr();
 		result_type result = 0.0f;
 		for(int i = 0; i < bins; ++i)
-			result += entropy_table(*counter_ptr++);
+			result += entropy_table[*counter_ptr++];
 
 		return result;
 	}
@@ -342,16 +343,16 @@ struct classic
 			counter(*data++) += 1;
 	}
 
-	static void fill_entropytable(cv::Mat_<result_type>& entropy_table, int size)
+	static void fill_entropytable(std::vector<result_type>& entropy_table, int size)
 	{
 		//entropy_table = cv::Mat(size, 1, CV_32FC1);
-		entropy_table = cv::Mat_<result_type>(size,1);
-		result_type *entropy_table_ptr = entropy_table[0];
+		//entropy_table = cv::Mat_<result_type>(size,1);
+		entropy_table.resize(size);
 		result_type n = 1.0f/size;
 
-		*entropy_table_ptr++ = 0.0f;
+		entropy_table[0] = 0;
 		for(int i = 1; i < size; ++i)
-			*entropy_table_ptr++ = -i*n*std::log(i*n);
+			entropy_table[i] = -i*n*std::log(i*n);
 	}
 };
 

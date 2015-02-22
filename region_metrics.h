@@ -66,7 +66,7 @@ template<typename cost_calc, int quantizer>
 class region_info_disparity
 {
 private:
-	cv::Mat_<float> entropy_table;
+	std::vector<float> entropy_table;
 
 	cost_calc calculator;
 	cv::Mat m_base, m_match;
