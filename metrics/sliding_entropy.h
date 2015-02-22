@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "fast_array.h"
 #include "entropy.h"
+#include "disparity_range.h"
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -73,7 +74,7 @@ template<int bins>
 class joint_fixed_windowsize_threaddata
 {
 public:
-	cv::Mat_<unsigned char> m_base;
+	cv::Mat_<unsigned char> m_basewindow;
 	cv::Mat_<unsigned char> m_match_table;
 	fast_array2d<unsigned short, bins, bins> counter_array;
 };
@@ -91,34 +92,35 @@ public:
 
 private:
 	std::vector<T> entropy_table;
+	cv::Mat m_base, m_match;
 
 public:
-	joint_fixed_windowsize(const cv::Mat& /*match*/, int pwindowsize) : windowsize(pwindowsize)
+	joint_fixed_windowsize(const cv::Mat& base, const cv::Mat& match, int pwindowsize) : windowsize(pwindowsize), m_base(base), m_match(match)
 	{
 		entropy_style::fill_entropytable(entropy_table, windowsize*windowsize*entropy_style::counter_factor());
 	}
 
 	//prepares a row for calculation
-	inline void prepare_row(thread_type& thread, const cv::Mat& match, int y)
+	inline void prepare_row(thread_type& thread, int y)
 	{
-		thread.m_match_table = serializeRow<unsigned char>(match, y, windowsize, false);
+		thread.m_match_table = serializeRow<unsigned char>(m_match, y, windowsize, false);
 	}
 
 	inline void prepare_window(thread_type& thread, const cv::Mat& base)
 	{
 		//copy the window for L1 Cache friendlieness
-		thread.m_base = base.clone();
+		thread.m_basewindow = base.clone();
 	}
 
 	//calculates the histogramms for mutual information
 	inline T increm(thread_type& thread, int x)
 	{
 		//creating histogramm
-		entropy_style::calculate_joint_histogramm(thread.counter_array, thread.m_base[0], thread.m_match_table[x], windowsize*windowsize);
+		entropy_style::calculate_joint_histogramm(thread.counter_array, thread.m_basewindow[0], thread.m_match_table[x], windowsize*windowsize);
 
 		//compute entropy
 		if(windowsize*windowsize*entropy_style::kernel_size() < bins*bins)
-			return entropy_style::calculate_joint_entropy_sparse(thread.counter_array, entropy_table, bins, windowsize*windowsize, thread.m_base[0], thread.m_match_table[x]);
+			return entropy_style::calculate_joint_entropy_sparse(thread.counter_array, entropy_table, bins, windowsize*windowsize, thread.m_basewindow[0], thread.m_match_table[x]);
 		else
 			return entropy_style::calculate_entropy(thread.counter_array, entropy_table, bins*bins);
 	}
@@ -128,7 +130,7 @@ template<int bins>
 class flexible_windowsize_threaddata
 {
 public:
-	cv::Mat_<unsigned char> m_base;
+	cv::Mat_<unsigned char> m_basewindow;
 	fast_array2d<unsigned short, bins, bins> counter_array;
 	int cwindowsizeX;
 	int cwindowsizeY;
@@ -147,40 +149,40 @@ public:
 
 private:
 	std::vector<T> entropy_table;
-	cv::Mat m_match;
+	cv::Mat m_base, m_match;
 
 public:
-	flexible_windowsize(const cv::Mat& match, unsigned int max_windowsize) : m_match(match)
+	flexible_windowsize(const cv::Mat& base, const cv::Mat& match, const disparity_range&, unsigned int max_windowsize) : m_base(base), m_match(match)
 	{
 		entropy_style::fill_entropytable(entropy_table, max_windowsize*max_windowsize*entropy_style::counter_factor());
 	}
 
 	//prepares a row for calculation
-	inline void prepare_row(thread_type& thread, const cv::Mat& /*match*/, int y)
+	inline void prepare_row(thread_type& thread, int y)
 	{
 		thread.crow = y;
 	}
 
-	inline void prepare_window(thread_type& thread, const cv::Mat& base, int cwindowsizeX, int cwindowsizeY)
+	inline void prepare_window(thread_type& thread, int x, int cwindowsizeX, int cwindowsizeY)
 	{
 		thread.cwindowsizeX = cwindowsizeX;
 		thread.cwindowsizeY = cwindowsizeY;
 		//copy the window for L1 Cache friendlieness
-		thread.m_base = base.clone();
+		thread.m_basewindow = subwindow(m_base, x, thread.crow, cwindowsizeX, cwindowsizeY).clone();
 
-		entropy_style::calculate_histogramm(thread.counter_array, thread.m_base[0], thread.m_base.total());
+		entropy_style::calculate_histogramm(thread.counter_array, thread.m_basewindow[0], thread.m_basewindow.total());
 		thread.base_entropy = entropy_style::calculate_entropy(thread.counter_array, entropy_table, bins);
 	}
 
 	//calculates the histogramms
-	inline T increm(thread_type& thread, int x)
+	inline T increm(thread_type& thread, int x, int d)
 	{
-		cv::Mat_<unsigned char> match_window = subwindow(m_match, x, thread.crow, thread.cwindowsizeX, thread.cwindowsizeY).clone();
+		cv::Mat_<unsigned char> match_window = subwindow(m_match, x+d, thread.crow, thread.cwindowsizeX, thread.cwindowsizeY).clone();
 		//creating joint histogramm, compute joint entropy
-		entropy_style::calculate_joint_histogramm(thread.counter_array, thread.m_base[0], match_window[0], thread.cwindowsizeX*thread.cwindowsizeY);
+		entropy_style::calculate_joint_histogramm(thread.counter_array, thread.m_basewindow[0], match_window[0], thread.cwindowsizeX*thread.cwindowsizeY);
 		T joint_entropy;
 		if(thread.cwindowsizeX*thread.cwindowsizeY*entropy_style::kernel_size() <= bins*bins)
-			joint_entropy = entropy_style::calculate_joint_entropy_sparse(thread.counter_array, entropy_table, bins, thread.cwindowsizeX*thread.cwindowsizeY, thread.m_base[0], match_window[0]);
+			joint_entropy = entropy_style::calculate_joint_entropy_sparse(thread.counter_array, entropy_table, bins, thread.cwindowsizeX*thread.cwindowsizeY, thread.m_basewindow[0], match_window[0]);
 		else
 			joint_entropy = entropy_style::calculate_joint_entropy(thread.counter_array, entropy_table, bins);
 

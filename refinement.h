@@ -52,7 +52,7 @@ cv::FileStorage& operator>>(cv::FileStorage& stream, refinement_config& config);
 typedef std::function<cv::Mat(cv::Mat& initial_disparity, single_stereo_task& task, cv::Mat base, cv::Mat match, region_container& container, const refinement_config& config)> refinement_func_type;
 
 
-template<typename cost_func, int quantizer>
+template<typename cost_func>
 cv::Mat refine_initial_disparity(cv::Mat& initial_disparity, single_stereo_task& task, cv::Mat base, cv::Mat match, region_container& container, const refinement_config& config)
 {
 	std::cout << "windows" << std::endl;

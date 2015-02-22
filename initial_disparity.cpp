@@ -60,6 +60,7 @@ public:
 	int cwindowsizeX;
 	int cwindowsizeY;
 	int crow;
+	int cbase_x;
 };
 
 class sliding_sad
@@ -69,32 +70,72 @@ public:
 	typedef sliding_sad_threaddata thread_type;
 private:
 
-	cv::Mat m_match;
+	cv::Mat m_base, m_match;
 
 public:
-	inline sliding_sad(const cv::Mat& match, unsigned int /*max_windowsize*/) : m_match(match)
+	inline sliding_sad(const cv::Mat& base, const cv::Mat& match, const disparity_range&, unsigned int /*max_windowsize*/) : m_base(base), m_match(match)
 	{
 	}
 
 	//prepares a row for calculation
-	inline void prepare_row(thread_type& thread, const cv::Mat& /*match*/, int y)
+	inline void prepare_row(thread_type& thread, int y)
 	{
 		thread.crow = y;
 	}
 
-	inline void prepare_window(thread_type& thread, const cv::Mat& base, int cwindowsizeX, int cwindowsizeY)
+	inline void prepare_window(thread_type& thread, int x, int cwindowsizeX, int cwindowsizeY)
 	{
 		thread.cwindowsizeX = cwindowsizeX;
 		thread.cwindowsizeY = cwindowsizeY;
 		//copy the window for L1 Cache friendlieness
-		thread.m_base = base.clone();
+		thread.cbase_x = x;
+		thread.m_base = subwindow(m_base, x, thread.crow, cwindowsizeX, cwindowsizeY).clone();
 	}
 
-	inline prob_table_type increm(thread_type& thread, int x)
+	inline prob_table_type increm(thread_type& thread, int x, int d)
 	{
-		cv::Mat match_window = subwindow(m_match, x, thread.crow, thread.cwindowsizeX, thread.cwindowsizeY).clone();
+		cv::Mat match_window = subwindow(m_match, x+d, thread.crow, thread.cwindowsizeX, thread.cwindowsizeY).clone();
 
 		return cv::norm(thread.m_base, match_window, cv::NORM_L1)/match_window.total()/256;
+	}
+};
+
+class sliding_sncc
+{
+public:
+	typedef float prob_table_type;
+	typedef sliding_sad_threaddata thread_type;
+
+private:
+	cv::Mat m_base, m_match;
+	std::vector<cv::Mat_<float> > results;
+
+public:
+	inline sliding_sncc(const cv::Mat& base, const cv::Mat& match, const disparity_range& range, unsigned int) : m_base(base), m_match(match)
+	{
+		sncc_disparitywise_calculator sncc(base, match);
+		results.resize(range.size());
+		for(int d = range.start(); d <= range.end(); ++d)
+			results[std::abs(d)] = sncc(d);
+	}
+
+	//prepares a row for calculation
+	inline void prepare_row(thread_type& thread, int y)
+	{
+		thread.crow = y;
+	}
+
+	inline void prepare_window(thread_type& thread, int x, int cwindowsizeX, int cwindowsizeY)
+	{
+		thread.cwindowsizeX = cwindowsizeX;
+		thread.cwindowsizeY = cwindowsizeY;
+		thread.cbase_x = x;
+	}
+
+	inline prob_table_type increm(thread_type& thread, int x, int d)
+	{
+		int d_offset = d < 0 ? d : 0;
+		return cv::norm(subwindow(results[std::abs(d)], x+d_offset, thread.crow, thread.cwindowsizeX, thread.cwindowsizeY))/thread.cwindowsizeX/thread.cwindowsizeY;
 	}
 };
 
@@ -251,16 +292,17 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 		//disparity_function = calculate_relaxed_region_generic<sad_disparitywise_calculator>;
 		task.algoLeft = task.left;
 		task.algoRight = task.right;
-		ref_func = refine_initial_disparity<refinement_metric, quantizer>;
+		ref_func = refine_initial_disparity<refinement_metric>;
 	}
 	else if(config.metric_type == "sncc")
 	{
-		typedef sliding_sad refinement_metric;
+		//typedef sliding_sad refinement_metric;
+		typedef sliding_sncc refinement_metric;
 		//disparity_function = calculate_region_generic<sncc_disparitywise_calculator>;
 		disparity_function = calculate_relaxed_region_generic<sncc_disparitywise_calculator>;
 		task.algoLeft = task.leftGray;
 		task.algoRight = task.rightGray;
-		ref_func = refine_initial_disparity<refinement_metric, quantizer>;
+		ref_func = refine_initial_disparity<refinement_metric>;
 	}
 	else
 	{
@@ -275,7 +317,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 		disparity_function = calculate_region_disparity_regionwise<disparity_metric>;
 		task.algoLeft  = quantize_image(task.leftGray, quantizer);
 		task.algoRight = quantize_image(task.rightGray, quantizer);
-		ref_func = refine_initial_disparity<refinement_metric, quantizer>;
+		ref_func = refine_initial_disparity<refinement_metric>;
 	}
 
 	std::shared_ptr<region_container> left  = std::make_shared<region_container>();

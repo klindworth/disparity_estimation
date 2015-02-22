@@ -148,11 +148,11 @@ int main(int argc, char *argv[])
 	//folder_testset testset("tasks/kitti-training_small-valid");
 	//folder_testset testset("tasks/kitti-training_debug");
 	//stereo_task testset("tasks/kit3"); //5, 3 neuer problemfall?
-	TaskTestSet testset("tasks/rgbset");
+	//TaskTestSet testset("tasks/rgbset");
 
 	//simulated (hard) tasks
 	//stereo_task testset("tasks/2im2");
-	//TaskTestSet testset("tasks/smallset2");
+	TaskTestSet testset("tasks/smallset2");
 
 	//vl/ir
 	//stereo_task testset("tasks/ir-vl");
@@ -172,12 +172,12 @@ int main(int argc, char *argv[])
 	//std::string configfile = "tasks/config-irvl.yml";
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";
 	//std::string configfile = "tasks/config-big-msslic.yml";
-	//std::string configfile = "tasks/config-small-msslic-current.yml";
+	std::string configfile = "tasks/config-small-msslic-current.yml";
 	//std::string configfile = "tasks/config-debug.yml";
 	//std::string configfile = "tasks/config-kit-refine2.yml";
 	//std::string configfile = "tasks/config-kit2.yml";
 	//std::string configfile = "tasks/config-kit-it.yml";
-	std::string configfile = "tasks/config-rgb-slic.yml";
+	//std::string configfile = "tasks/config-rgb-slic.yml";
 	//std::string configfile = "tasks/config-small-woopt.yml";
 
 	/*if(!task.valid())
@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
 	clas_config.soft = true;
 	clas_config.quantizer = 8;
 
-	classicLoggedRun(testset, clas_config);
+	//classicLoggedRun(testset, clas_config);
 
 	cv::FileStorage fs(configfile, cv::FileStorage::READ);
 	if(!fs.isOpened())
@@ -233,7 +233,7 @@ int main(int argc, char *argv[])
 	}*/
 
 	//algo(testset);
-	//logged_run(testset, config, refconfig);
+	logged_run(testset, config, refconfig);
 
 	ImageStore imviewer;
 	imviewer.refreshList(matstore);

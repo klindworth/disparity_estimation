@@ -48,7 +48,7 @@ std::tuple<T, T, T> entropies_calculator(joint_counter& counter_joint, counter& 
 
 	entropy_style::calculate_joint_histogramm(counter_joint, base_region.data, match_region.data, base_region.total());
 	T joint_entropy;
-	if(base_region.total()*6 > bins*bins)
+	if(base_region.total()*entropy_style::kernel_size() > bins*bins)
 		joint_entropy = entropy_style::calculate_joint_entropy(counter_joint, entropy_table, bins);
 	else
 		joint_entropy = entropy_style::calculate_joint_entropy_sparse(counter_joint, entropy_table, bins, base_region.total(), base_region.data, match_region.data);

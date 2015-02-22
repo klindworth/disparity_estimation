@@ -45,6 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "optimizer/manual_region_optimizer.h"
 
 #include "metrics/pixelwise/gradient_disparitywise.h"
+#include "metrics/pixelwise/sncc_disparitywise_calculator.h"
 
 std::string dateString()
 {
@@ -228,8 +229,13 @@ void singleClassicRun(const stereo_task& task, const classic_search_config& conf
 	else
 		std::cerr << "invalid quantizer" << std::endl;
 
-	//resultLeft.push_back(disparity::create_from_costmap(sliding_gradient(task.forward, config.windowsize), task.forward.range.start(), 1));
-	//resultRight.push_back(disparity::create_from_costmap(sliding_gradient(task.backward, config.windowsize), task.backward.range.start(), 1));
+	resultLeft.push_back(disparity::create_from_costmap(sliding_gradient(task.forward, config.windowsize), task.forward.range.start(), 1));
+	resultRight.push_back(disparity::create_from_costmap(sliding_gradient(task.backward, config.windowsize), task.backward.range.start(), 1));
+
+	sncc_disparitywise_calculator sncc_f(task.leftGray, task.rightGray);
+	resultLeft.push_back(disparity::create_from_costmap(simple_window_disparitywise_calculator(sncc_f, cv::Size(config.windowsize, config.windowsize), task.left.size(), task.forward.dispMin, task.forward.dispMax),task.forward.range.start(), 1));
+	sncc_disparitywise_calculator sncc_b(task.rightGray, task.leftGray);
+	resultRight.push_back(disparity::create_from_costmap(simple_window_disparitywise_calculator(sncc_b, cv::Size(config.windowsize, config.windowsize), task.right.size(), task.backward.dispMin, task.backward.dispMax),task.backward.range.start(), 1));
 
 	std::time_t endtime;
 	std::time(&endtime);
@@ -246,7 +252,7 @@ void singleClassicRun(const stereo_task& task, const classic_search_config& conf
 
 void classicLoggedRun(task_collection& taskset, classic_search_config& config)
 {
-	std::vector<std::string> names {"_mi", "_vi", "_nvi", "_ndi"/*, "_grad"*/};
+	std::vector<std::string> names {"_mi", "_vi", "_nvi", "_ndi", "_grad", "_sncc"};
 
 	std::vector<std::unique_ptr<cv::FileStorage>> fs;
 	std::string filename = "results/" + dateString() + "_" + timestampString();

@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include "genericfunctions.h"
+#include "disparity_range.h"
 
 namespace costmap_creators
 {
@@ -50,13 +51,13 @@ cv::Mat joint_fixed_size(const cv::Mat& base, const cv::Mat& match, int dispMin,
 	const int x_min = windowsize/2;
 	const int x_max = base.cols - windowsize/2;
 
-	cost_class cost_agg(match, windowsize);
+	cost_class cost_agg(base, match, windowsize);
 	typename cost_class::thread_type thread_data;
 
 	#pragma omp parallel for private(thread_data)
 	for(int y = y_min; y < y_max; ++y)
 	{
-		cost_agg.prepare_row(thread_data, match, y);
+		cost_agg.prepare_row(thread_data, y);
 		cv::Mat windowBase = subwindow(base, x_min, y, windowsize);
 		for(int x = x_min; x < x_max; ++x)
 		{
@@ -97,13 +98,13 @@ cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, int dispM
 	const int x_min = min_windowsize/2;
 	const int x_max = base.cols - min_windowsize/2;
 
-	cost_class cost_agg(match);
+	cost_class cost_agg(base, match, disparity_range(dispMin, dispMax));
 	typename cost_class::thread_type thread_data;
 
 	#pragma omp parallel for private(thread_data)
 	for(int y = y_min; y < y_max; ++y)
 	{
-		cost_agg.prepareRow(thread_data, match, y);
+		cost_agg.prepareRow(thread_data, y);
 
 		for(int x = x_min; x < x_max; ++x)
 		{
@@ -125,7 +126,7 @@ cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, int dispM
 				prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, disp_start-dispMin);
 				for(int d = disp_start; d <= disp_end; ++d)
 				{
-					*result_ptr++ = cost_agg.increm(thread_data, x+d);
+					*result_ptr++ = cost_agg.increm(thread_data, x, d);
 				}
 			}
 		}
@@ -148,13 +149,13 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 	const int x_min = min_windowsize/2;
 	const int x_max = base.cols - min_windowsize/2;
 
-	cost_class cost_agg(match, max_windowsize);
+	cost_class cost_agg(base, match, disparity_range(dispMin_comp, dispMax_comp), max_windowsize);
 	typename cost_class::thread_type thread_data;
 
 	#pragma omp parallel for private(thread_data)
 	for(int y = y_min; y < y_max; ++y)
 	{
-		cost_agg.prepare_row(thread_data, match, y);
+		cost_agg.prepare_row(thread_data, y);
 
 		for(int x = x_min; x < x_max; ++x)
 		{
@@ -173,8 +174,7 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 
 			if(cwindowsize[0] > 0 && cwindowsize[1] > 0 && disp_end > disp_start)
 			{
-				cv::Mat windowBase = subwindow(base, x, y, cwindowsize[1], cwindowsize[0] );
-				cost_agg.prepare_window(thread_data, windowBase, cwindowsize[1], cwindowsize[0] );
+				cost_agg.prepare_window(thread_data, x, cwindowsize[1], cwindowsize[0] );
 
 				assert(disp_start-dispMin >= 0);
 				assert(disp_start-dispMin < dispMax - dispMin + 1);
@@ -189,7 +189,7 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 				prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, disp_start-dispMin_pre);
 				for(int d = disp_start; d <= disp_end; ++d)
 				{
-					*result_ptr++ = cost_agg.increm(thread_data, x+d);
+					*result_ptr++ = cost_agg.increm(thread_data, x, d);
 				}
 			}
 		}
@@ -263,7 +263,7 @@ template<typename cost_type, typename window_type>
 cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv::Size base_size, int dispMin, int dispMax)
 {
 	int sz[] = {base_size.height, base_size.width, dispMax - dispMin + 1};
-	cv::Mat_<float> result = cv::Mat(3, sz, CV_32FC1, cv::Scalar(-std::numeric_limits<float>::max()));
+	cv::Mat_<float> result = cv::Mat(3, sz, CV_32FC1, cv::Scalar(std::numeric_limits<float>::max()));
 
 	#pragma omp parallel for
 	for(int d = dispMin; d <= dispMax; ++d)
