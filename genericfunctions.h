@@ -253,46 +253,32 @@ cv::Mat_<dst_t> value_scaled_image(const cv::Mat& image)
 	return result;
 }
 
+template<typename Iterator>
+std::size_t min_idx(Iterator begin, Iterator end, std::size_t preferred)
+{
+	Iterator best = begin + preferred;
+
+	for(Iterator it = begin; it != end; ++it)
+	{
+		if(*it < *best)
+			best = it;
+	}
+
+	return std::distance(begin, best);
+}
+
 template<typename T>
 std::size_t min_idx(const cv::Mat_<T>& src, std::size_t preferred = 0)
 {
-	std::size_t idx = preferred;
-	T value = src(preferred);
-
-	const T* ptr = src[0];
-	std::size_t size = src.total();
-
-	for(std::size_t i = 0; i < size; ++i)
-	{
-		if(*ptr < value)
-		{
-			value = *ptr;
-			idx = i;
-		}
-		++ptr;
-	}
-
-	return idx;
+	return min_idx(src[0], src[0] + src.total(), preferred);
 }
 
 template<typename T>
 std::size_t min_idx(const std::vector<T>& src, std::size_t preferred = 0)
 {
-	std::size_t idx = preferred;
-	T value = src[preferred];
-
-	const std::size_t size = src.size();
-	for(std::size_t i = 0; i < size; ++i)
-	{
-		if(src[i] < value)
-		{
-			value = src[i];
-			idx = i;
-		}
-	}
-
-	return idx;
+	return min_idx(src.begin(), src.end(), preferred);
 }
+
 
 cv::Mat cutImageBorder(const cv::Mat &input, int windowsize);
 cv::Mat lowerDimensionality(const cv::Mat &input);

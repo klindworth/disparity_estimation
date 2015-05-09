@@ -23,11 +23,12 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef ML_REGION_OPTIMIZER_H
-#define ML_REGION_OPTIMIZER_H
+#ifndef ML_REGION_OPTIMIZER_DISP_H
+#define ML_REGION_OPTIMIZER_DISP_H
 
 #include "region_optimizer.h"
 #include "region_ground_truth.h"
+#include "ml_region_optimizer.h"
 #include <memory>
 
 class single_stereo_task;
@@ -38,42 +39,11 @@ template<typename T>
 class network;
 }
 
-class ml_feature_calculator : public disparity_features_calculator
+class ml_region_optimizer_disp : public ml_region_optimizer_base
 {
 public:
-	ml_feature_calculator(const region_container& left_regions, const region_container& right_regions) : disparity_features_calculator(left_regions, right_regions) {}
-	void operator()(const disparity_region& baseRegion, short pot_trunc, const disparity_range& drange, std::vector<float>& result_vector);
-	void update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange);
-};
-
-class ml_region_optimizer_base : public region_optimizer
-{
-public:
-	void run(region_container& left, region_container& right, const optimizer_settings& config, int refinement= 0) override;
-
-protected:
-	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
-
-	std::vector<std::vector<double>> samples_left, samples_right;
-	std::vector<short> samples_gt_left, samples_gt_right;
-
-	int training_iteration;
-	std::string filename_left_prefix, filename_right_prefix;
-
-	std::unique_ptr<neural_network::network<double>> nnet;
-	result_eps_calculator total_diff_calc;
-
-	virtual void refresh_base_optimization_vector(const region_container& base, const region_container& match, int delta) = 0;
-	virtual void prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta) = 0;
-	virtual void optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename) = 0;
-	virtual void reset_internal() = 0;
-};
-
-class ml_region_optimizer : public ml_region_optimizer_base
-{
-public:
-	ml_region_optimizer();
-	~ml_region_optimizer();
+	ml_region_optimizer_disp();
+	~ml_region_optimizer_disp();
 
 	void reset(const region_container& left, const region_container& right) override;
 
@@ -83,13 +53,11 @@ public:
 	const static int vector_size = 0;//8;
 	const static int normalizer_size = vector_size+vector_size_per_disp;
 
-protected:
+private:
 	void refresh_base_optimization_vector(const region_container& base, const region_container& match, int delta);
+	void reset_internal();
 	void prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta);
 	void optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename);
-	void reset_internal();
 };
-
-void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& optimization_vectors, const region_container& base, const region_container& match, int delta);
 
 #endif

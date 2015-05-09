@@ -26,6 +26,7 @@ set(SOURCES main.cpp
     metrics/pixelwise/sncc_disparitywise_calculator.cpp
     optimizer/manual_region_optimizer.cpp
     optimizer/ml_region_optimizer.cpp
+    optimizer/ml_region_optimizer_disp.cpp
     region_ground_truth.cpp
 
     gui/miniplot.cpp    
@@ -62,6 +63,7 @@ set(HEADERS
     optimizer/region_optimizer.h
     optimizer/manual_region_optimizer.h
     optimizer/ml_region_optimizer.h
+    optimizer/ml_region_optimizer_disp.h
     configrun.h
     taskanalysis.h
     region_ground_truth.h

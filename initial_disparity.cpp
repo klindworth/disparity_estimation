@@ -280,8 +280,6 @@ cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, c
 
 std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const initial_disparity_config& config , const refinement_config& refconfig, int subsampling, region_optimizer& optimizer)
 {
-	const int quantizer = 8;
-
 	disparity_region_func disparity_function;
 	refinement_func_type ref_func;
 	if(config.metric_type == "sad")
@@ -306,6 +304,7 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 	}
 	else
 	{
+		const int quantizer = 8;
 		typedef normalized_information_distance_calc<float> it_metric;
 		//typedef normalized_variation_of_information_calc<float> it_metric;
 		//typedef variation_of_information_calc<float> it_metric;
@@ -399,7 +398,8 @@ initial_disparity_algo::initial_disparity_algo(initial_disparity_config &config,
 std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(stereo_task& task)
 {
 	std::cout << "task: " << task.name << std::endl;
-	int subsampling = 1; //TODO avoid this
+	//int subsampling = 1; //TODO avoid this
+	int subsampling = task.groundTruthSubsampling;
 	matstore.start_new_task(task.name, task);
 	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling, *m_optimizer);
 }

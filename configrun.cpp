@@ -39,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/highgui/highgui.hpp>
 #include <functional>
 #include <cvio/hdf5wrapper.h>
-#include <cvio-b/hdf5internals.h>
+#include <cvio/hdf5internals.h>
 
 #include "optimizer/ml_region_optimizer.h"
 #include "optimizer/manual_region_optimizer.h"
@@ -79,8 +79,7 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 	int subsampling = 1; //TODO: avoid this
 
 	task_analysis analysis(task, disparity.first, disparity.second, subsampling, ignore_border);
-	cv::Mat disp_left  = disparity::create_image(disparity.first);
-	cv::Mat disp_right = disparity::create_image(disparity.second);
+
 	if(logging)
 	{
 		fs << "taskname" << task.name;
@@ -92,10 +91,6 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 		hfile.save(disparity.first, "/results/left_disparity", false);
 		hfile.save(disparity.second, "/results/right_disparity", false);
 	}
-
-	matstore.add_mat(disp_left,  "disp_left");
-	//matstore.add_mat(disparity.first, "disp_left_org");
-	matstore.add_mat(disp_right, "disp_right");
 
 	if(task.groundLeft.data)
 	{
