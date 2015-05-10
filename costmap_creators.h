@@ -37,9 +37,9 @@ namespace costmap_creators
 namespace sliding_window
 {
 template<typename cost_class>
-cv::Mat joint_fixed_size(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, unsigned int windowsize)
+cv::Mat joint_fixed_size(const cv::Mat& base, const cv::Mat& match, const disparity_range range, const int windowsize)
 {
-	disparity_range range(dispMin, dispMax);
+	assert(windowsize > 0);
 
 	using prob_table_type = typename cost_class::result_type;
 	int sz[] = {base.rows, base.cols, range.size()};
@@ -64,7 +64,7 @@ cv::Mat joint_fixed_size(const cv::Mat& base, const cv::Mat& match, int dispMin,
 		for(int x = x_min; x < x_max; ++x)
 		{
 			cost_agg.prepare_window(thread_data, windowBase);
-			disparity_range crange = range.restrict_to_image(x, base.cols, border);
+			const disparity_range crange = range.restrict_to_image(x, base.cols, border);
 
 			prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, crange.index(crange.start()));
 			for(int d = crange.start(); d <= crange.end(); ++d)
@@ -79,10 +79,9 @@ cv::Mat joint_fixed_size(const cv::Mat& base, const cv::Mat& match, int dispMin,
 }
 
 template<typename cost_class>
-cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, const cv::Mat& windowsizes)
+cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, const disparity_range range, const cv::Mat_<cv::Vec2b>& windowsizes)
 {
 	int min_windowsize = 7;
-	disparity_range range(dispMin, dispMax);
 
 	typedef float prob_table_type;
 	int sz[] = {base.rows, base.cols, range.size()};
@@ -94,7 +93,7 @@ cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, int dispM
 	const int x_min = min_windowsize/2;
 	const int x_max = base.cols - min_windowsize/2;
 
-	cost_class cost_agg(base, match, disparity_range(dispMin, dispMax));
+	cost_class cost_agg(base, match, range);
 	typename cost_class::thread_type thread_data;
 
 	#pragma omp parallel for private(thread_data)
@@ -104,13 +103,13 @@ cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, int dispM
 
 		for(int x = x_min; x < x_max; ++x)
 		{
-			cv::Vec2b cwindowsize = windowsizes.at<cv::Vec2b>(y,x);
+			const cv::Vec2b cwindowsize = windowsizes(y,x);
 			if(cwindowsize[0] > 0 && cwindowsize[1] > 0)
 			{
 				cv::Mat windowBase = subwindow(base, x, y, cwindowsize[1], cwindowsize[0] );
 				cost_agg.prepareWindow(thread_data, windowBase, cwindowsize[1], cwindowsize[0] );
 
-				disparity_range crange = range.restrict_to_image(x, base.cols, cwindowsize[1]/2);
+				const disparity_range crange = range.restrict_to_image(x, base.cols, cwindowsize[1]/2);
 
 				prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, range.index(crange.start()));
 				for(int d = crange.start(); d <= crange.end(); ++d)
@@ -126,7 +125,7 @@ cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, int dispM
 
 //berechnet fuer subranges die disparitaet. disp*_comp gibt den gesamten Bereich an, rangeCenter-/+dispRange/2 den Teilbereich
 template<typename cost_class>
-cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat& match, const cv::Mat& windowsizes, const cv::Mat& rangeCenter, int disparity_delta, int dispMin_bound, int dispMax_bound, unsigned int min_windowsize, unsigned int max_windowsize)
+cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat& match, const cv::Mat& windowsizes, const cv::Mat& rangeCenter, int disparity_delta, const disparity_range range_bound, unsigned int min_windowsize, unsigned int max_windowsize)
 {
 	typedef float prob_table_type;
 	int sz[] = {base.rows, base.cols, disparity_delta*2+1};
@@ -138,9 +137,7 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 	const int x_min = min_windowsize/2;
 	const int x_max = base.cols - min_windowsize/2;
 
-	disparity_range range(dispMin_bound, dispMax_bound);
-
-	cost_class cost_agg(base, match, disparity_range(dispMin_bound, dispMax_bound), max_windowsize);
+	cost_class cost_agg(base, match, range_bound, max_windowsize);
 	typename cost_class::thread_type thread_data;
 
 	#pragma omp parallel for private(thread_data)
@@ -152,7 +149,7 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 		{
 			cv::Vec2b cwindowsize = windowsizes.at<cv::Vec2b>(y,x);
 
-			disparity_range crange  = range.subrange_with_subspace(rangeCenter.at<short>(y,x), disparity_delta).restrict_to_image(x, base.cols, cwindowsize[1]/2);
+			const disparity_range crange  = range_bound.subrange_with_subspace(rangeCenter.at<short>(y,x), disparity_delta).restrict_to_image(x, base.cols, cwindowsize[1]/2);
 
 			if(cwindowsize[0] > 0 && cwindowsize[1] > 0 && crange.end() > crange.start())
 			{
@@ -172,20 +169,19 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 }
 //! Calculates pointwise (no window involved) the disparity. cost aggregator must be passed as a function object, returns a cost map
 template<typename cost_class, typename data_type>
-cv::Mat calculate_pixelwise(cv::Mat base, data_type data, int dispMin, int dispMax)
+cv::Mat calculate_pixelwise(cv::Mat base, data_type data, const disparity_range range)
 {
-	disparity_range range(dispMin, dispMax);
 	int sz[]  = {base.size[0], base.size[1], range.size()};
 	cv::Mat result = cv::Mat(3, sz, CV_32FC1, cv::Scalar(std::numeric_limits<float>::max()));
 
-	cost_class cost_agg(base, data, dispMin);
+	cost_class cost_agg(base, data, range.start());
 
 	#pragma omp parallel for
 	for(int y = 0; y< base.size[0]; ++y)
 	{
 		for(int x = 0; x < base.size[1]; ++x)
 		{
-			disparity_range crange = range.restrict_to_image(x, base.size[1]);
+			const disparity_range crange = range.restrict_to_image(x, base.size[1]);
 
 			float *result_ptr = result.ptr<float>(y,x, crange.index(crange.start()));
 
@@ -226,13 +222,13 @@ cv::Mat flexBoxFilter(cv::Mat src, cv::Mat windowsizes)
 
 
 template<typename cost_type, typename window_type>
-cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv::Size base_size, int dispMin, int dispMax)
+cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv::Size base_size, const disparity_range range)
 {
-	int sz[] = {base_size.height, base_size.width, dispMax - dispMin + 1};
+	int sz[] = {base_size.height, base_size.width, range.size()};
 	cv::Mat_<float> result = cv::Mat(3, sz, CV_32FC1, cv::Scalar(std::numeric_limits<float>::max()));
 
 	#pragma omp parallel for
-	for(int d = dispMin; d <= dispMax; ++d)
+	for(int d = range.start(); d <= range.end(); ++d)
 	{
 		cv::Mat temp_result = window_sum(cost_func(d), d);
 
@@ -241,13 +237,13 @@ cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv
 			if(d < 0)
 			{
 				for(int x = -d; x < base_size.width; ++x)
-					result(y,x,d-dispMin) = temp_result.at<float>(y, x+d);
+					result(y,x,range.index(d)) = temp_result.at<float>(y, x+d);
 			}
 			else
 			{
 				int max_x = base_size.width - d;
 				for(int x = 0; x < max_x; ++x)
-					result(y,x,d-dispMin) = temp_result.at<float>(y, x);
+					result(y,x,range.index(d)) = temp_result.at<float>(y, x);
 			}
 		}
 	}
@@ -255,7 +251,7 @@ cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv
 }
 
 template<typename cost_type>
-cv::Mat simple_window_disparitywise_calculator(cost_type cost_func, cv::Size window_size, cv::Size base_size, int dispMin, int dispMax)
+cv::Mat simple_window_disparitywise_calculator(cost_type cost_func, cv::Size window_size, cv::Size base_size, const disparity_range range)
 {
 	auto window_sum = [=](const cv::Mat& pre_result, int){
 		cv::Mat temp_result;
@@ -263,7 +259,7 @@ cv::Mat simple_window_disparitywise_calculator(cost_type cost_func, cv::Size win
 		return temp_result;
 	};
 
-	return disparitywise_calculator(cost_func, window_sum, base_size, dispMin, dispMax);
+	return disparitywise_calculator(cost_func, window_sum, base_size, range);
 }
 
 #endif // COSTMAP_CREATORS_H

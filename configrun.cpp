@@ -228,9 +228,9 @@ void singleClassicRun(const stereo_task& task, const classic_search_config& conf
 	resultRight.push_back(disparity::create_from_costmap(sliding_gradient(task.backward, config.windowsize), task.backward.range.start(), 1));
 
 	sncc_disparitywise_calculator sncc_f(task.leftGray, task.rightGray);
-	resultLeft.push_back(disparity::create_from_costmap(simple_window_disparitywise_calculator(sncc_f, cv::Size(config.windowsize, config.windowsize), task.left.size(), task.forward.dispMin, task.forward.dispMax),task.forward.range.start(), 1));
+	resultLeft.push_back(disparity::create_from_costmap(simple_window_disparitywise_calculator(sncc_f, cv::Size(config.windowsize, config.windowsize), task.left.size(), task.forward.range),task.forward.range.start(), 1));
 	sncc_disparitywise_calculator sncc_b(task.rightGray, task.leftGray);
-	resultRight.push_back(disparity::create_from_costmap(simple_window_disparitywise_calculator(sncc_b, cv::Size(config.windowsize, config.windowsize), task.right.size(), task.backward.dispMin, task.backward.dispMax),task.backward.range.start(), 1));
+	resultRight.push_back(disparity::create_from_costmap(simple_window_disparitywise_calculator(sncc_b, cv::Size(config.windowsize, config.windowsize), task.right.size(), task.backward.range),task.backward.range.start(), 1));
 
 	std::time_t endtime;
 	std::time(&endtime);

@@ -146,5 +146,5 @@ cv::Mat sliding_gradient(const single_stereo_task& task, int windowsize)
 {
 	gradient_calculator calc(task.baseGray, task.matchGray);
 
-	return simple_window_disparitywise_calculator(calc, cv::Size(windowsize, windowsize), task.base.size(), task.dispMin, task.dispMax);
+	return simple_window_disparitywise_calculator(calc, cv::Size(windowsize, windowsize), task.base.size(), task.range);
 }

@@ -63,7 +63,7 @@ costmap_creators::entropy::entropies<T> calculate_entropies(const single_stereo_
 	cv::Mat_<unsigned char> base  = quantize_image(task.baseGray, quantizer);
 	cv::Mat_<unsigned char> match = quantize_image(task.matchGray, quantizer);
 
-	result.XY = sliding_window::joint_fixed_size<entropy::joint_fixed_windowsize<T, quantizer, soft> >(base, match, task.dispMin, task.dispMax, windowsize);
+	result.XY = sliding_window::joint_fixed_size<entropy::joint_fixed_windowsize<T, quantizer, soft> >(base, match, task.range, windowsize);
 	result.X  = slidingWindow<entropy::single_fixed_windowsize<T, quantizer, soft> >(base,  windowsize);
 	result.Y  = slidingWindow<entropy::single_fixed_windowsize<T, quantizer, soft> >(match, windowsize);
 
