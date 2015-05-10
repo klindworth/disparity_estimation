@@ -54,7 +54,7 @@ public:
 	const static int normalizer_size = vector_size+vector_size_per_disp;
 
 private:
-	void refresh_base_optimization_vector(const region_container& base, const region_container& match, int delta);
+	//void refresh_base_optimization_vector(const region_container& base, const region_container& match, int delta);
 	void reset_internal();
 	void prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta);
 	void optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename);

@@ -44,12 +44,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace neural_network;
 
-void ml_region_optimizer_disp::refresh_base_optimization_vector(const region_container& left, const region_container& right, int delta)
-{
-	refresh_base_optimization_vector_internal(optimization_vectors_left, left, right, delta);
-	refresh_base_optimization_vector_internal(optimization_vectors_right, right, left, delta);
-}
-
 template<int vector_size, int vector_size_per_disp, typename dst_type, typename src_type>
 void merge_with_corresponding_optimization_vector(dst_type *dst_ptr, const disparity_region& baseRegion, const std::vector<src_type>& optimization_vector_base, const std::vector<std::vector<src_type>>& optimization_vectors_match, const region_container& match, int delta, const single_stereo_task& task)
 {
@@ -247,44 +241,25 @@ void ml_region_optimizer_disp::prepare_training_sample(std::vector<short>& dst_g
 	std::cout << diff_calc << std::endl;
 }
 
-/*void ml_region_optimizer_disp::run(region_container& left, region_container& right, const optimizer_settings&, int refinement)
+void init_network_disp(network<double>& net, int /*crange*/, int nvector, int pass)
 {
-	refresh_base_optimization_vector(left, right, refinement);
-	if(training_mode)
-	{
-		for(int i = 0; i < training_iteration; ++i)
-		{
-			optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + "-disp.txt");
-			optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + "-disp.txt");
-
-			refresh_base_optimization_vector(left, right, refinement);
-		}
-
-		prepare_training_sample(samples_gt_left, samples_left, optimization_vectors_left, optimization_vectors_right, left, right, refinement);
-		prepare_training_sample(samples_gt_right, samples_right, optimization_vectors_right, optimization_vectors_left, right, left, refinement);
-	}
-	else
-	{
-		for(int i = 0; i <= training_iteration; ++i)
-		{
-			optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + "-disp.txt");
-			optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + "-disp.txt");
-
-			refresh_base_optimization_vector(left, right, refinement);
-		}
-
-		std::vector<short> gt;
-		region_ground_truth(left.regions, left.task.groundTruth, std::back_inserter(gt));
-
-		result_eps_calculator diff_calc = get_region_comparision(left.regions, gt);
-		matstore.add_mat(get_region_gt_error_image(left, gt), "gt_diff");
-
-		total_diff_calc += diff_calc;
-
-		std::cout << diff_calc << std::endl;
-		std::cout << "total: " << total_diff_calc << std::endl;
-	}
-}*/
+	//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	//net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
+	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(nvector*2, nvector, pass);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(nvector, nvector*2, pass);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(nvector);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(nvector);
+	net.emplace_layer<relu_layer>();
+	//net.emplace_layer<fully_connected_layer>(4);
+	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(2);
+	net.emplace_layer<softmax_output_layer>();
+	//net.emplace_layer<tanh_output_layer>();
+}
 
 void ml_region_optimizer_disp::reset_internal()
 {
@@ -294,19 +269,7 @@ void ml_region_optimizer_disp::reset_internal()
 	int nvector = ml_region_optimizer_disp::vector_size_per_disp;
 	int pass = ml_region_optimizer_disp::vector_size;
 	nnet = std::unique_ptr<network<double>>(new network<double>(dims));
-	//nnet->emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	//nnet->emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
-	//nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
-	nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<transpose_vector_connected_layer>(4, nvector*2, pass);
-	nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<row_connected_layer>(crange, crange, pass);
-	nnet->emplace_layer<relu_layer>();
-	//nnet->emplace_layer<fully_connected_layer>(crange);
-	//nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<fully_connected_layer>(crange);
-	nnet->emplace_layer<softmax_output_layer>();
+	init_network_disp(*nnet, crange, nvector, pass);
 }
 
 ml_region_optimizer_disp::ml_region_optimizer_disp()
@@ -326,7 +289,7 @@ void ml_region_optimizer_disp::reset(const region_container& /*left*/, const reg
 	reset_internal();
 }
 
-void per_disp_training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename)
+void training_internal_per_disp(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename)
 {
 	std::cout << "start disp actual training" << std::endl;
 	std::cout << "samples: " << samples.size() << std::endl;
@@ -350,23 +313,8 @@ void per_disp_training_internal(std::vector<std::vector<double>>& samples, std::
 	//int nvector = ml_region_optimizer::vector_size_per_disp + ml_region_optimizer::vector_size;
 	int nvector = ml_region_optimizer_disp::vector_size_per_disp;
 	int pass = ml_region_optimizer_disp::vector_size;
-	//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	//net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
-	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(nvector*2, nvector, pass);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(nvector, nvector*2, pass);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(nvector);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(nvector);
-	net.emplace_layer<relu_layer>();
-	//net.emplace_layer<fully_connected_layer>(4);
-	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(2);
-	net.emplace_layer<softmax_output_layer>();
-	//net.emplace_layer<tanh_output_layer>();
 
+	init_network_disp(net, dims, nvector, pass);
 	net.multi_training(samples, samples_gt, 16, 61, 4);
 
 	std::ofstream ostream(filename);
@@ -381,8 +329,8 @@ void per_disp_training_internal(std::vector<std::vector<double>>& samples, std::
 
 void ml_region_optimizer_disp::training()
 {
-	per_disp_training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + "-disp.txt");
+	training_internal_per_disp(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + "-disp.txt");
 	std::cout << "\n\n ------------------------------------------- next side --------------------------------------------" << std::endl;
-	per_disp_training_internal(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + "-disp.txt");
+	training_internal_per_disp(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + "-disp.txt");
 }
 

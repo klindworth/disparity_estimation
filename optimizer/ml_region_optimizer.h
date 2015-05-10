@@ -51,6 +51,7 @@ class ml_region_optimizer_base : public region_optimizer
 public:
 	void run(region_container& left, region_container& right, const optimizer_settings& config, int refinement= 0) override;
 
+
 protected:
 	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
 
@@ -63,7 +64,7 @@ protected:
 	std::unique_ptr<neural_network::network<double>> nnet;
 	result_eps_calculator total_diff_calc;
 
-	virtual void refresh_base_optimization_vector(const region_container& base, const region_container& match, int delta) = 0;
+	virtual void refresh_base_optimization_vector(const region_container& base, const region_container& match, int delta);
 	virtual void prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta) = 0;
 	virtual void optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename) = 0;
 	virtual void reset_internal() = 0;
@@ -76,7 +77,6 @@ public:
 	~ml_region_optimizer();
 
 	void reset(const region_container& left, const region_container& right) override;
-
 	void training() override;
 
 	const static int vector_size_per_disp = 11 +8+2;
@@ -84,12 +84,9 @@ public:
 	const static int normalizer_size = vector_size+vector_size_per_disp;
 
 protected:
-	void refresh_base_optimization_vector(const region_container& base, const region_container& match, int delta);
 	void prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta);
 	void optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename);
 	void reset_internal();
 };
-
-void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& optimization_vectors, const region_container& base, const region_container& match, int delta);
 
 #endif

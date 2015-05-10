@@ -62,7 +62,7 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 	}
 }
 
-void ml_region_optimizer::refresh_base_optimization_vector(const region_container& left, const region_container& right, int delta)
+void ml_region_optimizer_base::refresh_base_optimization_vector(const region_container& left, const region_container& right, int delta)
 {
 	refresh_base_optimization_vector_internal(optimization_vectors_left, left, right, delta);
 	refresh_base_optimization_vector_internal(optimization_vectors_right, right, left, delta);
@@ -204,6 +204,23 @@ void ml_region_optimizer_base::run(region_container& left, region_container& rig
 	}
 }
 
+void init_network(network<double>& net, int crange, int nvector, int pass)
+{
+	//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	//net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
+	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<transpose_vector_connected_layer>(4, nvector*2, pass);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<row_connected_layer>(crange, crange, pass);
+	net.emplace_layer<relu_layer>();
+	//net.emplace_layer<fully_connected_layer>(crange);
+	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(crange);
+	net.emplace_layer<softmax_output_layer>();
+}
+
 void ml_region_optimizer::reset_internal()
 {
 	samples_left.clear();
@@ -215,19 +232,8 @@ void ml_region_optimizer::reset_internal()
 	int nvector = ml_region_optimizer::vector_size_per_disp;
 	int pass = ml_region_optimizer::vector_size;
 	nnet = std::unique_ptr<network<double>>(new network<double>(dims));
-	//nnet->emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	//nnet->emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
-	//nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
-	nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<transpose_vector_connected_layer>(4, nvector*2, pass);
-	nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<row_connected_layer>(crange, crange, pass);
-	nnet->emplace_layer<relu_layer>();
-	//nnet->emplace_layer<fully_connected_layer>(crange);
-	//nnet->emplace_layer<relu_layer>();
-	nnet->emplace_layer<fully_connected_layer>(crange);
-	nnet->emplace_layer<softmax_output_layer>();
+
+	init_network(*nnet, crange, nvector, pass);
 }
 
 ml_region_optimizer::ml_region_optimizer()
@@ -274,19 +280,8 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	//int nvector = ml_region_optimizer::vector_size_per_disp + ml_region_optimizer::vector_size;
 	int nvector = ml_region_optimizer::vector_size_per_disp;
 	int pass = ml_region_optimizer::vector_size;
-	//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	//net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
-	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<transpose_vector_connected_layer>(4, nvector*2, pass);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<row_connected_layer>(crange, crange, pass);
-	net.emplace_layer<relu_layer>();
-	//net.emplace_layer<fully_connected_layer>(crange);
-	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(crange);
-	net.emplace_layer<softmax_output_layer>();
+
+	init_network(net, crange, nvector, pass);
 
 	net.training(samples, samples_gt, 64, 61, 4);
 
