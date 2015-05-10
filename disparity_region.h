@@ -75,6 +75,7 @@ public:
 
 struct region_container : public segmentation_image<disparity_region>
 {
+	region_container(const single_stereo_task& ptask) : task(ptask) {}
 	single_stereo_task task;
 	//std::vector<short> disparity;
 };

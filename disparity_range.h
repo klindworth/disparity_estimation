@@ -23,8 +23,8 @@ class disparity_range
 {
 public:
 	disparity_range() : _start(0), _end(0), _offset(0) {}
-	disparity_range(int start, int end) : _start(start), _end(end), _offset(start) {}
-	disparity_range(int start, int end, int offset) : _start(start), _end(end), _offset(offset) {}
+	disparity_range(int start, int end) : _start(start), _end(end), _offset(start) { assert(valid());}
+	disparity_range(int start, int end, int offset) : _start(start), _end(end), _offset(offset) {assert(valid());}
 
 	disparity_range subrange(int pivot, int delta) const
 	{
@@ -65,14 +65,19 @@ public:
 
 	inline std::size_t index(int d) const
 	{
-		assert(valid(d));
+		assert(valid_disparity(d));
 
 		return d-_offset;
 	}
 
-	bool valid(int d) const
+	bool valid_disparity(int d) const
 	{
 		return d >= _start && d <= _end;
+	}
+
+	bool valid() const
+	{
+		return _start <= _end;
 	}
 
 	inline int start() const { return _start; }

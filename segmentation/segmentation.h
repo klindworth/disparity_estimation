@@ -58,10 +58,10 @@ public:
 	 */
 	virtual int operator()(const cv::Mat& image, cv::Mat_<int>& labels) = 0;
 
-	template<typename seg_image_type>
-	std::shared_ptr<seg_image_type> segmentation_image(cv::Mat image)
+	template<typename seg_image_type, typename... arg_types>
+	std::shared_ptr<seg_image_type> segmentation_image(cv::Mat image, arg_types... params)
 	{
-		std::shared_ptr<seg_image_type> result = std::make_shared<seg_image_type>();
+		std::shared_ptr<seg_image_type> result = std::make_shared<seg_image_type>(params...);
 		result->segment_count = this->operator ()(image, result->labels);
 		result->regions = std::vector<typename seg_image_type::regions_type>(result->segment_count);
 		result->image_size = image.size();

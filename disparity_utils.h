@@ -183,11 +183,11 @@ cv::Mat_<disparity_type> warp_disparity(const cv::Mat_<disparity_type>& disparit
 }
 
 template<typename cost_class, typename data_type>
-cv::Mat_<short> wta_disparity(cv::Mat base, data_type data, int dispMin, int dispMax)
+cv::Mat_<short> wta_disparity(cv::Mat base, data_type data, const disparity_range range)
 {
 	cv::Mat_<short> result = cv::Mat_<short>(base.size(), 0);
 
-	cost_class cost_agg(base, data, dispMin);
+	cost_class cost_agg(base, data, range.start());
 	using cost_type = typename cost_class::result_type;
 
 	#pragma omp parallel for
@@ -195,18 +195,12 @@ cv::Mat_<short> wta_disparity(cv::Mat base, data_type data, int dispMin, int dis
 	{
 		for(int x = 0; x < base.size[1]; ++x)
 		{
-			int disp_start = std::min(std::max(x+dispMin, 0), base.size[1]-1) - x;
-			int disp_end   = std::max(std::min(x+dispMax, base.size[1]-1), 0) - x;
-
-			assert(disp_start-dispMin >= 0);
-			assert(disp_start-dispMin < dispMax - dispMin + 1);
-			assert(disp_end-disp_start < dispMax - dispMin + 1);
-			assert(disp_end-disp_start >= 0);
+			const disparity_range crange = range.restrict_to_image(x, base.size[1]);
 
 			short cdisp = 0;
 			cost_type min_cost = std::numeric_limits<cost_type>::max();
 
-			for(int d = disp_start; d <= disp_end; ++d)
+			for(int d = crange.start(); d <= crange.end(); ++d)
 			{
 				cost_type cost = cost_agg(y,x,d);
 				if(cost < min_cost)

@@ -43,9 +43,9 @@ void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_histo
 	std::mt19937 random_gen(random_dev()); //FIXME each threads needs a own copy
 	std::uniform_int_distribution<> random_dist(0, 1);
 
-	const int dispMin = base.task.dispMin;
+	const int dispMin = base.task.range.start();
 
-	std::vector<std::vector<float>> temp_results(omp_get_max_threads(), std::vector<float>(base.task.range_size()));
+	std::vector<std::vector<float>> temp_results(omp_get_max_threads(), std::vector<float>(base.task.range.size()));
 	std::vector<stat_t> cstat(omp_get_max_threads());
 
 	std::vector<stat_t> other_stat(match.regions.size());

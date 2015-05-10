@@ -185,10 +185,10 @@ std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(const single_stereo
 
 	auto data_single = std::make_pair(entropy.X, entropy.Y);
 
-	return std::vector<cv::Mat_<short>> {disparity::wta_disparity<entropy_agg<calc_type, mutual_information_calc>>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										disparity::wta_disparity<entropy_agg<calc_type, variation_of_information_calc>>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										disparity::wta_disparity<entropy_agg<calc_type, normalized_variation_of_information_calc>>(entropy.XY, data_single, task.dispMin, task.dispMax),
-										disparity::wta_disparity<entropy_agg<calc_type, normalized_information_distance_calc>>(entropy.XY, data_single, task.dispMin, task.dispMax)};
+	return std::vector<cv::Mat_<short>> {disparity::wta_disparity<entropy_agg<calc_type, mutual_information_calc>>(entropy.XY, data_single, task.range),
+										disparity::wta_disparity<entropy_agg<calc_type, variation_of_information_calc>>(entropy.XY, data_single, task.range),
+										disparity::wta_disparity<entropy_agg<calc_type, normalized_variation_of_information_calc>>(entropy.XY, data_single, task.range),
+										disparity::wta_disparity<entropy_agg<calc_type, normalized_information_distance_calc>>(entropy.XY, data_single, task.range)};
 }
 
 template<int quantizer>

@@ -53,7 +53,7 @@ shared_features_cache::shared_features_cache(const region_container& base, const
 		base_avg_cache[i] = base.regions[i].avg_point;
 	}
 
-	int dispMin = base.task.dispMin;
+	int dispMin = base.task.range.start();
 	cv::Mat_<float> min_costs = region_descriptors::set_regionwise<float>(base, [=](const disparity_region& region) {
 		return region.disparity_costs(region.disparity-dispMin);
 	});

@@ -86,11 +86,11 @@ void RegionWidget::warpTree(int index, disparity_region& baseRegion, std::vector
 		matchItem << QString::number(matchRegion.disparity);
 		matchItem << QString::number(matchRegion.m_size);
 		matchItem << QString::number(mutual_percent*100, 'f', 2) + "%";
-		matchItem << QString::number(matchRegion.get_corresponding_region(index, -currentDisparity- m_match->task.dispMin).percent*100, 'f', 2) + "%";
+		matchItem << QString::number(matchRegion.get_corresponding_region(index, -currentDisparity- m_match->task.range.start()).percent*100, 'f', 2) + "%";
 		//matchItem << QString::number(matchRegion.stats.stddev/baseRegion.stats.stddev);
 		matchItem << "-";
 		if(matchRegion.optimization_energy.data)
-			matchItem << QString::number(matchRegion.optimization_energy(-currentDisparity-m_match->task.dispMin));
+			matchItem << QString::number(matchRegion.optimization_energy(-currentDisparity-m_match->task.range.start()));
 		matchItem << "noop";
 
 		tree->addTopLevelItem(new QTreeWidgetItem(matchItem));
@@ -134,7 +134,7 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 		short currentDisp = i + dispMin;
 
 		float avg_disp = corresponding_regions_average(other_regions, *it, [](const disparity_region& cregion){return (float)cregion.disparity;});
-		float e_other = baseRegion.optimization_energy.data ? corresponding_regions_average(other_regions, *it, [&](const disparity_region& cregion){return cregion.optimization_energy(-currentDisp-m_match->task.dispMin);}) : 0;
+		float e_other = baseRegion.optimization_energy.data ? corresponding_regions_average(other_regions, *it, [&](const disparity_region& cregion){return cregion.optimization_energy(-currentDisp-m_match->task.range.start());}) : 0;
 
 		//ratings
 		//float stddev_dev = baseRegion.stats.stddev-stddev;
@@ -240,7 +240,7 @@ void RegionWidget::setData(std::shared_ptr<region_container>& base, std::shared_
 	m_match = match;
 	m_index = index;
 
-	int dispMin = m_base->task.dispMin;
+	int dispMin = m_base->task.range.start();
 
 	std::vector<disparity_region>& regionsBase = m_base->regions;
 	std::vector<disparity_region>& regionsMatch = m_match->regions;
@@ -295,7 +295,7 @@ RegionWidget::~RegionWidget()
 
 void RegionWidget::on_twMutualDisparity_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)
 {
-	warpTree(m_index, m_base->regions[m_index], m_match->regions, ui->treeConnected, m_base->task.dispMin, item->text(0).toInt());
+	warpTree(m_index, m_base->regions[m_index], m_match->regions, ui->treeConnected, m_base->task.range.start(), item->text(0).toInt());
 }
 
 void RegionWidget::on_treeConnected_itemDoubleClicked(QTreeWidgetItem *item, int /*column*/)

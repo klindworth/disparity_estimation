@@ -118,9 +118,9 @@ int main(int argc, char *argv[])
 	QApplication app(argc, argv);
 
 	auto prop_eval = [](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity, const stat_t& cstat, const std::vector<stat_t>& other_stats) {
-		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.dispMin];
-		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
-		float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
+		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.range.start()];
+		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.range.start());});
+		float e_base = baseRegion.optimization_energy(disparity-base.task.range.start());
 		//float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cstat.confidence2;}), std::numeric_limits<float>::min());
 		float confidence = std::max(corresponding_regions_average_by_index(other_regions, [&](std::size_t idx){ return other_stats[idx].confidence2;}), std::numeric_limits<float>::min());
 
@@ -128,11 +128,11 @@ int main(int argc, char *argv[])
 	};
 
 	auto prop_eval2 = [](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity, const stat_t& cstat, const std::vector<stat_t>& other_stats) {
-		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.dispMin];
+		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.range.start()];
 		float disp_pot = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
 
-		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
-		float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
+		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.range.start());});
+		float e_base = baseRegion.optimization_energy(disparity-base.task.range.start());
 
 		//float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cstat.confidence2;}), std::numeric_limits<float>::min());
 		float confidence = std::max(corresponding_regions_average_by_index(other_regions, [&](std::size_t idx){ return other_stats[idx].confidence2;}), std::numeric_limits<float>::min());

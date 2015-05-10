@@ -33,23 +33,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class single_stereo_task
 {
 public:
+	//single_stereo_task(const disparity_range& prange) : range(prange) {}
 	std::string name, fullname;
 	cv::Mat base, match, baseGray, matchGray;
 	cv::Mat_<short> groundTruth;
 	cv::Mat_<unsigned char> occ;
-	int dispMin, dispMax;
 	disparity_range range;
 	unsigned char groundTruthSampling;
-
-	inline int range_size() const { return dispMax - dispMin + 1; }
 };
 
 /// Class for saving a specific stereo processing task. It can be loaded from a yaml file, or you construct one by passing all the image paths
 class stereo_task
 {
 public:
-	stereo_task(const std::string& name, const cv::Mat& pleft, const cv::Mat& pright, int dispRange);
-	stereo_task(const std::string& name, const std::string &nameLeft, const std::string &nameRight, int dispRange);
+	//stereo_task(const std::string& name, const cv::Mat& pleft, const cv::Mat& pright, int dispRange);
+	//stereo_task(const std::string& name, const std::string &nameLeft, const std::string &nameRight, int dispRange);
 	stereo_task(const std::string& name, const std::string &nameLeft, const std::string &nameRight, const std::string &nameGroundLeft, const std::string &nameGroundRight, unsigned char subsamplingGroundTruth, int dispRange);
 	stereo_task(const std::string& name, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, const std::string& nameOccLeft, const std::string& nameOccRight, unsigned char subsamplingGroundTruth, int dispRange);
 	stereo_task(const std::string& filename);
@@ -63,6 +61,12 @@ public:
 	std::string name, filenameLeft, filenameRight, filenameGroundLeft, filenameGroundRight, filenameOccLeft, filenameOccRight;
 
 	single_stereo_task forward, backward;
+
+	//static construction functions
+	//static stereo_task construct(const std::string& name, const cv::Mat& pleft, const cv::Mat& pright, int dispRange);
+	//static stereo_task construct(const std::string& name, const std::string &nameLeft, const std::string &nameRight, int dispRange);
+	static stereo_task load_from_file(const std::string& filename);
+
 private:
 	double error_measure_internal(const cv::Mat& disparity, const cv::Mat &groundTruth, const cv::Mat& occ, unsigned char subsamplingDisparity, unsigned char subsamplingGroundTruth);
 	cv::Mat diff_image_internal(const cv::Mat& disparity, const cv::Mat& groundTruth, const cv::Mat& occ, unsigned char subsamplingDisparity, unsigned char subsamplingGroundTruth);

@@ -4,15 +4,15 @@
 template<int vector_size, int vector_size_per_disp, typename dst_type, typename src_type>
 void merge_with_corresponding_optimization_vector(dst_type *dst_ptr, const disparity_region& baseRegion, const std::vector<src_type>& optimization_vector_base, const std::vector<std::vector<src_type>>& optimization_vectors_match, const region_container& match, int delta, const single_stereo_task& task)
 {
-	const int crange = task.range_size();
+	const int crange = task.range.size();
 	disparity_range drange = task_subrange(task, baseRegion.base_disparity, delta);
 
 	std::vector<dst_type> disp_optimization_vector(vector_size_per_disp);
 	for(short d = drange.start(); d <= drange.end(); ++d)
 	{
 		std::fill(disp_optimization_vector.begin(), disp_optimization_vector.end(), 0.0f);
-		const int corresponding_disp_idx = -d - match.task.dispMin;
-		foreach_corresponding_region(baseRegion.corresponding_regions[d-task.dispMin], [&](std::size_t idx, float percent) {
+		const int corresponding_disp_idx = -d - match.task.range.start();
+		foreach_corresponding_region(baseRegion.corresponding_regions[d-task.range.start()], [&](std::size_t idx, float percent) {
 			const src_type* it = &(optimization_vectors_match[idx][corresponding_disp_idx*vector_size_per_disp]);
 			for(int i = 0; i < vector_size_per_disp; ++i)
 				disp_optimization_vector[i] += percent * *it++;

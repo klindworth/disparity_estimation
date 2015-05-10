@@ -179,8 +179,8 @@ corresponding_region disparity_region::get_corresponding_region(std::size_t idx,
 
 void fill_region_container(std::shared_ptr<region_container>& result, single_stereo_task& task, std::shared_ptr<segmentation_algorithm>& algorithm)
 {
-	result = algorithm->segmentation_image<region_container>(task.base);
-	result->task = task;
+	result = algorithm->segmentation_image<region_container>(task.base, task);
+	//result->task = task;
 
 	//matstore.addMat(getWrongColorSegmentationImage(result->task.base.size(), result->regions), "segtest");
 	std::cout << "regions count: " << result->segment_count << std::endl;

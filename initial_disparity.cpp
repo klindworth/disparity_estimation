@@ -225,9 +225,9 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 	std::cout << "init disp" << std::endl;
 
 	for(disparity_region& cregion : left.regions)
-		cregion.disparity_offset = task.forward.dispMin;
+		cregion.disparity_offset = task.forward.range.start();
 	for(disparity_region& cregion : right.regions)
-		cregion.disparity_offset = task.backward.dispMin;
+		cregion.disparity_offset = task.backward.range.start();
 
 	disparity_calculator(task.forward,  task.algoLeft,  task.algoRight, left.regions, refinement);
 	disparity_calculator(task.backward, task.algoRight, task.algoLeft, right.regions, refinement);
@@ -319,13 +319,13 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 		ref_func = refine_initial_disparity<refinement_metric>;
 	}
 
-	std::shared_ptr<region_container> left  = std::make_shared<region_container>();
-	std::shared_ptr<region_container> right = std::make_shared<region_container>();
-
-	//segment_based_disparity_internal(task, left, right, config, disparity_function);
-
 	auto segmentationLeft  = create_segmentation_instance(config.segmentation);
 	auto segmentationRight = create_segmentation_instance(config.segmentation);
+
+	std::shared_ptr<region_container> left  = segmentationLeft-> std::make_shared<region_container>(task.forward);
+	std::shared_ptr<region_container> right = std::make_shared<region_container>(task.backward);
+
+	//segment_based_disparity_internal(task, left, right, config, disparity_function);
 
 	fill_region_container(left, task.forward, segmentationLeft);
 	fill_region_container(right, task.backward, segmentationRight);

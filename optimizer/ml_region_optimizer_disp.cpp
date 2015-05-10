@@ -87,9 +87,9 @@ void ml_region_optimizer_disp::optimize_ml(region_container& base, const region_
 	istream >> net;
 
 	const std::size_t regions_count = base.regions.size();
-	const short sign = (base.task.dispMin < 0) ? -1 : 1;
+	const short sign = (base.task.range.start() < 0) ? -1 : 1;
 
-	std::vector<std::vector<double>> region_optimization_vectors(omp_get_max_threads(), std::vector<double>(base.task.range_size()*vector_size_per_disp*2+vector_size));
+	std::vector<std::vector<double>> region_optimization_vectors(omp_get_max_threads(), std::vector<double>(base.task.range.size()*vector_size_per_disp*2+vector_size));
 	//#pragma omp parallel for
 	std::vector<double> temp(sample_size);
 	for(std::size_t j = 0; j < regions_count; ++j)
@@ -135,7 +135,7 @@ void ml_region_optimizer_disp::prepare_training_sample(std::vector<short>& dst_g
 	gt.reserve(base.regions.size());
 	region_ground_truth(base.regions, base.task.groundTruth, std::back_inserter(gt));
 
-	const int crange = base.task.range_size();
+	const int crange = base.task.range.size();
 
 	const std::size_t regions_count = base.regions.size();
 	dst_data.reserve(dst_data.size() + base_optimization_vectors.size());

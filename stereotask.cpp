@@ -80,14 +80,21 @@ stereo_task::stereo_task(const std::string& filename)
 		std::cerr << "opening task failed: " << filename << std::endl;
 }
 
-stereo_task::stereo_task(const std::string& pname, const cv::Mat& pleft, const cv::Mat& pright, int dispRange) : left(pleft), right(pright), name(pname)
+stereo_task stereo_task::load_from_file(const std::string& filename)
+{
+	stereo_task task(filename);
+
+	return task;
+}
+
+/*stereo_task stereo_task::construct(const std::string& pname, const cv::Mat& pleft, const cv::Mat& pright, int dispRange) : left(pleft), right(pright), name(pname)
 {
 	cv::cvtColor(left,  leftGray,  CV_BGR2GRAY);
 	cv::cvtColor(right, rightGray, CV_BGR2GRAY);
 	this->dispRange = dispRange;
 
 	init_single_tasks();
-}
+}*/
 
 void stereo_task::load_images(const std::string& nameLeft, const std::string& nameRight)
 {
@@ -97,7 +104,7 @@ void stereo_task::load_images(const std::string& nameLeft, const std::string& na
 	if(!left.data || !right.data)
 		throw std::runtime_error("image couldn't be loaded: " + nameLeft + " or " + nameRight);
 
-	filenameLeft = nameLeft;
+	filenameLeft  = nameLeft;
 	filenameRight = nameRight;
 
 	cv::cvtColor(left,  leftGray,  CV_BGR2GRAY);
@@ -109,8 +116,8 @@ void stereo_task::load_ground_truth(const std::string& nameGroundLeft, const std
 	cv::Mat ground_temp_left = cv::imread(nameGroundLeft, CV_LOAD_IMAGE_GRAYSCALE);
 	cv::Mat ground_temp_right = cv::imread(nameGroundRight, CV_LOAD_IMAGE_GRAYSCALE);
 
-	filenameGroundLeft = nameGroundLeft;
-	filenameGroundRight =nameGroundRight;
+	filenameGroundLeft  = nameGroundLeft;
+	filenameGroundRight = nameGroundRight;
 
 	if(ground_temp_left.data)
 	{
@@ -130,13 +137,13 @@ void stereo_task::load_ground_truth(const std::string& nameGroundLeft, const std
 	}
 }
 
-stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, int dispRange) : name(pname)
+/*stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, int dispRange) : name(pname)
 {
 	load_images(nameLeft, nameRight);
 	this->dispRange = dispRange;
 
 	init_single_tasks();
-}
+}*/
 
 stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, unsigned char subsamplingGroundTruth, int dispRange) : name(pname)
 {
@@ -228,8 +235,8 @@ void stereo_task::init_single_tasks()
 	forward.groundTruthSampling = groundTruthSubsampling;
 	forward.occ = occLeft;
 	forward.groundTruth = groundLeft;
-	forward.dispMin = -dispRange+1;
-	forward.dispMax = 0;
+	//forward.dispMin = -dispRange+1;
+	//forward.dispMax = 0;
 	forward.range = disparity_range(-dispRange+1, 0);
 
 	backward.name = name;
@@ -241,8 +248,8 @@ void stereo_task::init_single_tasks()
 	backward.groundTruthSampling = groundTruthSubsampling;
 	backward.occ = occRight;
 	backward.groundTruth = groundRight;
-	backward.dispMin = 0;
-	backward.dispMax = dispRange-1;
+	//backward.dispMin = 0;
+	//backward.dispMax = dispRange-1;
 	backward.range = disparity_range(0, dispRange-1);
 }
 
@@ -255,8 +262,8 @@ TaskTestSet::TaskTestSet(const std::string& filename) : task_collection(filename
 	std::vector<std::string> taskFilenames;
 	stream["tasks"] >> taskFilenames;
 
-	for(std::string& cname : taskFilenames)
-		tasks.push_back(stereo_task(cname));
+	for(const std::string& cname : taskFilenames)
+		tasks.push_back(stereo_task::load_from_file(cname));
 }
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const TaskTestSet& testset)

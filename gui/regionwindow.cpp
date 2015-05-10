@@ -286,12 +286,12 @@ void RegionWindow::on_pbOptimize_clicked()
 	double pot_factor = ui->spDispFinal->value();
 
 	auto prop_eval = [=](const disparity_region& baseRegion, const region_container& base, const region_container& match, int disparity, const stat_t& cstat, const std::vector<stat_t>&) {
-		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.dispMin];
+		const std::vector<corresponding_region>& other_regions = baseRegion.corresponding_regions[disparity-base.task.range.start()];
 		float disp_pot = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return (float)std::min(std::abs(disparity+cregion.disparity), 10);});
 		//float stddev = getOtherRegionsAverage(match.regions, other_regions, [](const DisparityRegion& cregion){return cregion.stats.stddev;});
 
-		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.dispMin);});
-		float e_base = baseRegion.optimization_energy(disparity-base.task.dispMin);
+		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.range.start());});
+		float e_base = baseRegion.optimization_energy(disparity-base.task.range.start());
 
 		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cstat.confidence2;}), std::numeric_limits<float>::min());
 		//float mi_confidence = getOtherRegionsAverage(match.regions, other_regions, [&](const SegRegion& cregion){return cregion.confidence(-disparity-match.task.dispMin);});
@@ -338,8 +338,8 @@ void RegionWindow::on_pbRefreshBase_clicked()
 
 void resetContainerDisparities(region_container& container)
 {
-	short dispMin = container.task.dispMin;
-	short dispMax = container.task.dispMax;
+	short dispMin = container.task.range.start();
+	short dispMax = container.task.range.end();
 	for(disparity_region& cregion : container.regions)
 	{
 		float minCost = std::numeric_limits<float>::max();

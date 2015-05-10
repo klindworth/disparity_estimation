@@ -10,7 +10,7 @@ void calculate_region_generic(single_stereo_task& task, const cv::Mat& base, con
 	std::cout << "delta: " << delta << std::endl;
 	const std::size_t regions_count = regions.size();
 
-	int crange = task.range_size();
+	int crange = task.range.size();
 	if(delta != 0)
 		crange = 2*delta+1;
 
@@ -25,14 +25,14 @@ void calculate_region_generic(single_stereo_task& task, const cv::Mat& base, con
 	calculator calc(base,match);
 
 	#pragma omp parallel for
-	for(int d = task.dispMin; d <= task.dispMax; ++d)
+	for(int d = task.range.start(); d <= task.range.end(); ++d)
 	{
 		cv::Mat diff = calc(d);
 
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
 			disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
-			if(drange.valid(d))
+			if(drange.valid_disparity(d))
 			{
 				std::vector<region_interval> filtered = filtered_region(base.size[1], regions[i].lineIntervals, d);
 				cv::Mat diff_region = region_as_mat(diff, filtered, std::min(0, d));
@@ -67,7 +67,7 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 	std::cout << "delta: " << delta << std::endl;
 	const std::size_t regions_count = regions.size();
 
-	int crange = task.range_size();
+	int crange = task.range.size();
 	if(delta != 0)
 		crange = 2*delta+1;
 
@@ -95,7 +95,7 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 	//rowwise costs
 	int width = base.cols;
 	#pragma omp parallel for
-	for(int d = task.dispMin; d <= task.dispMax; ++d)
+	for(int d = task.range.start(); d <= task.range.end(); ++d)
 	{
 		cv::Mat diff = calc(d);
 		int base_offset = std::min(0,d);
@@ -104,7 +104,7 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 		{
 			disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
 
-			if(drange.valid(d))
+			if(drange.valid_disparity(d))
 			{
 				std::size_t idx = d - drange.start();
 				std::size_t row_count = regions[i].lineIntervals.size();
@@ -134,13 +134,13 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 	std::cout << "region" << std::endl;
 	//calculate regioncost
 	//pragma omp parallel for
-	for(int d = task.dispMin; d <= task.dispMax; ++d)
+	for(int d = task.range.start(); d <= task.range.end(); ++d)
 	{
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
 			disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
 
-			if(drange.valid(d))
+			if(drange.valid_disparity(d))
 			{
 				std::size_t idx = d - drange.start();
 				std::size_t row_count = regions[i].lineIntervals.size();
