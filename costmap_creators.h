@@ -39,17 +39,19 @@ namespace sliding_window
 template<typename cost_class>
 cv::Mat joint_fixed_size(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, unsigned int windowsize)
 {
-	int disparityRange = dispMax - dispMin + 1;
+	disparity_range range(dispMin, dispMax);
 
 	using prob_table_type = typename cost_class::result_type;
-	int sz[] = {base.rows, base.cols, disparityRange};
+	int sz[] = {base.rows, base.cols, range.size()};
 	cv::Mat cost_map = cv::Mat_<prob_table_type>(3, sz, static_cast<prob_table_type>(std::numeric_limits<prob_table_type>::max()/3));
 
-	const int y_min = windowsize/2;
-	const int y_max = base.rows - windowsize/2;
+	const int border = windowsize/2;
 
-	const int x_min = windowsize/2;
-	const int x_max = base.cols - windowsize/2;
+	const int y_min = border;
+	const int y_max = base.rows - border;
+
+	const int x_min = border;
+	const int x_max = base.cols - border;
 
 	cost_class cost_agg(base, match, windowsize);
 	typename cost_class::thread_type thread_data;
@@ -62,16 +64,10 @@ cv::Mat joint_fixed_size(const cv::Mat& base, const cv::Mat& match, int dispMin,
 		for(int x = x_min; x < x_max; ++x)
 		{
 			cost_agg.prepare_window(thread_data, windowBase);
-			int disp_start = std::min(std::max(x+dispMin, x_min), x_max-1) - x;
-			int disp_end   = std::max(std::min(x+dispMax, x_max-1), x_min) - x;
+			disparity_range crange = range.restrict_to_image(x, base.cols, border);
 
-			assert(disp_start-dispMin >= 0);
-			assert(disp_start-dispMin < disparityRange);
-			assert(disp_end-disp_start < disparityRange);
-			assert(disp_end-disp_start >= 0);
-
-			prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, disp_start-dispMin);
-			for(int d = disp_start; d <= disp_end; ++d)
+			prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, crange.index(crange.start()));
+			for(int d = crange.start(); d <= crange.end(); ++d)
 			{
 				*result_ptr++ = cost_agg.increm(thread_data, x+d);
 			}
@@ -86,10 +82,10 @@ template<typename cost_class>
 cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, int dispMin, int dispMax, const cv::Mat& windowsizes)
 {
 	int min_windowsize = 7;
-	int disparityRange = dispMax - dispMin + 1;
+	disparity_range range(dispMin, dispMax);
 
 	typedef float prob_table_type;
-	int sz[] = {base.rows, base.cols, disparityRange};
+	int sz[] = {base.rows, base.cols, range.size()};
 	cv::Mat cost_map(3, sz, CV_32FC1, cv::Scalar(8));
 
 	const int y_min = min_windowsize/2;
@@ -113,18 +109,11 @@ cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, int dispM
 			{
 				cv::Mat windowBase = subwindow(base, x, y, cwindowsize[1], cwindowsize[0] );
 				cost_agg.prepareWindow(thread_data, windowBase, cwindowsize[1], cwindowsize[0] );
-				int cx_min = cwindowsize[1]/2;
-				int cx_max = base.cols - cwindowsize[1]/2;
-				int disp_start = std::min(std::max(x+dispMin, cx_min), cx_max-1) - x;
-				int disp_end   = std::max(std::min(x+dispMax, cx_max-1), cx_min) - x;
 
-				assert(disp_start-dispMin >= 0);
-				assert(disp_start-dispMin < dispMax - dispMin + 1);
-				assert(disp_end-disp_start < dispMax - dispMin + 1);
-				assert(disp_end-disp_start >= 0);
+				disparity_range crange = range.restrict_to_image(x, base.cols, cwindowsize[1]/2);
 
-				prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, disp_start-dispMin);
-				for(int d = disp_start; d <= disp_end; ++d)
+				prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, range.index(crange.start()));
+				for(int d = crange.start(); d <= crange.end(); ++d)
 				{
 					*result_ptr++ = cost_agg.increm(thread_data, x, d);
 				}
@@ -137,10 +126,10 @@ cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, int dispM
 
 //berechnet fuer subranges die disparitaet. disp*_comp gibt den gesamten Bereich an, rangeCenter-/+dispRange/2 den Teilbereich
 template<typename cost_class>
-cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat& match, const cv::Mat& windowsizes, const cv::Mat& rangeCenter, int disparityRange, int dispMin_comp, int dispMax_comp, unsigned int min_windowsize, unsigned int max_windowsize)
+cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat& match, const cv::Mat& windowsizes, const cv::Mat& rangeCenter, int disparity_delta, int dispMin_bound, int dispMax_bound, unsigned int min_windowsize, unsigned int max_windowsize)
 {
 	typedef float prob_table_type;
-	int sz[] = {base.rows, base.cols, disparityRange};
+	int sz[] = {base.rows, base.cols, disparity_delta*2+1};
 	cv::Mat cost_map(3, sz, CV_32FC1, cv::Scalar(8));
 
 	const int y_min = min_windowsize/2;
@@ -149,7 +138,9 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 	const int x_min = min_windowsize/2;
 	const int x_max = base.cols - min_windowsize/2;
 
-	cost_class cost_agg(base, match, disparity_range(dispMin_comp, dispMax_comp), max_windowsize);
+	disparity_range range(dispMin_bound, dispMax_bound);
+
+	cost_class cost_agg(base, match, disparity_range(dispMin_bound, dispMax_bound), max_windowsize);
 	typename cost_class::thread_type thread_data;
 
 	#pragma omp parallel for private(thread_data)
@@ -161,33 +152,14 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 		{
 			cv::Vec2b cwindowsize = windowsizes.at<cv::Vec2b>(y,x);
 
-			int dispMin_pre = rangeCenter.at<short>(y,x) - disparityRange/2+1;
-			int dispMax_pre = rangeCenter.at<short>(y,x) + disparityRange/2;
+			disparity_range crange  = range.subrange_with_subspace(rangeCenter.at<short>(y,x), disparity_delta).restrict_to_image(x, base.cols, cwindowsize[1]/2);
 
-			int dispMin = std::max(dispMin_pre, dispMin_comp);
-			int dispMax = std::min(dispMax_pre, dispMax_comp);
-
-			int cx_min = cwindowsize[1]/2;
-			int cx_max = base.cols - cwindowsize[1]/2;
-			int disp_start = std::min(std::max(x+dispMin, cx_min), cx_max-1) - x;
-			int disp_end   = std::max(std::min(x+dispMax, cx_max-1), cx_min) - x;
-
-			if(cwindowsize[0] > 0 && cwindowsize[1] > 0 && disp_end > disp_start)
+			if(cwindowsize[0] > 0 && cwindowsize[1] > 0 && crange.end() > crange.start())
 			{
 				cost_agg.prepare_window(thread_data, x, cwindowsize[1], cwindowsize[0] );
 
-				assert(disp_start-dispMin >= 0);
-				assert(disp_start-dispMin < dispMax - dispMin + 1);
-				assert(disp_end-disp_start < dispMax - dispMin + 1);
-				assert(disp_end-disp_start >= 0);
-
-				assert(disp_start >= dispMin_comp);
-				assert(disp_end <= dispMax_comp);
-				assert(disp_start-dispMin_pre >= 0);
-				assert(disp_end-dispMin_pre < disparityRange);
-
-				prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, disp_start-dispMin_pre);
-				for(int d = disp_start; d <= disp_end; ++d)
+				prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, crange.index(crange.start()));
+				for(int d = crange.start(); d <= crange.end(); ++d)
 				{
 					*result_ptr++ = cost_agg.increm(thread_data, x, d);
 				}
@@ -202,8 +174,8 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 template<typename cost_class, typename data_type>
 cv::Mat calculate_pixelwise(cv::Mat base, data_type data, int dispMin, int dispMax)
 {
-	int disparityRange = dispMax - dispMin + 1;
-	int sz[]  = {base.size[0], base.size[1], disparityRange};
+	disparity_range range(dispMin, dispMax);
+	int sz[]  = {base.size[0], base.size[1], range.size()};
 	cv::Mat result = cv::Mat(3, sz, CV_32FC1, cv::Scalar(std::numeric_limits<float>::max()));
 
 	cost_class cost_agg(base, data, dispMin);
@@ -213,17 +185,11 @@ cv::Mat calculate_pixelwise(cv::Mat base, data_type data, int dispMin, int dispM
 	{
 		for(int x = 0; x < base.size[1]; ++x)
 		{
-			int disp_start = std::min(std::max(x+dispMin, 0), base.size[1]-1) - x;
-			int disp_end   = std::max(std::min(x+dispMax, base.size[1]-1), 0) - x;
+			disparity_range crange = range.restrict_to_image(x, base.size[1]);
 
-			assert(disp_start-dispMin >= 0);
-			assert(disp_start-dispMin < dispMax - dispMin + 1);
-			assert(disp_end-disp_start < dispMax - dispMin + 1);
-			assert(disp_end-disp_start >= 0);
+			float *result_ptr = result.ptr<float>(y,x, crange.index(crange.start()));
 
-			float *result_ptr = result.ptr<float>(y,x, disp_start-dispMin);
-
-			for(int d = disp_start; d <= disp_end; ++d)
+			for(int d = crange.start(); d <= crange.end(); ++d)
 			{
 				*result_ptr++ = cost_agg(y,x,d);
 			}

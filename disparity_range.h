@@ -30,10 +30,32 @@ public:
 	{
 		assert(pivot >= _start && pivot <= _end);
 
-		int start = std::max(_start, pivot - delta);
-		int end = std::min(_end, pivot + delta);
+		const int start = std::max(_start, pivot - delta);
+		const int end = std::min(_end, pivot + delta);
 
 		return disparity_range(start, end, _offset);
+	}
+
+	disparity_range subrange_with_subspace(int pivot, int delta) const
+	{
+		assert(pivot >= _start && pivot <= _end);
+
+		const int start = std::max(_start, pivot - delta);
+		const int end = std::min(_end, pivot + delta);
+		const int offset = pivot - delta;
+
+		return disparity_range(start, end, offset);
+	}
+
+	disparity_range restrict_to_image(int pt, int image_size, int border_size = 0) const
+	{
+		const int min_pt = border_size;
+		const int max_pt = image_size - border_size - 1;
+
+		const int disp_start = std::min(std::max(pt + _start, min_pt), max_pt) - pt;
+		const int disp_end   = std::min(std::max(pt + _end,   min_pt), max_pt) - pt;
+
+		return disparity_range(disp_start, disp_end, _offset);
 	}
 
 	disparity_range without_offset() const
@@ -41,7 +63,7 @@ public:
 		return disparity_range(_start, _end);
 	}
 
-	std::size_t index(int d) const
+	inline std::size_t index(int d) const
 	{
 		assert(valid(d));
 
