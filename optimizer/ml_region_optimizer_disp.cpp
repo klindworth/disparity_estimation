@@ -41,44 +41,28 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <neural_network/data_normalizer.h>
 #include "costmap_utils.h"
 #include "debugmatstore.h"
+#include "ml_region_optimizer_algorithms.h"
 
 using namespace neural_network;
 
-template<int vector_size, int vector_size_per_disp, typename dst_type, typename src_type>
-void merge_with_corresponding_optimization_vector(dst_type *dst_ptr, const disparity_region& baseRegion, const std::vector<src_type>& optimization_vector_base, const std::vector<std::vector<src_type>>& optimization_vectors_match, const region_container& match, int delta, const single_stereo_task& task)
+void init_network_disp(network<double>& net, int /*crange*/, int nvector, int pass)
 {
-	const int crange = task.range_size();
-	disparity_range drange = task_subrange(task, baseRegion.base_disparity, delta);
-
-	std::vector<dst_type> disp_optimization_vector(vector_size_per_disp);
-	for(short d = drange.start(); d <= drange.end(); ++d)
-	{
-		std::fill(disp_optimization_vector.begin(), disp_optimization_vector.end(), 0.0f);
-		const int corresponding_disp_idx = -d - match.task.dispMin;
-		foreach_corresponding_region(baseRegion.corresponding_regions[d-task.dispMin], [&](std::size_t idx, float percent) {
-			const src_type* it = &(optimization_vectors_match[idx][corresponding_disp_idx*vector_size_per_disp]);
-			for(int i = 0; i < vector_size_per_disp; ++i)
-				disp_optimization_vector[i] += percent * *it++;
-		});
-
-		const src_type *base_ptr = optimization_vector_base.data() + (d-drange.start())*vector_size_per_disp;
-		const dst_type *other_ptr = disp_optimization_vector.data();
-
-		//dst_type *ndst_ptr = dst_ptr + (d-drange.start())*ml_region_optimizer::vector_size_per_disp*2;
-		dst_type *ndst_ptr = dst_ptr + vector_size_per_disp*2*(int)std::abs(d);
-
-		for(int j = 0; j < vector_size_per_disp; ++j)
-			*ndst_ptr++ = *base_ptr++;
-
-		for(int j = 0; j < vector_size_per_disp; ++j)
-			*ndst_ptr++ = *other_ptr++;
-	}
-
-	const src_type *base_src_ptr = optimization_vector_base.data()+crange*vector_size_per_disp;
-
-	dst_type *ndst_ptr = dst_ptr + crange*vector_size_per_disp*2;
-	for(int i = 0; i < vector_size; ++i)
-		*ndst_ptr++ = *base_src_ptr++;
+	//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	//net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
+	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(nvector*2, nvector, pass);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(nvector, nvector*2, pass);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(nvector);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(nvector);
+	net.emplace_layer<relu_layer>();
+	//net.emplace_layer<fully_connected_layer>(4);
+	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(2);
+	net.emplace_layer<softmax_output_layer>();
+	//net.emplace_layer<tanh_output_layer>();
 }
 
 void ml_region_optimizer_disp::optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename)
@@ -97,21 +81,7 @@ void ml_region_optimizer_disp::optimize_ml(region_container& base, const region_
 
 	int nvector = ml_region_optimizer_disp::vector_size_per_disp;
 	int pass = ml_region_optimizer_disp::vector_size;
-	//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	//net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
-	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(nvector*2, nvector, pass);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(nvector, nvector*2, pass);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(nvector);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(nvector);
-	net.emplace_layer<relu_layer>();
-	//net.emplace_layer<fully_connected_layer>(4);
-	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(2);
-	net.emplace_layer<softmax_output_layer>();
+	init_network_disp(net, sample_size, nvector, pass);
 
 	data_normalizer<double> normalizer(istream);
 	istream >> net;
@@ -239,26 +209,6 @@ void ml_region_optimizer_disp::prepare_training_sample(std::vector<short>& dst_g
 		}
 	}
 	std::cout << diff_calc << std::endl;
-}
-
-void init_network_disp(network<double>& net, int /*crange*/, int nvector, int pass)
-{
-	//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
-	//net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
-	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(nvector*2, nvector, pass);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<vector_connected_layer>(nvector, nvector*2, pass);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(nvector);
-	net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(nvector);
-	net.emplace_layer<relu_layer>();
-	//net.emplace_layer<fully_connected_layer>(4);
-	//net.emplace_layer<relu_layer>();
-	net.emplace_layer<fully_connected_layer>(2);
-	net.emplace_layer<softmax_output_layer>();
-	//net.emplace_layer<tanh_output_layer>();
 }
 
 void ml_region_optimizer_disp::reset_internal()

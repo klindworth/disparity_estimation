@@ -64,6 +64,7 @@ set(HEADERS
     optimizer/manual_region_optimizer.h
     optimizer/ml_region_optimizer.h
     optimizer/ml_region_optimizer_disp.h
+    optimizer/ml_region_optimizer_algorithms.h
     configrun.h
     taskanalysis.h
     region_ground_truth.h
