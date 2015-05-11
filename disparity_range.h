@@ -70,6 +70,11 @@ public:
 		return d-_offset;
 	}
 
+	inline int disparity_at_index(std::size_t index) const
+	{
+		return index+_offset;
+	}
+
 	bool valid_disparity(int d) const
 	{
 		return d >= _start && d <= _end;

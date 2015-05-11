@@ -115,7 +115,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -Wal
 enable_testing()
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
-add_executable(${PROJECT_NAME}_tests neural_network/tests.cpp neural_network/network.h disparity_utils_tests.cpp)
+add_executable(${PROJECT_NAME}_tests neural_network/tests.cpp neural_network/network.h disparity_utils_tests.cpp disparity_range_tests.cpp)
 target_link_libraries(${PROJECT_NAME}_tests ${OpenCV_LIBS} ${GTEST_BOTH_LIBRARIES} openblas)
 
 add_subdirectory(segmentation)
