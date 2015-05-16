@@ -43,10 +43,10 @@ void task_analysis::create_internal(const single_stereo_task& task, const cv::Ma
 	{
 		cv::Mat_<short> scaledDisp, scaledGround;
 		int commonSubsampling = 1;
-		if(subsamplingDisparity != task.groundTruthSampling)
+		if(subsamplingDisparity != task.groundTruth.subsampling)
 		{
 			scaledDisp = disparity / subsamplingDisparity;
-			scaledGround = task.groundTruth / task.groundTruthSampling;
+			scaledGround = task.groundTruth / task.groundTruth.subsampling;
 		}
 		else
 		{

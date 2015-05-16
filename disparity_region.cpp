@@ -141,9 +141,9 @@ void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t o
 	}
 }
 
-cv::Mat_<short> disparity_by_segments(const region_container& container)
+disparity_map disparity_by_segments(const region_container& container)
 {
-	return region_descriptors::set_regionwise<short>(container, [](const disparity_region& cregion){return cregion.disparity;});
+	return disparity_map(region_descriptors::set_regionwise<short>(container, [](const disparity_region& cregion){return cregion.disparity;}), 1);
 	//return regionWiseSet<short>(container.task.base.size(), container.regions, [](const DisparityRegion& cregion){return cregion.disparity;});
 }
 
@@ -177,11 +177,3 @@ corresponding_region disparity_region::get_corresponding_region(std::size_t idx,
 		return *it;
 }
 
-void fill_region_container(std::shared_ptr<region_container>& result, single_stereo_task& task, std::shared_ptr<segmentation_algorithm>& algorithm)
-{
-	result = algorithm->segmentation_image<region_container>(task.base, task);
-	//result->task = task;
-
-	//matstore.addMat(getWrongColorSegmentationImage(result->task.base.size(), result->regions), "segtest");
-	std::cout << "regions count: " << result->segment_count << std::endl;
-}

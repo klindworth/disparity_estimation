@@ -1,3 +1,28 @@
+/*
+Copyright (c) 2015, Kai Klindworth
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+*/
+
 #ifndef DISPARITY_RANGE_H
 #define DISPARITY_RANGE_H
 
@@ -26,6 +51,15 @@ public:
 	disparity_range(int start, int end) : _start(start), _end(end), _offset(start) { assert(valid());}
 	disparity_range(int start, int end, int offset) : _start(start), _end(end), _offset(offset) {assert(valid());}
 
+	/**
+	 * @brief subrange Creates a subrange around a pivot element.
+	 * If the pivot element is near the border, closer than delta,
+	 * the range will be automatically cut off at the borders of the original range. The offset will nor be affected.
+	 * That means, you should call the function if the underlying array is the same like the original range.
+	 * @param pivot Pivot element. This is the element in the middle of the new range
+	 * @param delta Number of elements before and after the pivot element which should belong to the new range
+	 * @return The newly created range
+	 */
 	disparity_range subrange(int pivot, int delta) const
 	{
 		assert(pivot >= _start && pivot <= _end);
@@ -36,6 +70,13 @@ public:
 		return disparity_range(start, end, _offset);
 	}
 
+	/**
+	 * @brief subrange_with_subspace Like subrange, but with it's own offset.
+	 * Usefull if you have a seperate array with the length of the new range.
+	 * @param pivot
+	 * @param delta
+	 * @return
+	 */
 	disparity_range subrange_with_subspace(int pivot, int delta) const
 	{
 		assert(pivot >= _start && pivot <= _end);
@@ -44,7 +85,7 @@ public:
 		const int end = std::min(_end, pivot + delta);
 		const int offset = pivot - delta;
 
-		return disparity_range(start, end, offset);
+		return disparity_range(start, end, offset); //FIXME: old offset ignored
 	}
 
 	disparity_range restrict_to_image(int pt, int image_size, int border_size = 0) const

@@ -38,12 +38,11 @@ class region_interval;
 class corresponding_region
 {
 public:
-	corresponding_region() : index(0), percent(0.0f) {}
-	corresponding_region(std::size_t idx) : index(idx), percent(0.0f) {}
-	corresponding_region(std::size_t idx, float per) : index(idx), percent(per) {}
+	typedef unsigned int index_type;
 
-	//std::size_t index;
-	unsigned int index; ///< Index of the corresponding region
+	corresponding_region(index_type idx = 0, float per = 0.0f) : index(idx), percent(per) {}
+
+	index_type index; ///< Index of the corresponding region
 	float percent; ///< Amount of overlapping
 };
 
@@ -80,9 +79,7 @@ struct region_container : public segmentation_image<disparity_region>
 	//std::vector<short> disparity;
 };
 
-cv::Mat_<short> disparity_by_segments(const region_container &container);
-
-void fill_region_container(std::shared_ptr<region_container>& result, single_stereo_task& task, std::shared_ptr<segmentation_algorithm>& algorithm);
+disparity_map disparity_by_segments(const region_container& container);
 
 int reenumerate_segmentation_labels(cv::Mat& labels, int old_count);
 void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t old_idx, std::size_t new_idx);

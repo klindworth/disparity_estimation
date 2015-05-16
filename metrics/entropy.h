@@ -55,6 +55,8 @@ struct soft_entropy
 	static constexpr int counter_factor() { return 5; }
 	static constexpr int kernel_size() { return 5; }
 
+	static constexpr int border_bins() { return additional_bins()/2; }
+
 	static inline result_type normalize(result_type result, result_type n)
 	{
 		result /= n;
@@ -63,12 +65,12 @@ struct soft_entropy
 	}
 
 	template<typename counter_type, typename entropytable_type>
-	static inline result_type calculate_entropy(counter_type& counter, const entropytable_type& entropy_table, int bins)
+	static inline result_type calculate_entropy(const counter_type& counter, const entropytable_type& entropy_table, const int bins)
 	{
-		auto *counter_ptr = counter.ptr(1);
+		const auto *counter_ptr = counter.ptr(border_bins());
 		result_type result = 0.0f;
 		unsigned int normalize_counter = 0;
-		for(int i = 1; i < bins-1; ++i)
+		for(int i = border_bins(); i < bins-border_bins(); ++i)
 		{
 			normalize_counter += *counter_ptr;
 			result += entropy_table[*counter_ptr++];
@@ -77,13 +79,13 @@ struct soft_entropy
 	}
 
 	template<typename counter_type, typename entropytable_type>
-	static inline result_type calculate_joint_entropy(counter_type& counter, const entropytable_type& entropy_table, int bins)
+	static inline result_type calculate_joint_entropy(const counter_type& counter, const entropytable_type& entropy_table, const int bins)
 	{
 		result_type result = 0.0f;
 		unsigned int normalize_counter = 0;
-		for(int i = 1; i < bins-1; ++i)
+		for(int i = border_bins(); i < bins-border_bins(); ++i)
 		{
-			for(int j = 1; j < bins-1; ++j)
+			for(int j = border_bins(); j < bins-border_bins(); ++j)
 			{
 				auto ccounter = counter(i,j);
 				normalize_counter += ccounter;
@@ -94,7 +96,7 @@ struct soft_entropy
 	}
 
 	template<typename counter_type, typename entropytable_type, typename data_type>
-	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, int bins, int len, const data_type* dataLeft, const data_type* dataRight)
+	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, const int bins, const int len, const data_type* dataLeft, const data_type* dataRight)
 	{
 		result_type result = 0.0f;
 		unsigned int normalize_counter = 0;
@@ -142,7 +144,7 @@ struct soft_entropy
 			const data_type cright = *dataRight++;
 			counter(cleft,   cright+1) += 1;
 			counter(cleft+1, cright)   += 1;
-			counter(cleft+1, cright+1) += 5;
+			counter(cleft+1, cright+1) += counter_factor();
 			counter(cleft+1, cright+2) += 1;
 			counter(cleft+2, cright+1) += 1;
 		}
@@ -156,7 +158,7 @@ struct soft_entropy
 		{
 			data_type cdata = *data++;
 			counter(cdata) += 1;
-			counter(cdata+1) += 5;
+			counter(cdata+1) += counter_factor();
 			counter(cdata+2) += 1;
 		}
 	}
@@ -169,6 +171,8 @@ struct simplified_soft_entropy
 	static constexpr int counter_factor() { return 5; }
 	static constexpr int kernel_size() { return 5; }
 
+	static constexpr int border_bins() { return additional_bins()/2; }
+
 	static inline result_type normalize(result_type result, result_type n)
 	{
 		result /= n;
@@ -177,12 +181,12 @@ struct simplified_soft_entropy
 	}
 
 	template<typename counter_type, typename entropytable_type>
-	static inline result_type calculate_entropy(counter_type& counter, const entropytable_type& entropy_table, int bins)
+	static inline result_type calculate_entropy(const counter_type& counter, const entropytable_type& entropy_table, const int bins)
 	{
-		auto *counter_ptr = counter.ptr(1);
+		const auto *counter_ptr = counter.ptr();
 		result_type result = 0.0f;
 		unsigned int normalize_counter = 0;
-		for(int i = 1; i < bins-1; ++i)
+		for(int i = 0; i < bins; ++i)
 		{
 			normalize_counter += *counter_ptr;
 			result += entropy_table[*counter_ptr++];
@@ -191,14 +195,14 @@ struct simplified_soft_entropy
 	}
 
 	template<typename counter_type, typename entropytable_type>
-	static inline result_type calculate_joint_entropy(counter_type& counter, const entropytable_type& entropy_table, int bins)
+	static inline result_type calculate_joint_entropy(const counter_type& counter, const entropytable_type& entropy_table, const int bins)
 	{
 		result_type result = 0.0f;
 		unsigned int normalize_counter = 0;
 
-		auto counter_ptr = counter.ptr();
+		const auto counter_ptr = counter.ptr();
 
-		int bound = bins*bins;
+		const int bound = bins*bins;
 		for(int i = 0; i < bound; ++i)
 		{
 			auto ccounter = *counter_ptr++;
@@ -210,7 +214,7 @@ struct simplified_soft_entropy
 	}
 
 	template<typename counter_type, typename entropytable_type, typename data_type>
-	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, int, int len, const data_type* dataLeft, const data_type* dataRight)
+	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, const int, const int len, const data_type* dataLeft, const data_type* dataRight)
 	{
 		result_type result = 0.0f;
 		unsigned int normalize_counter = 0;
@@ -240,7 +244,7 @@ struct simplified_soft_entropy
 	}
 
 	template<typename counter_type, typename data_type>
-	inline static void calculate_joint_histogramm(counter_type& counter, const data_type* dataLeft, const data_type* dataRight, int len)
+	inline static void calculate_joint_histogramm(counter_type& counter, const data_type* dataLeft, const data_type* dataRight, const int len)
 	{
 		counter.reset();
 		for(int i = 0; i < len; ++i)
@@ -249,21 +253,21 @@ struct simplified_soft_entropy
 			const data_type cright = *dataRight++;
 			counter(cleft,   cright+1) += 1;
 			counter(cleft+1, cright)   += 1;
-			counter(cleft+1, cright+1) += 5;
+			counter(cleft+1, cright+1) += counter_factor();
 			counter(cleft+1, cright+2) += 1;
 			counter(cleft+2, cright+1) += 1;
 		}
 	}
 
 	template<typename counter_type, typename data_type>
-	static inline void calculate_histogramm(counter_type& counter, const data_type* data, int len)
+	static inline void calculate_histogramm(counter_type& counter, const data_type* data, const int len)
 	{
 		counter.reset();
 		for(int i = 0; i < len; ++i)
 		{
 			data_type cdata = *data++;
 			counter(cdata) += 1;
-			counter(cdata+1) += 5;
+			counter(cdata+1) += counter_factor();
 			counter(cdata+2) += 1;
 		}
 	}
@@ -276,6 +280,8 @@ struct verysoft_entropy
 	static constexpr int counter_factor() { return 10; }
 	static constexpr int kernel_size() { return 9; }
 
+	static constexpr int border_bins() { return additional_bins()/2; }
+
 	static inline result_type normalize(result_type result, result_type n)
 	{
 		result /= n;
@@ -284,12 +290,12 @@ struct verysoft_entropy
 	}
 
 	template<typename counter_type, typename entropytable_type>
-	static inline result_type calculate_entropy(counter_type& counter, const entropytable_type& entropy_table, int bins)
+	static inline result_type calculate_entropy(const counter_type& counter, const entropytable_type& entropy_table, const int bins)
 	{
-		auto *counter_ptr = counter.ptr(1);
+		const auto *counter_ptr = counter.ptr(border_bins());
 		result_type result = 0.0f;
 		unsigned int normalize_counter = 0;
-		for(int i = 2; i < bins-2; ++i)
+		for(int i = border_bins(); i < bins-border_bins(); ++i)
 		{
 			normalize_counter += *counter_ptr;
 			result += entropy_table[*counter_ptr++];
@@ -298,13 +304,13 @@ struct verysoft_entropy
 	}
 
 	template<typename counter_type, typename entropytable_type>
-	static inline result_type calculate_joint_entropy(counter_type& counter, const entropytable_type& entropy_table, int bins)
+	static inline result_type calculate_joint_entropy(const counter_type& counter, const entropytable_type& entropy_table, const int bins)
 	{
 		result_type result = 0.0f;
 		unsigned int normalize_counter = 0;
-		for(int i = 2; i < bins-2; ++i)
+		for(int i = border_bins(); i < bins-border_bins(); ++i)
 		{
-			for(int j = 2; j < bins-2; ++j)
+			for(int j = border_bins(); j < bins-border_bins(); ++j)
 			{
 				auto ccounter = counter(i,j);
 				normalize_counter += ccounter;
@@ -315,7 +321,7 @@ struct verysoft_entropy
 	}
 
 	template<typename counter_type, typename entropytable_type, typename data_type>
-	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, int bins, int len, const data_type* dataLeft, const data_type* dataRight)
+	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, const int bins, const int len, const data_type* dataLeft, const data_type* dataRight)
 	{
 		result_type result = 0.0f;
 		unsigned int normalize_counter = 0;
@@ -363,7 +369,7 @@ struct verysoft_entropy
 	}
 
 	template<typename counter_type, typename data_type>
-	inline static void calculate_joint_histogramm(counter_type& counter, const data_type* dataLeft, const data_type* dataRight, int len)
+	inline static void calculate_joint_histogramm(counter_type& counter, const data_type* dataLeft, const data_type* dataRight, const int len)
 	{
 		counter.reset();
 		for(int i = 0; i < len; ++i)
@@ -386,7 +392,7 @@ struct verysoft_entropy
 	}
 
 	template<typename counter_type, typename data_type>
-	static inline void calculate_histogramm(counter_type& counter, const data_type* data, int len)
+	static inline void calculate_histogramm(counter_type& counter, const data_type* data, const int len)
 	{
 		counter.reset();
 		for(int i = 0; i < len; ++i)
@@ -409,7 +415,7 @@ struct classic
 	static constexpr int kernel_size() { return 1; }
 
 	template<typename counter_type, typename entropytable_type, typename data_type>
-	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, int, int len, const data_type* dataLeft, const data_type* dataRight)
+	static inline result_type calculate_joint_entropy_sparse(counter_type& counter, const entropytable_type& entropy_table, const int, const int len, const data_type* dataLeft, const data_type* dataRight)
 	{
 		result_type result = 0.0f;
 		for(int i = 0; i < len; ++i)
@@ -424,9 +430,9 @@ struct classic
 	}
 
 	template<typename counter_type, typename entropytable_type>
-	static inline result_type calculate_entropy(counter_type& counter, const entropytable_type& entropy_table, int bins)
+	static inline result_type calculate_entropy(const counter_type& counter, const entropytable_type& entropy_table, const int bins)
 	{
-		auto *counter_ptr = counter.ptr();
+		const auto *counter_ptr = counter.ptr();
 		result_type result = 0.0f;
 		for(int i = 0; i < bins; ++i)
 			result += entropy_table[*counter_ptr++];
@@ -435,7 +441,7 @@ struct classic
 	}
 
 	template<typename counter_type, typename data_type>
-	static inline void calculate_joint_histogramm(counter_type& counter, const data_type* dataLeft, const data_type* dataRight, int len)
+	static inline void calculate_joint_histogramm(counter_type& counter, const data_type* dataLeft, const data_type* dataRight, const int len)
 	{
 		counter.reset();
 		for(int i = 0; i < len; ++i)
@@ -443,7 +449,7 @@ struct classic
 	}
 
 	template<typename counter_type, typename data_type>
-	static inline void calculate_histogramm(counter_type& counter, const data_type* data, int len)
+	static inline void calculate_histogramm(counter_type& counter, const data_type* data, const int len)
 	{
 		counter.reset();
 		for(int i = 0; i < len; ++i)

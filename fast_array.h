@@ -44,11 +44,25 @@ public:
 		return *(data + x);
 	}
 
+	inline const T& operator()(int x) const {
+		assert(x >= 0 && x < size);
+		return *(data + x);
+	}
+
 	inline T* ptr() {
 		return data;
 	}
 
 	inline T* ptr(int x) {
+		assert(x >= 0 && x < size);
+		return data + x;
+	}
+
+	inline const T* ptr() const {
+		return data;
+	}
+
+	inline const T* ptr(int x) const {
 		assert(x >= 0 && x < size);
 		return data + x;
 	}
@@ -88,6 +102,16 @@ public:
 		return *(data + step1*x + y);
 	}
 
+	inline const T& operator()(int x) const {
+		assert(x >= 0 && x < size);
+		return *(data + x);
+	}
+
+	inline const T& operator()(int x, int y) const {
+		assert(x >= 0 && y >= 0 && x < step1 && y < step2);
+		return *(data + step1*x + y);
+	}
+
 	inline T* ptr() {
 		return data;
 	}
@@ -98,6 +122,20 @@ public:
 	}
 
 	inline T* ptr(int x, int y) {
+		assert(x >= 0 && y >= 0 && x < step1 && y < step2);
+		return data + step1*x + y;
+	}
+
+	inline const T* ptr() const {
+		return data;
+	}
+
+	inline const T* ptr(int x) const {
+		assert(x >= 0 && x < size);
+		return data + x;
+	}
+
+	inline const T* ptr(int x, int y) const {
 		assert(x >= 0 && y >= 0 && x < step1 && y < step2);
 		return data + step1*x + y;
 	}

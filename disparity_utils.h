@@ -33,6 +33,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace disparity {
 
+/**
+ * Returns the value with the bigger absolute value. It returns the original value, not it's absolute one.
+ * E.g. absmax(-4, 3) returns -4
+ */
 template<typename T>
 inline T absmax(const T& v1, const T& v2)
 {
@@ -236,7 +240,9 @@ template<typename T>
 T disparity_interpolate(const T* cost_ptr, std::size_t min_d, std::size_t range, int subsample)
 {
 	T ndisp;
-	if(min_d > 0 && min_d < range-2 && (cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]) > 0 && subsample > 1)
+	if(min_d > 0 && min_d < range-2 && //check range
+		(cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]) > 0 && //avoid division by zero (that part is taken from the denominator)
+		subsample > 1)
 	{
 		T nmin_d = 0.5*(cost_ptr[min_d-1]-cost_ptr[min_d+1])/(cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]);
 		ndisp = (min_d+nmin_d)*subsample+0.5f;//add 0.5 for correct rounding
@@ -247,7 +253,7 @@ T disparity_interpolate(const T* cost_ptr, std::size_t min_d, std::size_t range,
 	return ndisp;
 }
 
-cv::Mat create_from_costmap(const cv::Mat &cost_map_org, int dispMin, int subsample);
+disparity_map create_from_costmap(const cv::Mat &cost_map_org, int dispMin, int subsample);
 cv::Mat create_image(const cv::Mat &disparity);
 
 }

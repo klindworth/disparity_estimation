@@ -32,11 +32,11 @@ namespace disparity
 
 typedef float costmap_type;
 
-cv::Mat create_from_costmap(const cv::Mat& cost_map, int dispMin, int subsample)
+disparity_map create_from_costmap(const cv::Mat& cost_map, int dispMin, int subsample)
 {
 	costmap_type dispMinF = dispMin*subsample;
 
-	cv::Mat_<short> disparity_map = cv::Mat::zeros(cost_map.size[0], cost_map.size[1], CV_16SC1);
+	cv::Mat_<short> result = cv::Mat::zeros(cost_map.size[0], cost_map.size[1], CV_16SC1);
 	int range = cost_map.size[2];
 	for(int i = 0; i < cost_map.size[0]; ++i)
 	{
@@ -44,11 +44,11 @@ cv::Mat create_from_costmap(const cv::Mat& cost_map, int dispMin, int subsample)
 		{
 			const costmap_type *cost_ptr = cost_map.ptr<costmap_type>(i,j);
 			std::size_t min_d = minimal_cost_disparity(cost_ptr, range, dispMin);
-			disparity_map(i,j) = disparity_interpolate(cost_ptr, min_d, range, subsample)+dispMinF;
+			result(i,j) = disparity_interpolate(cost_ptr, min_d, range, subsample)+dispMinF;
 		}
 	}
 
-	return disparity_map;
+	return disparity_map(result, subsample);
 }
 
 cv::Mat create_image(const cv::Mat& disparity)

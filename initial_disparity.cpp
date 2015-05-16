@@ -143,38 +143,9 @@ public:
 typedef std::function<void(single_stereo_task&, const cv::Mat&, const cv::Mat&, std::vector<disparity_region>&, int)> disparity_region_func;
 
 //untested
-cv::Mat convertDisparityFromPartialCostmap(const cv::Mat& disparity, const cv::Mat& rangeCenters, int subsampling = 1)
+disparity_map convertDisparityFromPartialCostmap(const disparity_map& disparity, const disparity_map& rangeCenters, int subsampling = 1)
 {
-	return disparity + rangeCenters * subsampling;
-}
-
-cv::Mat convertToFullDisparityCostMap(const cv::Mat& cost_map, const cv::Mat& rangeCenters, int dispMin, int dispMax, float initValue)
-{
-	assert(cost_map.dims == 3 && cost_map.size[0] > 0 && cost_map.size[1] > 0 && cost_map.size[2] > 0);
-	int disparityRange = dispMax - dispMin + 1;
-	int sz[] = {cost_map.size[0], cost_map.size[1], disparityRange};
-	cv::Mat result(3, sz, CV_32FC1, cv::Scalar(initValue));
-
-	for(int y = 0; y < cost_map.size[0]; ++y)
-	{
-		for(int x = 0; x < cost_map.size[1]; ++x)
-		{
-			const float* src_ptr = cost_map.ptr<float>(y,x,0);
-			int dispSubStart = std::max(rangeCenters.at<short>(y,x)- cost_map.size[2]/2+1, dispMin);
-			int dispSubEnd = std::min(rangeCenters.at<short>(y,x) + cost_map.size[2]/2, dispMax);
-			//target constraints
-			assert(dispSubStart - dispMin >= 0);
-			assert(dispSubEnd - dispSubStart < disparityRange);
-			assert(dispSubEnd - dispMin < disparityRange);
-			//source constraints
-			assert(dispSubEnd-dispSubStart+1 >= 0);
-			assert(dispSubEnd-dispSubStart+1 <= cost_map.size[2]);
-			float* result_ptr = result.ptr<float>(y, x, dispSubStart - dispMin);
-			memcpy(result_ptr, src_ptr, (dispSubEnd-dispSubStart+1)*sizeof(float));
-		}
-	}
-
-	return result;
+	return disparity_map(cv::Mat_<short>(disparity + rangeCenters * subsampling), subsampling);
 }
 
 template<typename T, typename reg_type, typename lambda_type>
@@ -273,12 +244,12 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 	}
 }
 
-cv::Mat getNormalDisparity(cv::Mat& initial_disparity, const cv::Mat& costmap, const refinement_config& refconfig, int subsampling = 1)
+disparity_map getNormalDisparity(const disparity_map& initial_disparity, const cv::Mat& costmap, const refinement_config& refconfig, int subsampling = 1)
 {
 	return convertDisparityFromPartialCostmap(disparity::create_from_costmap(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
 }
 
-std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const initial_disparity_config& config , const refinement_config& refconfig, int subsampling, region_optimizer& optimizer)
+std::pair<disparity_map, disparity_map> segment_based_disparity_it(stereo_task& task, const initial_disparity_config& config , const refinement_config& refconfig, int subsampling, region_optimizer& optimizer)
 {
 	disparity_region_func disparity_function;
 	refinement_func_type ref_func;
@@ -322,13 +293,8 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 	auto segmentationLeft  = create_segmentation_instance(config.segmentation);
 	auto segmentationRight = create_segmentation_instance(config.segmentation);
 
-	std::shared_ptr<region_container> left  = std::make_shared<region_container>(task.forward);
-	std::shared_ptr<region_container> right = std::make_shared<region_container>(task.backward);
-
-	//segment_based_disparity_internal(task, left, right, config, disparity_function);
-
-	fill_region_container(left, task.forward, segmentationLeft);
-	fill_region_container(right, task.backward, segmentationRight);
+	std::shared_ptr<region_container> left  =  segmentationLeft->segmentation_image<region_container>(task.forward.base,  task.forward);
+	std::shared_ptr<region_container> right = segmentationRight->segmentation_image<region_container>(task.backward.base, task.backward);
 
 	for(disparity_region& cregion : left->regions)
 		cregion.base_disparity = 0;
@@ -366,8 +332,8 @@ std::pair<cv::Mat, cv::Mat> segment_based_disparity_it(stereo_task& task, const 
 		}
 	}
 
-	cv::Mat disparity_left  = disparity_by_segments(*left);
-	cv::Mat disparity_right = disparity_by_segments(*right);
+	disparity_map disparity_left  = disparity_by_segments(*left);
+	disparity_map disparity_right = disparity_by_segments(*right);
 
 	//pixelwise refinement
 	if(config.enable_refinement)
@@ -395,7 +361,7 @@ initial_disparity_algo::initial_disparity_algo(initial_disparity_config &config,
 {
 }
 
-std::pair<cv::Mat, cv::Mat> initial_disparity_algo::operator ()(stereo_task& task)
+std::pair<disparity_map, disparity_map> initial_disparity_algo::operator ()(stereo_task& task)
 {
 	std::cout << "task: " << task.name << std::endl;
 	//int subsampling = 1; //TODO avoid this

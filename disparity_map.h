@@ -1,8 +1,5 @@
-#ifndef CONFIGRUN_H
-#define CONFIGRUN_H
-
 /*
-Copyright (c) 2013, Kai Klindworth
+Copyright (c) 2015, Kai Klindworth
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -26,36 +23,18 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "disparity_map.h"
+#ifndef DISPARITY_MAP_H
+#define DISPARITY_MAP_H
+
 #include <opencv2/core/core.hpp>
-#include <functional>
 
-#include "region_optimizer.h"
-#include <segmentation/segmentation.h>
-
-class stereo_task;
-class disparity_region;
-class region_container;
-class TaskTestSet;
-class classic_search_config;
-class refinement_config;
-class task_collection;
-
-class disparity_estimator_algo
+class disparity_map : public cv::Mat_<short>
 {
 public:
-	disparity_estimator_algo() {}
-	virtual ~disparity_estimator_algo() {}
-	virtual std::pair<disparity_map, disparity_map> operator()(stereo_task& task) = 0;
-	virtual void writeConfig(cv::FileStorage& fs) = 0;
+	disparity_map() : cv::Mat_<short>(), subsampling(1) {}
+	disparity_map(const cv::Mat_<short>& disp, int psubsampling) : cv::Mat_<short>(disp), subsampling(psubsampling) {}
+
+	int subsampling;
 };
 
-cv::FileStorage& operator<<(cv::FileStorage& stream, const initial_disparity_config& config);
-cv::FileStorage& operator>>(cv::FileStorage& stream, initial_disparity_config& config);
-
-std::pair<cv::Mat, cv::Mat> single_logged_run(stereo_task& task, disparity_estimator_algo &disparity_estimator, cv::FileStorage& fs, const std::string& filename);
-void logged_run(stereo_task& task, initial_disparity_config& config, refinement_config& refconfig);
-void logged_run(task_collection& testset, initial_disparity_config& config, refinement_config& refconfig);
-void classicLoggedRun(task_collection& taskset, classic_search_config& config);
-
-#endif // CONFIGRUN_H
+#endif

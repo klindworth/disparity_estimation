@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef STEREOTASK_H
 #define STEREOTASK_H
 
+#include "disparity_map.h"
 #include <opencv2/core/core.hpp>
 #include <string>
 #include "disparity_range.h"
@@ -34,12 +35,13 @@ class single_stereo_task
 {
 public:
 	//single_stereo_task(const disparity_range& prange) : range(prange) {}
-	std::string name, fullname;
+	//std::string name, fullname;
 	cv::Mat base, match, baseGray, matchGray;
-	cv::Mat_<short> groundTruth;
+	//cv::Mat_<short> groundTruth;
+	disparity_map groundTruth;
 	cv::Mat_<unsigned char> occ;
 	disparity_range range;
-	unsigned char groundTruthSampling;
+	//unsigned char groundTruthSampling;
 };
 
 /// Class for saving a specific stereo processing task. It can be loaded from a yaml file, or you construct one by passing all the image paths
@@ -55,7 +57,7 @@ public:
 	bool valid() const;
 
 	cv::Mat left, right, leftGray, rightGray, occLeft, occRight, algoLeft, algoRight;
-	cv::Mat_<short> groundLeft, groundRight;
+	disparity_map groundLeft, groundRight;
 	int dispRange;
 	unsigned char groundTruthSubsampling;
 	std::string name, filenameLeft, filenameRight, filenameGroundLeft, filenameGroundRight, filenameOccLeft, filenameOccRight;
@@ -72,7 +74,7 @@ private:
 	cv::Mat diff_image_internal(const cv::Mat& disparity, const cv::Mat& groundTruth, const cv::Mat& occ, unsigned char subsamplingDisparity, unsigned char subsamplingGroundTruth);
 	void init_single_tasks();
 	void load_images(const std::string& nameLeft, const std::string& nameRight);
-	void load_ground_truth(const std::string &nameGroundLeft, const std::string &nameGroundRight);
+	void load_ground_truth(const std::string &nameGroundLeft, const std::string &nameGroundRight, int subsampling);
 	void load_occ(const std::string& nameOccLeft, const std::string& nameOccRight);
 	void estimate_occ();
 };
