@@ -5,6 +5,7 @@ project(disparity_estimation)
 find_package(Qt5Widgets)
 find_package(OpenCV REQUIRED core imgproc highgui)
 find_package(Boost REQUIRED filesystem system)
+find_package(HDF5 REQUIRED)
 find_package(OpenMP)
 #include(${QT_USE_FILE})
 
@@ -107,7 +108,7 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-    Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} cvio cvsegmentation_lib openblas
+    Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} cvio cvsegmentation_lib openblas
 )
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++11 -O0 -fsanitize=address -fsanitize=undefined")
@@ -154,5 +155,5 @@ set_target_properties(${PROJECT_NAME}_loganalyzer PROPERTIES AUTOMOC TRUE)
 #set_target_properties(${PROJECT_NAME}_loganalyzer PROPERTIES AUTOUIC TRUE)
 
 target_link_libraries(${PROJECT_NAME}_loganalyzer
-    Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} cvio cvsegmentation_lib
+    Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} cvio cvsegmentation_lib
 )

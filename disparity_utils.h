@@ -186,8 +186,14 @@ cv::Mat_<disparity_type> warp_disparity(const cv::Mat_<disparity_type>& disparit
 	return warpedImage;
 }
 
+template<typename disparity_type>
+disparity_map warp_disparity(const disparity_map& disparity, float scaling = 1.0f)
+{
+	return disparity_map(warp_disparity(disparity, scaling), disparity.subsampling);
+}
+
 template<typename cost_class, typename data_type>
-cv::Mat_<short> wta_disparity(cv::Mat base, data_type data, const disparity_range range)
+disparity_map wta_disparity(cv::Mat base, data_type data, const disparity_range range)
 {
 	cv::Mat_<short> result = cv::Mat_<short>(base.size(), 0);
 
@@ -217,7 +223,7 @@ cv::Mat_<short> wta_disparity(cv::Mat base, data_type data, const disparity_rang
 		}
 	}
 
-	return result;
+	return disparity_map(result, 1);
 }
 
 template<typename T>

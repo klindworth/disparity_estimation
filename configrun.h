@@ -53,7 +53,7 @@ public:
 cv::FileStorage& operator<<(cv::FileStorage& stream, const initial_disparity_config& config);
 cv::FileStorage& operator>>(cv::FileStorage& stream, initial_disparity_config& config);
 
-std::pair<cv::Mat, cv::Mat> single_logged_run(stereo_task& task, disparity_estimator_algo &disparity_estimator, cv::FileStorage& fs, const std::string& filename);
+std::pair<disparity_map, disparity_map> single_logged_run(stereo_task& task, disparity_estimator_algo &disparity_estimator, cv::FileStorage& fs, const std::string& filename);
 void logged_run(stereo_task& task, initial_disparity_config& config, refinement_config& refconfig);
 void logged_run(task_collection& testset, initial_disparity_config& config, refinement_config& refconfig);
 void classicLoggedRun(task_collection& taskset, classic_search_config& config);

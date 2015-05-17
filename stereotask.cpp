@@ -136,7 +136,7 @@ void stereo_task::load_ground_truth(const std::string& nameGroundLeft, const std
 	else
 	{
 		if(groundLeft.data)
-			groundRight = disparity_map(disparity::warp_disparity<short>(groundLeft), subsampling);
+			groundRight = disparity::warp_disparity<short>(groundLeft);
 		std::cout << "no ground truth data for right image" << std::endl;
 	}
 }

@@ -239,6 +239,35 @@ void Analyzer::on_pbRefresh_clicked()
 	optimizeWidth(ui->twOverview);
 }
 
+stereo_task load_task(cv::FileNodeIterator it, std::string name, std::string base_folder)
+{
+	std::string leftGround, rightGround, left, right, leftOcc, rightOcc;
+	int dispRange, groundSubsampling;
+	(*it)["left"] >> left;
+	(*it)["right"] >> right;
+	(*it)["occLeft"] >> leftOcc;
+	(*it)["occRight"] >> rightOcc;
+	(*it)["groundLeft"] >> leftGround;
+	(*it)["groundRight"] >> rightGround;
+	(*it)["dispRange"] >> dispRange;
+	(*it)["groundTruthSubsampling"] >> groundSubsampling;
+
+	std::vector<std::string*> pathToTransform {&leftGround, &rightGround, &left, &right, &leftOcc, &rightOcc};
+	for(std::string* cpath : pathToTransform)
+		*cpath = base_folder + "/" + *cpath;
+
+	return stereo_task(name, left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
+}
+
+disparity_map load_disparity(cvio::hdf5file& hfile, const std::string& path, int default_subsampling)
+{
+	cvio::hdf5dataset dataset_right(hfile, path);
+	int subsampling = dataset_right.get_attribute("subsampling", default_subsampling);
+	std::cout << "subsampling_right: " << subsampling << std::endl;
+
+	return disparity_map(hfile.load(path), subsampling);
+}
+
 void Analyzer::setSubTask(const QString& base, const QString& name)
 {
 	m_currentFilename = base + ".yml";
@@ -258,6 +287,7 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 	int windowsize, subsampling;
 	fs["windowsize"] >> windowsize;
 	fs["subsampling"] >> subsampling;
+	std::cout << "subsampling: " << subsampling << std::endl;
 	if(subsampling == 0)
 		subsampling = 1;
 	cv::FileNode node = fs["analysis"];
@@ -267,37 +297,22 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 		if(cname == name)
 		{
 			std::cout << "found" << std::endl;
-			std::string leftGround, rightGround, left, right, leftOcc, rightOcc;
-			int dispRange, groundSubsampling;
-			(*it)["left"] >> left;
-			(*it)["right"] >> right;
-			(*it)["occLeft"] >> leftOcc;
-			(*it)["occRight"] >> rightOcc;
-			(*it)["groundLeft"] >> leftGround;
-			(*it)["groundRight"] >> rightGround;
-			(*it)["dispRange"] >> dispRange;
-			(*it)["groundTruthSubsampling"] >> groundSubsampling;
 
-			std::vector<std::string*> pathToTransform {&leftGround, &rightGround, &left, &right, &leftOcc, &rightOcc};
-			std::string base_folder = m_basePath.absolutePath().toStdString();
 			std::string result_path = m_resultsPath.absolutePath().toStdString();
 			std::string abs_prefix = result_path + "/" + prefix.toStdString();
 
-			for(std::string* cpath : pathToTransform)
-				*cpath = base_folder + "/" + *cpath;
-
-			stereo_task task(name.toStdString(), left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
+			stereo_task task = load_task(it, name.toStdString(), m_basePath.absolutePath().toStdString());
 
 			std::cout << abs_prefix << std::endl;
 			cvio::hdf5file hfile(abs_prefix + ".hdf5");
 
-			cv::Mat_<short> disp_left = hfile.load("/results/left_disparity");//file_to_mat(abs_prefix + "-left.cvmat");
-			cv::Mat_<short> disp_right = hfile.load("/results/right_disparity");//file_to_mat(abs_prefix + "-right.cvmat");
+			disparity_map disp_left  = load_disparity(hfile, "/results/left_disparity",  subsampling);
+			disparity_map disp_right = load_disparity(hfile, "/results/right_disparity", subsampling);
 
-			task_analysis analysis(task, disp_left, disp_right, subsampling, windowsize/2);
+			task_analysis analysis(task, disp_left, disp_right, windowsize/2);
 
-			cv::Mat warpedLeft  = disparity::warp_image<cv::Vec3b>(task.left, disp_left, cv::Vec3b(0,0,0), 1.0f/subsampling);
-			cv::Mat warpedRight  = disparity::warp_image<cv::Vec3b>(task.right, disp_right, cv::Vec3b(0,0,0), 1.0f/subsampling);
+			cv::Mat warpedLeft   = disparity::warp_image<cv::Vec3b>(task.left,  disp_left,  cv::Vec3b(0,0,0), 1.0f/disp_left.subsampling);
+			cv::Mat warpedRight  = disparity::warp_image<cv::Vec3b>(task.right, disp_right, cv::Vec3b(0,0,0), 1.0f/disp_right.subsampling);
 
 			cv::Mat disp_left_img  = disparity::create_image(disp_left);
 			cv::Mat disp_right_img = disparity::create_image(disp_right);
@@ -471,59 +486,38 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 			fs["subsampling"] >> subsampling;
 			if(subsampling == 0)
 				subsampling = 1;
+			std::cout << "subsampling: " << subsampling << std::endl;
 			cv::FileNode node = fs["analysis"];
 			for(cv::FileNodeIterator it = node.begin(); it != node.end(); ++it)
 			{
 				QString name = readString("taskname", *it);
 				QString prefix = base+ "_" + name;
-				std::vector<int> hist_left, hist_right;
-				std::string leftGround, rightGround, left, right, leftOcc, rightOcc;
-				int dispRange, groundSubsampling;
-				(*it)["left"] >> left;
-				(*it)["right"] >> right;
-				(*it)["occLeft"] >> leftOcc;
-				(*it)["occRight"] >> rightOcc;
-				(*it)["groundLeft"] >> leftGround;
-				(*it)["groundRight"] >> rightGround;
-				(*it)["dispRange"] >> dispRange;
-				(*it)["groundTruthSubsampling"] >> groundSubsampling;
 
-				std::vector<std::string*> pathToTransform {&leftGround, &rightGround, &left, &right, &leftOcc, &rightOcc};
 				std::string base_folder = m_basePath.absolutePath().toStdString();
 				std::string result_path = m_resultsPath.absolutePath().toStdString();
 				std::string abs_prefix = result_path + "/" + prefix.toStdString();
 
-				for(std::string* cpath : pathToTransform)
-				{
-					*cpath = base_folder + "/" + *cpath;
-					std::cout << *cpath << std::endl;
-				}
-
-				stereo_task task(name.toStdString(), left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
+				stereo_task task = load_task(it, name.toStdString(), base_folder);
 
 				std::cout << abs_prefix << std::endl;
 
 				cvio::hdf5file hfile(abs_prefix + ".hdf5");
 
-				cv::Mat_<short> disp_left = hfile.load("/results/left_disparity");//file_to_mat(abs_prefix + "-left.cvmat");
-				cv::Mat_<short> disp_right = hfile.load("/results/right_disparity");//file_to_mat(abs_prefix + "-right.cvmat");
+				disparity_map disp_left  = load_disparity(hfile, "/results/left_disparity",  subsampling);
+				disparity_map disp_right = load_disparity(hfile, "/results/right_disparity", subsampling);
 
-				task_analysis analysis(task, disp_left, disp_right, subsampling, windowsize/2);
-				hist_left = std::vector<int>(analysis.error_hist_left.begin(), analysis.error_hist_left.end());
-				hist_right = std::vector<int>(analysis.error_hist_right.begin(), analysis.error_hist_right.end());
+				task_analysis analysis(task, disp_left, disp_right, windowsize/2);
 
 
 				CompareRow *crow_left  = getElement(rows, name +" (left)");
 				crow_left->images.push_back(disparity::create_image(disp_left));
-				//crow_left->images.push_back(getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_left));
 				crow_left->images.push_back(analysis.diff_mat_left);
-				crow_left->hist.push_back(hist_left);
+				crow_left->hist.push_back(analysis.error_hist_left);
 
 				CompareRow *crow_right = getElement(rows, name +" (right)");
 				crow_right->images.push_back(disparity::create_image(disp_right));
-				//crow_right->images.push_back(getValueScaledImage<unsigned char, unsigned char>(analysis.diff_mat_right));
 				crow_right->images.push_back(analysis.diff_mat_right);
-				crow_right->hist.push_back(hist_right);
+				crow_right->hist.push_back(analysis.error_hist_right);
 			}
 		}
 	}

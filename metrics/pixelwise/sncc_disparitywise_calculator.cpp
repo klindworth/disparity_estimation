@@ -117,7 +117,7 @@ void sncc_kernel(float* result, const float* mu_base, const float* mu_match, con
 
 	for(int y = 0; y < rows; ++y)
 	{
-		int y_offset = y*row_stride;
+		const int y_offset = y*row_stride;
 		const float* mu_base_ptr = mu_base + y_offset;
 		const float* mu_match_ptr = mu_match + y_offset;
 		const float* sigma_base_inv_ptr = sigma_base_inv + y_offset;

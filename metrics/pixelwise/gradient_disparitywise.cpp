@@ -75,17 +75,18 @@ cv::Mat gradient_image(const cv::Mat& base, const cv::Mat& base2, const cv::Mat&
 	int i = 0;
 
 	#if __SSE__
-	__m128* simd_base1  = (__m128*) base_cutted.data;
-	__m128* simd_base2  = (__m128*) base2_cutted.data;
-	__m128* simd_match1 = (__m128*) match_shifted.data;
-	__m128* simd_match2 = (__m128*) match2_shifted.data;
-	__m128* simd_norm_match = (__m128*) match_norm.data;
-	__m128* simd_norm_base  = (__m128*) base_norm.data;
+	const __m128* simd_base1  = (const __m128*) base_cutted.data;
+	const __m128* simd_base2  = (const __m128*) base2_cutted.data;
+	const __m128* simd_match1 = (const __m128*) match_shifted.data;
+	const __m128* simd_match2 = (const __m128*) match2_shifted.data;
+	const __m128* simd_norm_match = (const __m128*) match_norm.data;
+	const __m128* simd_norm_base  = (const __m128*) base_norm.data;
 
 	__m128 simd_anglearg;
 	__m128* simd_result = (__m128*) result.data;
 
-	for(; i < counter_max-3; i += simd_size)
+	const int bound = counter_max-simd_size+1;
+	for(; i < bound; i += simd_size)
 	{
 		__m128 sse_dotprod = _mm_add_ps( _mm_mul_ps(*simd_base1++, *simd_match1++), _mm_mul_ps(*simd_base2++, *simd_match2++));
 		simd_anglearg = _mm_div_ps(sse_dotprod, _mm_mul_ps(*simd_norm_base, *simd_norm_match));

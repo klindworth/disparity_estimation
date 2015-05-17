@@ -73,12 +73,11 @@ std::string timestampString()
 	return std::string(buffer);
 }
 
-void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pair<cv::Mat, cv::Mat>& disparity, const stereo_task& task, int total_runtime, int ignore_border = 0)
+void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pair<disparity_map, disparity_map>& disparity, const stereo_task& task, int total_runtime, int ignore_border = 0)
 {
 	bool logging = true;
-	int subsampling = 1; //TODO: avoid this
 
-	task_analysis analysis(task, disparity.first, disparity.second, subsampling, ignore_border);
+	task_analysis analysis(task, disparity.first, disparity.second, ignore_border);
 
 	if(logging)
 	{
@@ -88,8 +87,16 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 		fs << analysis;
 
 		cvio::hdf5file hfile(filename + ".hdf5");
-		hfile.save(disparity.first, "/results/left_disparity", false);
-		hfile.save(disparity.second, "/results/right_disparity", false);
+
+		std::string datasetname_left = "/results/left_disparity";
+		std::string datasetname_right = "/results/right_disparity";
+		hfile.save(disparity.first, datasetname_left, false);
+		hfile.save(disparity.second, datasetname_right, false);
+
+		cvio::hdf5dataset dataset_left(hfile, datasetname_left);
+		dataset_left.set_attribute("subsampling", disparity.first.subsampling);
+		cvio::hdf5dataset dataset_right(hfile, datasetname_right);
+		dataset_right.set_attribute("subsampling", disparity.second.subsampling);
 	}
 
 	if(task.groundLeft.data)
@@ -104,13 +111,13 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 	}
 }
 
-std::pair<cv::Mat, cv::Mat> single_logged_run(stereo_task& task, disparity_estimator_algo& disparity_estimator, cv::FileStorage& fs, const std::string& filename)
+std::pair<disparity_map, disparity_map> single_logged_run(stereo_task& task, disparity_estimator_algo& disparity_estimator, cv::FileStorage& fs, const std::string& filename)
 {
 
 	std::time_t starttime;
 	std::time(&starttime);
 
-	std::pair<cv::Mat, cv::Mat> disparity = disparity_estimator(task);
+	std::pair<disparity_map, disparity_map> disparity = disparity_estimator(task);
 
 	std::time_t endtime;
 	std::time(&endtime);
@@ -174,7 +181,7 @@ void logged_run(task_collection& testset, initial_disparity_config& config, refi
 }
 
 template<int quantizer>
-std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(const single_stereo_task& task, bool soft, unsigned int windowsize)
+std::vector<disparity_map> AllInformationTheoreticDistance(const single_stereo_task& task, bool soft, unsigned int windowsize)
 {
 	typedef float calc_type;
 	long long start = cv::getCPUTickCount();
@@ -185,14 +192,14 @@ std::vector<cv::Mat_<short>> AllInformationTheoreticDistance(const single_stereo
 
 	auto data_single = std::make_pair(entropy.X, entropy.Y);
 
-	return std::vector<cv::Mat_<short>> {disparity::wta_disparity<entropy_agg<calc_type, mutual_information_calc>>(entropy.XY, data_single, task.range),
+	return std::vector<disparity_map> {disparity::wta_disparity<entropy_agg<calc_type, mutual_information_calc>>(entropy.XY, data_single, task.range),
 										disparity::wta_disparity<entropy_agg<calc_type, variation_of_information_calc>>(entropy.XY, data_single, task.range),
 										disparity::wta_disparity<entropy_agg<calc_type, normalized_variation_of_information_calc>>(entropy.XY, data_single, task.range),
 										disparity::wta_disparity<entropy_agg<calc_type, normalized_information_distance_calc>>(entropy.XY, data_single, task.range)};
 }
 
 template<int quantizer>
-void it_both_sides(std::vector<cv::Mat_<short>>& resultLeft, std::vector<cv::Mat_<short>>& resultRight, const stereo_task& task, const classic_search_config& config)
+void it_both_sides(std::vector<disparity_map>& resultLeft, std::vector<disparity_map>& resultRight, const stereo_task& task, const classic_search_config& config)
 {
 	resultLeft = AllInformationTheoreticDistance<quantizer>(task.forward, config.soft, config.windowsize);
 	resultRight = AllInformationTheoreticDistance<quantizer>(task.backward, config.soft, config.windowsize);
@@ -206,7 +213,7 @@ void it_both_sides(std::vector<cv::Mat_<short>>& resultLeft, std::vector<cv::Mat
 
 void singleClassicRun(const stereo_task& task, const classic_search_config& config, const std::string& filename, std::vector<std::unique_ptr<cv::FileStorage>>& fs, const std::vector<std::string>& names)
 {
-	std::vector<cv::Mat_<short> > resultLeft, resultRight;
+	std::vector<disparity_map> resultLeft, resultRight;
 
 	std::time_t starttime;
 	std::time(&starttime);
@@ -239,7 +246,7 @@ void singleClassicRun(const stereo_task& task, const classic_search_config& conf
 	for(std::size_t i = 0; i < resultLeft.size(); ++i)
 	{
 		std::string fullfilename = filename + names[i] + "_" + task.name;
-		std::pair<cv::Mat, cv::Mat> disparity {resultLeft[i], resultRight[i]};
+		std::pair<disparity_map, disparity_map> disparity {resultLeft[i], resultRight[i]};
 
 		write_logged_data(*(fs[i]), fullfilename, disparity, task, total_runtime, config.windowsize/2);
 	}

@@ -74,6 +74,7 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 	for(std::size_t i = 0; i < regions_count; ++i)
 		regions[i].disparity_costs = cv::Mat(crange, 1, CV_32FC1, cv::Scalar(500));
 
+	//memory layout
 	//region:disp:y_interval
 	//region:y_interval*disparity_range
 	std::vector<std::vector<float> > row_costs;
@@ -93,43 +94,42 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 
 	std::cout << "rowwise" << std::endl;
 	//rowwise costs
-	int width = base.cols;
+	const int width = base.cols;
 	#pragma omp parallel for
 	for(int d = task.range.start(); d <= task.range.end(); ++d)
 	{
 		cv::Mat diff = calc(d);
-		int base_offset = std::min(0,d);
+		const int base_offset = std::min(0,d);
 
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
-			disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
+			const disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
 
 			if(drange.valid_disparity(d))
 			{
-				std::size_t idx = d - drange.start();
-				std::size_t row_count = regions[i].lineIntervals.size();
+				const std::size_t row_count = regions[i].lineIntervals.size();
+				const std::size_t idx = drange.index(d)*row_count;
 
 				for(std::size_t j = 0; j < row_count; ++j)
 				{
 					const region_interval& cinterval = regions[i].lineIntervals[j];
-					int lower = std::max(cinterval.lower+d, 0)-d + base_offset;
-					int upper = std::min(cinterval.upper+d, width)-d + base_offset;
-					int y = cinterval.y;
+					const int lower = std::max(cinterval.lower+d, 0)-d + base_offset;
+					const int upper = std::min(cinterval.upper+d, width)-d + base_offset;
 
 					float sum = 0.0;
-					const float *diff_ptr = diff.ptr<float>(y,lower);
+					const float *diff_ptr = diff.ptr<float>(cinterval.y,lower);
 					for(int x = lower; x < upper; ++x)
 						sum += *diff_ptr++;
 
-					row_costs[i][idx*row_count+j] = sum;
-					row_sizes[i][idx*row_count+j] = std::max(upper-lower+1,0);
+					row_costs[i][idx+j] = sum;
+					row_sizes[i][idx+j] = std::max(upper-lower+1,0);
 				}
 			}
 		}
 	}
 
 	const float p = 0.9;
-	std::array<float,3> penalties{1.0f, 1/p, 1/(p*p)};
+	const std::array<float,3> penalties{1.0f, 1/p, 1/(p*p)};
 
 	std::cout << "region" << std::endl;
 	//calculate regioncost
@@ -138,15 +138,15 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 	{
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
-			disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
+			const disparity_range drange = task_subrange(task, regions[i].base_disparity, delta);
 
 			if(drange.valid_disparity(d))
 			{
-				std::size_t idx = d - drange.start();
-				std::size_t row_count = regions[i].lineIntervals.size();
+				//std::size_t idx = d - drange.start();
+				const std::size_t row_count = regions[i].lineIntervals.size();
 
-				int delta_neg = std::max(drange.start(), d - 2) - d;
-				int delta_pos = std::min(drange.end(), d + 2) - d;
+				const int delta_neg = std::max(drange.start(), d - 2) - d;
+				const int delta_pos = std::min(drange.end(), d + 2) - d;
 
 				float region_costs = 0.0f;
 				int region_size = 0;
@@ -155,12 +155,14 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 				{
 					float row_cost = std::numeric_limits<float>::max();
 					int row_size = 0;
+					std::size_t idx = row_count*drange.index(d)+j;
+
 					for(int delta = delta_neg; delta <= delta_pos; ++delta)
 					{
 						float cpenanlty = penalties[std::abs(delta)];
 						int delta_idx = delta*row_count;
-						int csize = row_sizes[i][row_count*idx+j+delta_idx];
-						float ccost = row_costs[i][row_count*idx+j+delta_idx] / csize * cpenanlty;
+						int csize = row_sizes[i][idx+delta_idx];
+						float ccost = row_costs[i][idx+delta_idx] / csize * cpenanlty;
 
 						if(ccost != 0 && ccost < row_cost && csize > 0)
 						{

@@ -26,6 +26,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TASKANALYSIS_H
 #define TASKANALYSIS_H
 
+#include "disparity_map.h"
+
 #include <opencv2/core/core.hpp>
 
 class stereo_task;
@@ -35,13 +37,13 @@ class task_analysis
 {
 public:
 	task_analysis();
-	task_analysis(const stereo_task& task, const cv::Mat& disparity_left, const cv::Mat& disparity_right, int subsampling, int ignore_border = 0);
+	task_analysis(const stereo_task& task, const disparity_map& disparity_left, const disparity_map& disparity_right, int ignore_border = 0);
 	//void write(cv::FileNode& node) const;
 	static const int maxdiff = 15;
-	std::array<int, maxdiff> error_hist_left, error_hist_right;
+	std::vector<int> error_hist_left, error_hist_right;
 	cv::Mat_<unsigned char> diff_mat_left, diff_mat_right;
 private:
-	void create_internal(const single_stereo_task& task, const cv::Mat_<short>& disparity, cv::Mat_<unsigned char>& error_mat, std::array<int, maxdiff>& hist,  int subsamplingDisparity, unsigned int ignore_border = 0);
+	void create_internal(const single_stereo_task& task, const disparity_map& disparity, cv::Mat_<unsigned char>& error_mat, std::vector<int>& hist, unsigned int ignore_border = 0);
 };
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const task_analysis& analysis);

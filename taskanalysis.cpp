@@ -31,28 +31,26 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "stereotask.h"
 #include "genericfunctions.h"
 
-task_analysis::task_analysis()
+task_analysis::task_analysis() : error_hist_left(maxdiff, 0), error_hist_right(maxdiff, 0)
 {
-	std::fill(error_hist_left.begin(), error_hist_left.end(), 0);
-	std::fill(error_hist_right.begin(), error_hist_right.end(), 0);
 }
 
-void task_analysis::create_internal(const single_stereo_task& task, const cv::Mat_<short>& disparity, cv::Mat_<unsigned char>& error_mat, std::array<int, maxdiff>& hist, int subsamplingDisparity, unsigned int ignore_border)
+void task_analysis::create_internal(const single_stereo_task& task, const disparity_map& disparity, cv::Mat_<unsigned char>& error_mat, std::vector<int>& hist, unsigned int ignore_border)
 {
 	if(task.groundTruth.data)
 	{
 		cv::Mat_<short> scaledDisp, scaledGround;
 		int commonSubsampling = 1;
-		if(subsamplingDisparity != task.groundTruth.subsampling)
+		if(disparity.subsampling != task.groundTruth.subsampling)
 		{
-			scaledDisp = disparity / subsamplingDisparity;
+			scaledDisp = disparity / disparity.subsampling;
 			scaledGround = task.groundTruth / task.groundTruth.subsampling;
 		}
 		else
 		{
 			scaledDisp = disparity;
 			scaledGround = task.groundTruth;
-			commonSubsampling = subsamplingDisparity;
+			commonSubsampling = disparity.subsampling;
 		}
 
 		cv::Mat ndisp = scaledDisp; //createFixedDisparity(scaledDisp, 1.0f);
@@ -67,11 +65,12 @@ void task_analysis::create_internal(const single_stereo_task& task, const cv::Ma
 		//if(ignore_border > 0)
 			//resetBorder<unsigned char>(error_mat, ignore_border);
 
+		const int diff_bound = hist.size() - 1;
 		for(unsigned int y = ignore_border; y < error_mat.rows - ignore_border; ++y)
 		{
 			for(unsigned int x = ignore_border; x < error_mat.cols - ignore_border; ++x)
 			{
-				unsigned char idx = std::min((maxdiff-1), error_mat(y,x)/commonSubsampling);
+				unsigned char idx = std::min(diff_bound, error_mat(y,x)/commonSubsampling);
 				if(task.occ.data && task.groundTruth(y,x) != 0)
 				{
 					if(task.occ(y,x) > 128)
@@ -86,13 +85,10 @@ void task_analysis::create_internal(const single_stereo_task& task, const cv::Ma
 		std::clog << "no ground truth data" << std::endl;
 }
 
-task_analysis::task_analysis(const stereo_task& task, const cv::Mat& disparity_left, const cv::Mat& disparity_right, int subsampling, int ignore_border)
+task_analysis::task_analysis(const stereo_task& task, const disparity_map& disparity_left, const disparity_map& disparity_right, int ignore_border) : error_hist_left(maxdiff, 0), error_hist_right(maxdiff, 0)
 {
-	std::fill(error_hist_left.begin(), error_hist_left.end(), 0);
-	std::fill(error_hist_right.begin(), error_hist_right.end(), 0);
-
-	create_internal(task.forward, disparity_left, this->diff_mat_left, this->error_hist_left, subsampling, ignore_border);
-	create_internal(task.backward, disparity_right, this->diff_mat_right, this->error_hist_right, subsampling, ignore_border);
+	create_internal(task.forward, disparity_left, this->diff_mat_left, this->error_hist_left, ignore_border);
+	create_internal(task.backward, disparity_right, this->diff_mat_right, this->error_hist_right, ignore_border);
 }
 
 /*void TaskAnalysis::write(cv::FileNode& node) const
