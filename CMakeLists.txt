@@ -7,6 +7,7 @@ find_package(OpenCV REQUIRED core imgproc highgui)
 find_package(Boost REQUIRED filesystem system)
 find_package(HDF5 REQUIRED)
 find_package(OpenMP)
+find_package(Doxygen)
 #include(${QT_USE_FILE})
 
 
@@ -16,19 +17,22 @@ set(SOURCES main.cpp
     costmap_utils.cpp
     disparity_region.cpp
     initial_disparity.cpp
-    disparity_toolkit/stereotask.cpp
     window_size.cpp
-    disparity_toolkit/disparity_utils.cpp
-    optimizer/region_optimizer.cpp
     configrun.cpp
     taskanalysis.cpp
-    metrics/pixelwise/gradient_disparitywise.cpp
     refinement.cpp
+    region_ground_truth.cpp
+
+    disparity_toolkit/stereotask.cpp
+    disparity_toolkit/disparity_utils.cpp
+
+    metrics/pixelwise/gradient_disparitywise.cpp
     metrics/pixelwise/sncc_disparitywise_calculator.cpp
+
+    optimizer/region_optimizer.cpp
     optimizer/manual_region_optimizer.cpp
     optimizer/ml_region_optimizer.cpp
     optimizer/ml_region_optimizer_disp.cpp
-    region_ground_truth.cpp
 
     gui/miniplot.cpp    
     gui/regionwidget.cpp
@@ -39,40 +43,40 @@ set(SOURCES main.cpp
 set(HEADERS
     genericfunctions.h
     fast_array.h
-    metrics/pixelwise/gradient_disparitywise.h
     debugmatstore.h
-    metrics/sliding_entropy.h
     costmap_creators.h
-    metrics/it_metrics.h
     costmap_utils.h
-    disparity_toolkit/disparity_map.h
-    disparity_toolkit/disparity_range.h
+    configrun.h
+    taskanalysis.h
+    region_ground_truth.h
+    window_size.h
+    region_metrics.h
+    refinement.h
+    sparse_counter.h
+    initial_disparity.h
+
     disparity_region.h
     disparity_region_algorithms.h
     disparitywise_calculator.h
+
     metrics/pixelwise/sncc_disparitywise_calculator.h
     metrics/pixelwise/converter_to_region.h
     metrics/pixelwise/sad_disparitywise.h
+    metrics/pixelwise/gradient_disparitywise.h
     metrics/entropy.h
+    metrics/it_metrics.h
+    metrics/sliding_entropy.h
 
-    sparse_counter.h
-    initial_disparity.h
     disparity_toolkit/stereotask.h
-
-    window_size.h
     disparity_toolkit/disparity_utils.h
+    disparity_toolkit/disparity_map.h
+    disparity_toolkit/disparity_range.h
 
     optimizer/region_optimizer.h
     optimizer/manual_region_optimizer.h
     optimizer/ml_region_optimizer.h
     optimizer/ml_region_optimizer_disp.h
     optimizer/ml_region_optimizer_algorithms.h
-    configrun.h
-    taskanalysis.h
-    region_ground_truth.h
-
-    region_metrics.h
-    refinement.h
 
     neural_network/network.h
     neural_network/blas_wrapper.h
@@ -157,3 +161,19 @@ set_target_properties(${PROJECT_NAME}_loganalyzer PROPERTIES AUTOMOC TRUE)
 target_link_libraries(${PROJECT_NAME}_loganalyzer
     Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} cvio cvsegmentation_lib
 )
+
+if(DOXYGEN_FOUND)
+
+    set(doxyfile_in ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in)
+    set(doxyfile ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
+
+    configure_file(${doxyfile_in} ${doxyfile} @ONLY)
+
+    add_custom_target(doc
+	COMMAND ${DOXYGEN_EXECUTABLE} ${doxyfile}
+	WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+	COMMENT "Generating API documentation with Doxygen"
+	VERBATIM)
+
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/html DESTINATION share/doc)
+endif()

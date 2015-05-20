@@ -149,22 +149,20 @@ cv::Mat occlusion_map(const cv::Mat_<disparity_type>& disparity, const cv::Mat_<
 	return occ_image;
 }
 
-///warps an image
+
+
+/**
+ * @brief Warps an image.
+ * This function uses a disparity map to simulate a different perspective of an image
+ * @param image Image that will be warped
+ * @param disparity Disparity map that determines the amount of pixels that a pixel will be moved to simulate the different perspective
+ * @param init Value for undefinied values (undefinied/not existing in the simulated perspective). Default: 0
+ * @param scaling The scaling factor will be applied on the disparity values. This is usefull for over/undersampled integer disparity maps.
+ * If a disparity value e.g. of four means one pixel, you pass 0.25 as scaling factor. Default: 1
+ * @return Warped image
+ */
 template<typename image_type, typename disparity_type>
-cv::Mat warp_image(const cv::Mat_<image_type>& image, const cv::Mat_<disparity_type>& disparity, float scaling = 1.0f)
-{
-	cv::Mat_<image_type> warpedImage(image.size(), static_cast<image_type>(0));
-
-	foreach_warped_pixel_unique<disparity_type>(disparity, scaling, [&](cv::Point pos, cv::Point warped_pos, disparity_type){
-		warpedImage(warped_pos) = image(pos);
-	});
-
-	return warpedImage;
-}
-
-///warps an image
-template<typename image_type, typename disparity_type>
-cv::Mat warp_image(const cv::Mat_<image_type>& image, const cv::Mat_<disparity_type>& disparity, image_type init, float scaling = 1.0f)
+cv::Mat warp_image(const cv::Mat_<image_type>& image, const cv::Mat_<disparity_type>& disparity, image_type init = 0, float scaling = 1.0f)
 {
 	cv::Mat_<image_type> warpedImage(image.size(), init);
 
@@ -175,6 +173,13 @@ cv::Mat warp_image(const cv::Mat_<image_type>& image, const cv::Mat_<disparity_t
 	return warpedImage;
 }
 
+/**
+ * @brief Warps a disparity with itself and adjust it's sign for backtransformation
+ * @param disparity Disparity map that will be wapred and that determines the amount of pixels that a disparity value will be moved to simulate the different perspective
+ * @param scaling The scaling factor will be applied on the disparity values. This is usefull for over/undersampled integer disparity maps.
+ * If a disparity value e.g. of four means one pixel, you pass 0.25 as scaling factor. Default: 1
+ * @return Warped disparity
+ */
 template<typename disparity_type>
 cv::Mat_<disparity_type> warp_disparity(const cv::Mat_<disparity_type>& disparity, float scaling = 1.0f)
 {

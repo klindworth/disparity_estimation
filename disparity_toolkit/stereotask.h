@@ -37,11 +37,9 @@ public:
 	//single_stereo_task(const disparity_range& prange) : range(prange) {}
 	//std::string name, fullname;
 	cv::Mat base, match, baseGray, matchGray;
-	//cv::Mat_<short> groundTruth;
 	disparity_map groundTruth;
 	cv::Mat_<unsigned char> occ;
 	disparity_range range;
-	//unsigned char groundTruthSampling;
 };
 
 /// Class for saving a specific stereo processing task. It can be loaded from a yaml file, or you construct one by passing all the image paths
