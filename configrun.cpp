@@ -73,6 +73,13 @@ std::string timestampString()
 	return std::string(buffer);
 }
 
+void save_disparity(cvio::hdf5file& hfile, const disparity_map& disp, const std::string& path)
+{
+	hfile.save(disp, path, false);
+	cvio::hdf5dataset dataset(hfile, path);
+	dataset.set_attribute("sampling", disp.sampling);
+}
+
 void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pair<disparity_map, disparity_map>& disparity, const stereo_task& task, int total_runtime, int ignore_border = 0)
 {
 	bool logging = true;
@@ -88,15 +95,8 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 
 		cvio::hdf5file hfile(filename + ".hdf5");
 
-		std::string datasetname_left = "/results/left_disparity";
-		std::string datasetname_right = "/results/right_disparity";
-		hfile.save(disparity.first, datasetname_left, false);
-		hfile.save(disparity.second, datasetname_right, false);
-
-		cvio::hdf5dataset dataset_left(hfile, datasetname_left);
-		dataset_left.set_attribute("subsampling", disparity.first.subsampling);
-		cvio::hdf5dataset dataset_right(hfile, datasetname_right);
-		dataset_right.set_attribute("subsampling", disparity.second.subsampling);
+		save_disparity(hfile, disparity.first,  "/results/left_disparity");
+		save_disparity(hfile, disparity.second, "/results/right_disparity");
 	}
 
 	if(task.groundLeft.data)
@@ -191,11 +191,12 @@ std::vector<disparity_map> AllInformationTheoreticDistance(const single_stereo_t
 	std::cout << "entropy " << start << std::endl;
 
 	auto data_single = std::make_pair(entropy.X, entropy.Y);
+	int sampling = task.groundTruth.sampling;
 
-	return std::vector<disparity_map> {disparity::wta_disparity<entropy_agg<calc_type, mutual_information_calc>>(entropy.XY, data_single, task.range),
-										disparity::wta_disparity<entropy_agg<calc_type, variation_of_information_calc>>(entropy.XY, data_single, task.range),
-										disparity::wta_disparity<entropy_agg<calc_type, normalized_variation_of_information_calc>>(entropy.XY, data_single, task.range),
-										disparity::wta_disparity<entropy_agg<calc_type, normalized_information_distance_calc>>(entropy.XY, data_single, task.range)};
+	return std::vector<disparity_map> {disparity::wta_disparity_sampling<entropy_agg<calc_type, mutual_information_calc>>(entropy.XY, data_single, task.range, sampling),
+										disparity::wta_disparity_sampling<entropy_agg<calc_type, variation_of_information_calc>>(entropy.XY, data_single, task.range, sampling),
+										disparity::wta_disparity_sampling<entropy_agg<calc_type, normalized_variation_of_information_calc>>(entropy.XY, data_single, task.range, sampling),
+										disparity::wta_disparity_sampling<entropy_agg<calc_type, normalized_information_distance_calc>>(entropy.XY, data_single, task.range, sampling)};
 }
 
 template<int quantizer>
@@ -231,13 +232,15 @@ void singleClassicRun(const stereo_task& task, const classic_search_config& conf
 	else
 		std::cerr << "invalid quantizer" << std::endl;
 
-	resultLeft.push_back(disparity::create_from_costmap(sliding_gradient(task.forward, config.windowsize), task.forward.range.start(), 1));
-	resultRight.push_back(disparity::create_from_costmap(sliding_gradient(task.backward, config.windowsize), task.backward.range.start(), 1));
+	int sampling = task.groundTruthSubsampling;
+
+	resultLeft.push_back(disparity::create_from_costmap(sliding_gradient(task.forward, config.windowsize), task.forward.range.start(), sampling));
+	resultRight.push_back(disparity::create_from_costmap(sliding_gradient(task.backward, config.windowsize), task.backward.range.start(), sampling));
 
 	sncc_disparitywise_calculator sncc_f(task.leftGray, task.rightGray);
-	resultLeft.push_back(disparity::create_from_costmap(simple_window_disparitywise_calculator(sncc_f, cv::Size(config.windowsize, config.windowsize), task.left.size(), task.forward.range),task.forward.range.start(), 1));
+	resultLeft.push_back(disparity::create_from_costmap(simple_window_disparitywise_calculator(sncc_f, cv::Size(config.windowsize, config.windowsize), task.left.size(), task.forward.range),task.forward.range.start(), sampling));
 	sncc_disparitywise_calculator sncc_b(task.rightGray, task.leftGray);
-	resultRight.push_back(disparity::create_from_costmap(simple_window_disparitywise_calculator(sncc_b, cv::Size(config.windowsize, config.windowsize), task.right.size(), task.backward.range),task.backward.range.start(), 1));
+	resultRight.push_back(disparity::create_from_costmap(simple_window_disparitywise_calculator(sncc_b, cv::Size(config.windowsize, config.windowsize), task.right.size(), task.backward.range),task.backward.range.start(), sampling));
 
 	std::time_t endtime;
 	std::time(&endtime);

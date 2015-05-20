@@ -31,10 +31,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class disparity_map : public cv::Mat_<short>
 {
 public:
-	disparity_map() : cv::Mat_<short>(), subsampling(1) {}
-	disparity_map(const cv::Mat_<short>& disp, int psubsampling) : cv::Mat_<short>(disp), subsampling(psubsampling) {}
+	disparity_map() : cv::Mat_<short>(), sampling(1) {}
+	disparity_map(const cv::Mat_<short>& disp, int psubsampling) : cv::Mat_<short>(disp), sampling(psubsampling) {}
 
-	int subsampling;
+	int sampling;
 };
 
 #endif

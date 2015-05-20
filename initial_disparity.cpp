@@ -143,9 +143,9 @@ public:
 typedef std::function<void(single_stereo_task&, const cv::Mat&, const cv::Mat&, std::vector<disparity_region>&, int)> disparity_region_func;
 
 //untested
-disparity_map convertDisparityFromPartialCostmap(const disparity_map& disparity, const disparity_map& rangeCenters, int subsampling = 1)
+disparity_map convertDisparityFromPartialCostmap(const disparity_map& disparity_delta, const disparity_map& initial_disparity, int subsampling = 1)
 {
-	return disparity_map(cv::Mat_<short>(disparity + rangeCenters * subsampling), subsampling);
+	return disparity_map(cv::Mat_<short>(disparity_delta + initial_disparity * subsampling), subsampling);
 }
 
 template<typename T, typename reg_type, typename lambda_type>
@@ -246,7 +246,7 @@ void single_pass_region_disparity(stereo_task& task, region_container& left, reg
 
 disparity_map getNormalDisparity(const disparity_map& initial_disparity, const cv::Mat& costmap, const refinement_config& refconfig, int subsampling = 1)
 {
-	return convertDisparityFromPartialCostmap(disparity::create_from_costmap(costmap, -refconfig.deltaDisp/2+1, subsampling), initial_disparity, subsampling);
+	return convertDisparityFromPartialCostmap(disparity::create_from_costmap(costmap, -refconfig.deltaDisp, subsampling), initial_disparity, subsampling);
 }
 
 std::pair<disparity_map, disparity_map> segment_based_disparity_it(stereo_task& task, const initial_disparity_config& config , const refinement_config& refconfig, int subsampling, region_optimizer& optimizer)

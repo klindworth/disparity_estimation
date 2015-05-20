@@ -46,9 +46,10 @@ cv::Mat norm2(const cv::Mat& mat1, const cv::Mat& mat2)
 
 	for(int i = 0; i < total; ++i)
 	{
-		*norm_ptr++ = std::max(1.0f, std::sqrt(*mat1_ptr * *mat1_ptr + *mat2_ptr * *mat2_ptr));
+		/**norm_ptr++ = std::max(1.0f, std::sqrt(*mat1_ptr * *mat1_ptr + *mat2_ptr * *mat2_ptr));
 		++mat1_ptr;
-		++mat2_ptr;
+		++mat2_ptr;*/
+		*norm_ptr++ = std::max(1.0f, std::hypot(*mat1_ptr++, *mat2_ptr++));
 	}
 
 	return norm;

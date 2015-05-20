@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "stereotask.h"
 #include "disparity_range.h"
+#include <omp.h>
 
 namespace disparity {
 
@@ -187,9 +188,9 @@ cv::Mat_<disparity_type> warp_disparity(const cv::Mat_<disparity_type>& disparit
 }
 
 template<typename disparity_type>
-disparity_map warp_disparity(const disparity_map& disparity, float scaling = 1.0f)
+disparity_map warp_disparity(const disparity_map& disparity)
 {
-	return disparity_map(warp_disparity(disparity, scaling), disparity.subsampling);
+	return disparity_map(warp_disparity(disparity, 1.0f/disparity.sampling), disparity.sampling);
 }
 
 template<typename cost_class, typename data_type>
@@ -227,6 +228,61 @@ disparity_map wta_disparity(cv::Mat base, data_type data, const disparity_range 
 }
 
 template<typename T>
+T disparity_interpolate(const T* cost_ptr, std::size_t min_d, std::size_t range)
+{
+	auto interpolation = [](T d0, T d1, T d2) {
+		return 0.5*(d0-d2)/(d0-2.0f*d1+d2);
+	};
+
+	//T ndisp;
+	if(min_d > 0 && min_d < range-2 && //check range
+		(cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]) > 0)// avoid division by zero (that part is taken from the denominator)
+	{
+		return min_d + interpolation(cost_ptr[min_d-1], cost_ptr[min_d], cost_ptr[min_d+1]);
+	}
+	else
+		return min_d;
+}
+
+template<typename cost_class, typename data_type>
+disparity_map wta_disparity_sampling(cv::Mat base, data_type data, const disparity_range range, int sampling)
+{
+	cv::Mat_<short> result = cv::Mat_<short>(base.size(), 0);
+
+	cost_class cost_agg(base, data, range.start());
+	using cost_type = typename cost_class::result_type;
+
+	std::vector<std::vector<cost_type>> cost_temp(omp_get_max_threads(), std::vector<cost_type>(range.size(), std::numeric_limits<cost_type>::max()));
+
+	#pragma omp parallel for
+	for(int y = 0; y< base.size[0]; ++y)
+	{
+		for(int x = 0; x < base.size[1]; ++x)
+		{
+			const disparity_range crange = range.restrict_to_image(x, base.size[1]);
+
+			short cdisp = 0;
+			cost_type min_cost = std::numeric_limits<cost_type>::max();
+
+			for(int d = crange.start(); d <= crange.end(); ++d)
+			{
+				cost_type cost = cost_agg(y,x,d);
+				cost_temp[omp_get_thread_num()][crange.index(d)] = cost;
+				if(cost < min_cost)
+				{
+					min_cost = cost;
+					cdisp = d;
+				}
+			}
+
+			result(y,x) = disparity_interpolate(cost_temp[omp_get_thread_num()].data(), crange.index(cdisp), crange.size()) * sampling + range.start()*sampling;
+		}
+	}
+
+	return disparity_map(result, sampling);
+}
+
+template<typename T>
 std::size_t minimal_cost_disparity(const T* cost_ptr, int range, int dispMin)
 {
 	T min_cost = std::numeric_limits<T>::max();
@@ -243,23 +299,14 @@ std::size_t minimal_cost_disparity(const T* cost_ptr, int range, int dispMin)
 }
 
 template<typename T>
-T disparity_interpolate(const T* cost_ptr, std::size_t min_d, std::size_t range, int subsample)
+short minimal_cost_disparity_with_interpolation(const T* cost_ptr, disparity_range drange, int sampling = 1)
 {
-	T ndisp;
-	if(min_d > 0 && min_d < range-2 && //check range
-		(cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]) > 0 && //avoid division by zero (that part is taken from the denominator)
-		subsample > 1)
-	{
-		T nmin_d = 0.5*(cost_ptr[min_d-1]-cost_ptr[min_d+1])/(cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]);
-		ndisp = (min_d+nmin_d)*subsample+0.5f;//add 0.5 for correct rounding
-	}
-	else
-		ndisp = min_d*subsample;
+	std::size_t min_d = minimal_cost_disparity(cost_ptr, drange.size(), drange.start());
 
-	return ndisp;
+	return sampling > 1 ? disparity_interpolate(cost_ptr, min_d, drange.size())*sampling+drange.start()*sampling : min_d;
 }
 
-disparity_map create_from_costmap(const cv::Mat &cost_map_org, int dispMin, int subsample);
+disparity_map create_from_costmap(const cv::Mat &cost_map_org, int dispMin, int sampling);
 cv::Mat create_image(const cv::Mat &disparity);
 
 }

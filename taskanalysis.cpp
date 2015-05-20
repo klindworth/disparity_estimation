@@ -30,47 +30,50 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "stereotask.h"
 #include "genericfunctions.h"
+#include <boost/math/common_factor.hpp>
 
 task_analysis::task_analysis() : error_hist_left(maxdiff, 0), error_hist_right(maxdiff, 0)
 {
+}
+
+disparity_map create_diff_disparity(const disparity_map& disparity, const disparity_map& ground_truth)
+{
+	cv::Mat_<short> scaledDisp, scaledGround;
+	int common_sampling = boost::math::lcm(disparity.sampling, ground_truth.sampling);
+	if(disparity.sampling != ground_truth.sampling)
+	{
+		scaledDisp = disparity * (common_sampling / disparity.sampling);
+		scaledGround = ground_truth * (common_sampling / ground_truth.sampling);
+	}
+	else
+	{
+		scaledDisp = disparity;
+		scaledGround = ground_truth;
+	}
+
+	cv::Mat error_mat_temp;
+	cv::absdiff(scaledDisp, scaledGround, error_mat_temp);
+
+	return disparity_map(error_mat_temp, common_sampling);
 }
 
 void task_analysis::create_internal(const single_stereo_task& task, const disparity_map& disparity, cv::Mat_<unsigned char>& error_mat, std::vector<int>& hist, unsigned int ignore_border)
 {
 	if(task.groundTruth.data)
 	{
-		cv::Mat_<short> scaledDisp, scaledGround;
-		int commonSubsampling = 1;
-		if(disparity.subsampling != task.groundTruth.subsampling)
-		{
-			scaledDisp = disparity / disparity.subsampling;
-			scaledGround = task.groundTruth / task.groundTruth.subsampling;
-		}
-		else
-		{
-			scaledDisp = disparity;
-			scaledGround = task.groundTruth;
-			commonSubsampling = disparity.subsampling;
-		}
-
-		cv::Mat ndisp = scaledDisp; //createFixedDisparity(scaledDisp, 1.0f);
-		//cv::imshow("ndisp", ndisp);
-		//cv::imshow("ground", scaledGround);
-		cv::Mat error_mat_temp;
-		cv::absdiff(ndisp, scaledGround, error_mat_temp);
+		disparity_map error_mat_temp = create_diff_disparity(disparity, task.groundTruth);
 		error_mat_temp.convertTo(error_mat, CV_8UC1);
+
 		if(task.occ.data)
 			foreign_threshold(error_mat, task.occ, (unsigned char)128, true);
 		foreign_null(error_mat, task.groundTruth); //doesn't work with signed gt
-		//if(ignore_border > 0)
-			//resetBorder<unsigned char>(error_mat, ignore_border);
 
 		const int diff_bound = hist.size() - 1;
 		for(unsigned int y = ignore_border; y < error_mat.rows - ignore_border; ++y)
 		{
 			for(unsigned int x = ignore_border; x < error_mat.cols - ignore_border; ++x)
 			{
-				unsigned char idx = std::min(diff_bound, error_mat(y,x)/commonSubsampling);
+				unsigned char idx = std::min(diff_bound, error_mat(y,x)/error_mat_temp.sampling);
 				if(task.occ.data && task.groundTruth(y,x) != 0)
 				{
 					if(task.occ(y,x) > 128)

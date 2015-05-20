@@ -311,8 +311,8 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 
 			task_analysis analysis(task, disp_left, disp_right, windowsize/2);
 
-			cv::Mat warpedLeft   = disparity::warp_image<cv::Vec3b>(task.left,  disp_left,  cv::Vec3b(0,0,0), 1.0f/disp_left.subsampling);
-			cv::Mat warpedRight  = disparity::warp_image<cv::Vec3b>(task.right, disp_right, cv::Vec3b(0,0,0), 1.0f/disp_right.subsampling);
+			cv::Mat warpedLeft   = disparity::warp_image<cv::Vec3b>(task.left,  disp_left,  cv::Vec3b(0,0,0), 1.0f/disp_left.sampling);
+			cv::Mat warpedRight  = disparity::warp_image<cv::Vec3b>(task.right, disp_right, cv::Vec3b(0,0,0), 1.0f/disp_right.sampling);
 
 			cv::Mat disp_left_img  = disparity::create_image(disp_left);
 			cv::Mat disp_right_img = disparity::create_image(disp_right);

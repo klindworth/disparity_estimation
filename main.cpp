@@ -172,7 +172,7 @@ int main(int argc, char *argv[])
 	//std::string configfile = "tasks/config-irvl.yml";
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";
 	//std::string configfile = "tasks/config-big-msslic.yml";
-	std::string configfile = "tasks/config-small-msslic-current.yml";
+	std::string configfile = "tasks/config-small-msslic-current-sncc.yml";
 	//std::string configfile = "tasks/config-debug.yml";
 	//std::string configfile = "tasks/config-kit-refine2.yml";
 	//std::string configfile = "tasks/config-kit2.yml";
@@ -187,7 +187,7 @@ int main(int argc, char *argv[])
 	}*/
 
 	classic_search_config clas_config;
-	clas_config.windowsize = 11;
+	clas_config.windowsize = 17;
 	clas_config.soft = true;
 	clas_config.quantizer = 8;
 
