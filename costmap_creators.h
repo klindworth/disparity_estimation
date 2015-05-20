@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "genericfunctions.h"
+#include "disparity_toolkit/genericfunctions.h"
 #include "disparity_toolkit/disparity_range.h"
 
 namespace costmap_creators

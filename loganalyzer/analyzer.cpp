@@ -15,11 +15,11 @@
 #include <algorithm>
 #include <numeric>
 #include <iomanip>
-
+#include <memory>
 #include <iostream>
 
-#include "genericfunctions.h"
-#include "taskanalysis.h"
+#include "disparity_toolkit/genericfunctions.h"
+#include "disparity_toolkit/taskanalysis.h"
 #include "disparity_toolkit/disparity_utils.h"
 #include "disparity_toolkit/stereotask.h"
 #include "detailviewer.h"
@@ -81,42 +81,23 @@ void Analyzer::on_toolButton_clicked()
 	}
 }
 
-QString readInt(const std::string& elem, cv::FileStorage& fs)
+template<typename T, typename storage_type>
+QString read_number(const std::string& elem, const storage_type& fs)
 {
-	int temp;
+	T temp;
 	fs[elem] >> temp;
 	return QString::number(temp);
 }
 
-QString readInt(const std::string& elem, const cv::FileNode& fs)
+template<typename T, typename storage_type>
+void read_numbers(const storage_type& fs, QStringList& list, std::initializer_list<std::string> elems)
 {
-	int temp;
-	fs[elem] >> temp;
-	return QString::number(temp);
+	for(const std::string& elem : elems)
+		list << read_number<T>(elem, fs);
 }
 
-QString readDouble(const std::string& elem, cv::FileStorage& fs)
-{
-	double temp;
-	fs[elem] >> temp;
-	return QString::number(temp);
-}
-
-QString readDouble(const std::string& elem, const cv::FileNode& fs)
-{
-	double temp;
-	fs[elem] >> temp;
-	return QString::number(temp);
-}
-
-QString readString(const std::string& elem, cv::FileStorage& fs)
-{
-	std::string temp;
-	fs[elem] >> temp;
-	return QString(temp.c_str());
-}
-
-QString readString(const std::string& elem, const cv::FileNode& fs)
+template<typename storage_type>
+QString read_string(const std::string& elem, const storage_type& fs)
 {
 	std::string temp;
 	fs[elem] >> temp;
@@ -146,9 +127,9 @@ void addHist(QStringList& item, std::vector<int>& hist, bool bcumulative)
 
 void addSubItem(QStringList& subitem, const cv::FileNode& node)
 {
-	subitem << readString("taskname", node);
+	subitem << read_string("taskname", node);
 	subitem << "" << "" << "";
-	subitem << readInt("total_runtime", node);
+	subitem << read_number<int>("total_runtime", node);
 
 	for(int j = 0; j < 4; ++j)
 		subitem << "";
@@ -179,30 +160,26 @@ void Analyzer::on_pbRefresh_clicked()
 			if(!fs.isOpened())
 				qDebug("not");
 			//item << readString("left", fs) + ", " + readString("right", fs);
-			item << readString("testset", fs);
-			item << readString("configname", fs);
-			QString segm = readString("segmentation", fs);
+			item << read_string("testset", fs);
+			item << read_string("configname", fs);
+			QString segm = read_string("segmentation", fs);
 			if(!segm.isEmpty())
 			{
-				QString subitem = readInt("min_windowsize", fs) + "-" + readInt("max_windowsize", fs);
+				QString subitem = read_number<int>("min_windowsize", fs) + "-" + read_number<int>("max_windowsize", fs);
 				item << subitem;
 			}
 			else
-				item << readInt("windowsize", fs);
-			item << readInt("quantizer", fs);
+				item << read_number<int>("windowsize", fs);
+			item << read_number<int>("quantizer", fs);
 			item << segm;
 			//item << readInt("total_runtime", fs);
 			item << "";
-			item << readInt("optimization_rounds", fs);
-			item << readInt("dilate", fs);
-			item << readInt("dilate_step", fs);
-			item << readInt("refinement", fs);
-			item << readInt("enable_damping", fs);
-			item << readDouble("color_var", fs);
-			item << readInt("spatial_var", fs);
-			item << readInt("superpixel_size" ,fs);
-			item << readDouble("superpixel_compactness", fs);
-			item << readInt("deltaDisp", fs);
+			read_numbers<int>(fs, item, {"optimization_rounds", "dilate", "dilate_step", "refinement", "enable_damping"});
+			item << read_number<double>("color_var", fs);
+			item << read_number<int>("spatial_var", fs);
+			item << read_number<int>("superpixel_size" ,fs);
+			item << read_number<double>("superpixel_compactness", fs);
+			item << read_number<int>("deltaDisp", fs);
 
 			int total_runtime = 0;
 			QTreeWidgetItem* parent = new QTreeWidgetItem(item);
@@ -278,11 +255,7 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 
 	QString prefix = base+ "_" + name;
 
-	std::vector<cv::Mat> imagesLeft {cv::imread(m_resultsPath.absoluteFilePath(prefix + "-left.png").toStdString()), cv::imread(m_resultsPath.absoluteFilePath(prefix + "_error-left.png").toStdString())};
-	std::vector<cv::Mat> imagesRight {cv::imread(m_resultsPath.absoluteFilePath(prefix + "-right.png").toStdString()), cv::imread(m_resultsPath.absoluteFilePath(prefix + "_error-right.png").toStdString())};
 	ui->compare->reset(std::vector<QString>{base});
-	ui->compare->addRow(name + " (forward)", imagesLeft);
-	ui->compare->addRow(name + " (backward)", imagesRight);
 
 	int windowsize, subsampling;
 	fs["windowsize"] >> windowsize;
@@ -293,7 +266,7 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 	cv::FileNode node = fs["analysis"];
 	for(cv::FileNodeIterator it = node.begin(); it != node.end(); ++it)
 	{
-		QString cname = readString("taskname", *it);
+		QString cname = read_string("taskname", *it);
 		if(cname == name)
 		{
 			std::cout << "found" << std::endl;
@@ -325,6 +298,7 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 			pc->height = disp_left.rows;
 			pc->width = disp_left.cols;
 			pc->is_dense = true;
+	std::stringstream stream = generate_latex(rows, setnames);
 
 			int total_points = task.left.total();
 			pc->reserve(total_points);
@@ -387,6 +361,12 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 			DetailViewer *viewer = new DetailViewer();
 			viewer->setMatList(images);
 			viewer->show();
+
+			//mainwindow
+			std::vector<cv::Mat> imagesLeft {disp_left_img, analysis.diff_mat_left};
+			std::vector<cv::Mat> imagesRight {disp_right_img, analysis.diff_mat_right};
+			ui->compare->addRow(name + " (forward)", imagesLeft);
+			ui->compare->addRow(name + " (backward)", imagesRight);
 		}
 	}
 }
@@ -420,19 +400,17 @@ public:
 	std::vector<cv::Mat> images;
 };
 
-CompareRow* getElement(std::vector<CompareRow>&rows, const QString& name)
+CompareRow* getElement(std::vector<std::unique_ptr<CompareRow>>&rows, const QString& name)
 {
-	auto it = std::find_if(rows.begin(), rows.end(), [&](const CompareRow& row){return name == row.name;});
-	CompareRow *crow;
+	auto it = std::find_if(rows.begin(), rows.end(), [&](const std::unique_ptr<CompareRow>& row){return name == row->name;});
+
 	if(it == rows.end())
 	{
-		rows.push_back(CompareRow(name));
-		crow = &(rows.back());
+		rows.push_back(std::unique_ptr<CompareRow>(new CompareRow(name)));
+		return rows.back().get();
 	}
 	else
-		crow = &(*it);
-
-	return crow;
+		return it->get();
 }
 
 void Analyzer::on_pbSave_clicked()
@@ -451,9 +429,72 @@ void Analyzer::on_cbCumulative_clicked()
 	on_pbRefresh_clicked();
 }
 
+std::string generate_latex(const std::vector<std::unique_ptr<CompareRow>>& rows, const std::vector<QString>& setnames)
+{
+	assert(rows.size() > 0);
+	assert(rows[0].hist.size() > 0);
+	std::stringstream stream;
+	std::size_t trunc = 6;
+	int cols = std::min(rows[0]->hist[0].size(), trunc);
+	std::string header = "|l||";
+	for(int i = 0; i < cols + 2; ++i)
+		header += "l|";
+	stream << "\\begin{tabular}{" << header << "}\\hline\n";
+	stream << "~ & ";
+	for(int i = 0; i < cols-1; ++i)
+		stream << i << " & ";
+	stream << "$\\geq$ " << (cols-1) << " & $\\mu$ & ~ \\\\ \\hline \n";
+
+	for(const std::unique_ptr<CompareRow>& crow : rows)
+	{
+		stream << "\\hline\\multicolumn{" << cols+3 << "}{|l|}{" << crow->name.toStdString() << "}\\\\ \\hline \n";
+		std::vector<std::stringstream> rowstream(crow->hist.size());
+		std::vector<float> rowmeans(crow->hist.size());
+		for(std::size_t i = 0; i < crow->hist.size(); ++i)
+		{
+			int sum = std::accumulate(crow->hist[i].begin(), crow->hist[i].end(), 0);
+			int sum_trunc = std::accumulate(crow->hist[i].begin() + trunc, crow->hist[i].end(), 0);
+
+			std::string name = setnames[i].toStdString();
+			while(name.find('_') != std::string::npos)
+				name.replace(name.find('_'), 1, "-");
+			rowstream[i] << name;
+
+			rowstream[i] << std::setprecision(3);
+			float mean = 0.0f;
+			for(int j = 0; j < cols; ++j)
+			{
+				float cval = (j == cols-1) ? (float)sum_trunc/sum :(float)crow->hist[i][j]/sum;
+				rowstream[i] << " & " << cval*100 << "\\%";
+				mean += cval*j;
+			}
+			rowmeans[i] = mean;
+			rowstream[i] << std::setprecision(5);
+			rowstream[i] << " & " << mean;
+			//rowstream[i] << "\\\\ \\hline \n";
+		}
+
+		float min_mean = *(std::min_element(rowmeans.begin(), rowmeans.end()));
+		for(std::size_t i = 0; i < crow->hist.size(); ++i)
+		{
+			if(rowmeans[i] == min_mean)
+				rowstream[i] << " & - ";
+			else
+				rowstream[i] << " & +" << ((rowmeans[i]/min_mean)-1)*100 << " \\%";
+			rowstream[i] << "\\\\ \\hline \n";
+		}
+
+		for(std::stringstream& cstream : rowstream)
+			stream << cstream.str();
+	}
+	stream << "\\end{tabular}";
+
+	return stream.str();
+}
+
 void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 {
-	std::vector<CompareRow> rows;
+	std::vector<std::unique_ptr<CompareRow>> rows;
 	std::vector<QString> setnames;
 	std::vector<QString> notes;
 
@@ -490,7 +531,7 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 			cv::FileNode node = fs["analysis"];
 			for(cv::FileNodeIterator it = node.begin(); it != node.end(); ++it)
 			{
-				QString name = readString("taskname", *it);
+				QString name = read_string("taskname", *it);
 				QString prefix = base+ "_" + name;
 
 				std::string base_folder = m_basePath.absolutePath().toStdString();
@@ -509,12 +550,12 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 				task_analysis analysis(task, disp_left, disp_right, windowsize/2);
 
 
-				CompareRow *crow_left  = getElement(rows, name +" (left)");
+				CompareRow* crow_left  = getElement(rows, name +" (left)");
 				crow_left->images.push_back(disparity::create_image(disp_left));
 				crow_left->images.push_back(analysis.diff_mat_left);
 				crow_left->hist.push_back(analysis.error_hist_left);
 
-				CompareRow *crow_right = getElement(rows, name +" (right)");
+				CompareRow* crow_right = getElement(rows, name +" (right)");
 				crow_right->images.push_back(disparity::create_image(disp_right));
 				crow_right->images.push_back(analysis.diff_mat_right);
 				crow_right->hist.push_back(analysis.error_hist_right);
@@ -524,69 +565,12 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 
 	ui->compare->reset(setnames);
 	ui->compare->insertNotesRow(notes);
-	for(CompareRow& crow : rows)
+	for(std::unique_ptr<CompareRow>& crow : rows)
 	{
-		ui->compare->addRow(crow.name, crow.hist, crow.images);
+		ui->compare->addRow(crow->name, crow->hist, crow->images);
 	}
 
-	assert(rows.size() > 0);
-	assert(rows[0].hist.size() > 0);
-	std::stringstream stream;
-	std::size_t trunc = 6;
-	int cols = std::min(rows[0].hist[0].size(), trunc);
-	std::string header = "|l||";
-	for(int i = 0; i < cols + 2; ++i)
-		header += "l|";
-	stream << "\\begin{tabular}{" << header << "}\\hline\n";
-	stream << "~ & ";
-	for(int i = 0; i < cols-1; ++i)
-		stream << i << " & ";
-	stream << "$\\geq$ " << (cols-1) << " & $\\mu$ & ~ \\\\ \\hline \n";
-
-	for(CompareRow& crow : rows)
-	{
-		stream << "\\hline\\multicolumn{" << cols+3 << "}{|l|}{" << crow.name.toStdString() << "}\\\\ \\hline \n";
-		std::vector<std::stringstream> rowstream(crow.hist.size());
-		std::vector<float> rowmeans(crow.hist.size());
-		for(std::size_t i = 0; i < crow.hist.size(); ++i)
-		{
-			int sum = std::accumulate(crow.hist[i].begin(), crow.hist[i].end(), 0);
-			int sum_trunc = std::accumulate(crow.hist[i].begin() + trunc, crow.hist[i].end(), 0);
-
-			float mean = 0.0f;
-			std::string name = setnames[i].toStdString();
-			while(name.find('_') != std::string::npos)
-				name.replace(name.find('_'), 1, "-");
-			rowstream[i] << name;
-
-			rowstream[i] << std::setprecision(3);
-			for(int j = 0; j < cols; ++j)
-			{
-				float cval = (j == cols-1) ? (float)sum_trunc/sum :(float)crow.hist[i][j]/sum;
-				rowstream[i] << " & " << cval*100 << "\\%";
-				mean += cval*j;
-			}
-			rowmeans[i] = mean;
-			rowstream[i] << std::setprecision(5);
-			rowstream[i] << " & " << mean;
-			//rowstream[i] << "\\\\ \\hline \n";
-		}
-
-		float min_mean = *(std::min_element(rowmeans.begin(), rowmeans.end()));
-		for(std::size_t i = 0; i < crow.hist.size(); ++i)
-		{
-			if(rowmeans[i] == min_mean)
-				rowstream[i] << " & - ";
-			else
-				rowstream[i] << " & +" << ((rowmeans[i]/min_mean)-1)*100 << " \\%";
-			rowstream[i] << "\\\\ \\hline \n";
-		}
-
-		for(std::stringstream& cstream : rowstream)
-			stream << cstream.str();
-	}
-	stream << "\\end{tabular}";
-	std::cout << stream.str() << std::endl;
+	std::cout << generate_latex(rows, setnames) << std::endl;
 }
 
 void Analyzer::on_twOverview_itemSelectionChanged()

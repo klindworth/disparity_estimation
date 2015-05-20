@@ -11,18 +11,19 @@ find_package(Doxygen)
 #include(${QT_USE_FILE})
 
 
-set(SOURCES main.cpp
-    genericfunctions.cpp
+set(SOURCES
+    main.cpp
     debugmatstore.cpp
     costmap_utils.cpp
     disparity_region.cpp
     initial_disparity.cpp
     window_size.cpp
     configrun.cpp
-    taskanalysis.cpp
     refinement.cpp
     region_ground_truth.cpp
 
+    disparity_toolkit/taskanalysis.cpp
+    disparity_toolkit/genericfunctions.cpp
     disparity_toolkit/stereotask.cpp
     disparity_toolkit/disparity_utils.cpp
 
@@ -41,13 +42,12 @@ set(SOURCES main.cpp
 )
 
 set(HEADERS
-    genericfunctions.h
     fast_array.h
     debugmatstore.h
     costmap_creators.h
     costmap_utils.h
     configrun.h
-    taskanalysis.h
+
     region_ground_truth.h
     window_size.h
     region_metrics.h
@@ -71,6 +71,8 @@ set(HEADERS
     disparity_toolkit/disparity_utils.h
     disparity_toolkit/disparity_map.h
     disparity_toolkit/disparity_range.h
+    disparity_toolkit/taskanalysis.h
+    disparity_toolkit/genericfunctions.h
 
     optimizer/region_optimizer.h
     optimizer/manual_region_optimizer.h
@@ -134,9 +136,9 @@ set(SOURCES_ANALYZER
     loganalyzer/comparewidget.cpp
     loganalyzer/detailviewer.cpp
 
-    genericfunctions.cpp
+    disparity_toolkit/genericfunctions.cpp
     disparity_toolkit/disparity_utils.cpp
-    taskanalysis.cpp
+    disparity_toolkit/taskanalysis.cpp
     disparity_toolkit/stereotask.cpp
 )
 

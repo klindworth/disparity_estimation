@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SLIDINGENTROPY_H
 #define SLIDINGENTROPY_H
 
-#include "genericfunctions.h"
+#include "disparity_toolkit/genericfunctions.h"
 #include "fast_array.h"
 #include "entropy.h"
 #include "disparity_toolkit/disparity_range.h"

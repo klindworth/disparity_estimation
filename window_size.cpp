@@ -25,7 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "window_size.h"
 
-#include "genericfunctions.h"
+#include "disparity_toolkit/genericfunctions.h"
 #include "debugmatstore.h"
 #include "disparity_region.h"
 

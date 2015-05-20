@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "regionwidget.h"
 #include "ui_regionwidget.h"
 #include "costmap_utils.h"
-#include "genericfunctions.h"
+#include "disparity_toolkit/genericfunctions.h"
 #include "disparity_toolkit/disparity_utils.h"
 #include "disparity_region.h"
 #include "disparity_region_algorithms.h"

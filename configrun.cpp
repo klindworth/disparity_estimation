@@ -29,10 +29,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "initial_disparity.h"
 #include "disparity_region.h"
-#include "genericfunctions.h"
+#include "disparity_toolkit/genericfunctions.h"
 #include "debugmatstore.h"
 #include "disparity_toolkit/disparity_utils.h"
-#include "taskanalysis.h"
+#include "disparity_toolkit/taskanalysis.h"
 #include <segmentation/segmentation.h>
 #include "it_metrics.h"
 #include "refinement.h"

@@ -32,7 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <segmentation/intervals.h>
 #include <segmentation/intervals_algorithms.h>
 #include "disparity_toolkit/disparity_utils.h"
-#include "genericfunctions.h"
+#include "disparity_toolkit/genericfunctions.h"
 #include "disparity_toolkit/disparity_range.h"
 
 #include <fstream>

@@ -24,7 +24,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "disparity_region.h"
-#include "genericfunctions.h"
+#include "disparity_toolkit/genericfunctions.h"
 #include "sparse_counter.h"
 #include "disparity_toolkit/disparity_utils.h"
 
