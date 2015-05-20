@@ -25,7 +25,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "debugmatstore.h"
 
-#include "stereotask.h"
+#include "disparity_toolkit/stereotask.h"
 
 debug_store matstore;
 

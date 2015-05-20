@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef REGION_OPTIMIZER_H
 #define REGION_OPTIMIZER_H
 
-#include "disparity_range.h"
+#include "disparity_toolkit/disparity_range.h"
 
 #include "costmap_utils.h"
 

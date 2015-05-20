@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "disparity_region.h"
 #include "genericfunctions.h"
-#include "disparity_utils.h"
+#include "disparity_toolkit/disparity_utils.h"
 #include "costmap_utils.h"
 
 void manual_region_optimizer::optimize(std::vector<unsigned char>& damping_history, region_container& base, region_container& match, const disparity_hypothesis_weight_vector& base_eval, std::function<float(const disparity_region&, const region_container&, const region_container&, int, const stat_t&, const std::vector<stat_t>&)> prop_eval, int delta)

@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "window_size.h"
 #include "costmap_creators.h"
-#include "stereotask.h"
+#include "disparity_toolkit/stereotask.h"
 #include "disparity_region.h"
 
 #include <iostream>

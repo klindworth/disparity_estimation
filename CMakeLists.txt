@@ -16,9 +16,9 @@ set(SOURCES main.cpp
     costmap_utils.cpp
     disparity_region.cpp
     initial_disparity.cpp
-    stereotask.cpp
+    disparity_toolkit/stereotask.cpp
     window_size.cpp
-    disparity_utils.cpp
+    disparity_toolkit/disparity_utils.cpp
     optimizer/region_optimizer.cpp
     configrun.cpp
     taskanalysis.cpp
@@ -45,8 +45,8 @@ set(HEADERS
     costmap_creators.h
     metrics/it_metrics.h
     costmap_utils.h
-    disparity_map.h
-    disparity_range.h
+    disparity_toolkit/disparity_map.h
+    disparity_toolkit/disparity_range.h
     disparity_region.h
     disparity_region_algorithms.h
     disparitywise_calculator.h
@@ -57,10 +57,10 @@ set(HEADERS
 
     sparse_counter.h
     initial_disparity.h
-    stereotask.h
+    disparity_toolkit/stereotask.h
 
     window_size.h
-    disparity_utils.h
+    disparity_toolkit/disparity_utils.h
 
     optimizer/region_optimizer.h
     optimizer/manual_region_optimizer.h
@@ -117,7 +117,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -Wal
 enable_testing()
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
-add_executable(${PROJECT_NAME}_tests neural_network/tests.cpp neural_network/network.h disparity_utils_tests.cpp disparity_range_tests.cpp)
+add_executable(${PROJECT_NAME}_tests neural_network/tests.cpp neural_network/network.h disparity_toolkit/disparity_utils_tests.cpp disparity_toolkit/disparity_range_tests.cpp)
 target_link_libraries(${PROJECT_NAME}_tests ${OpenCV_LIBS} ${GTEST_BOTH_LIBRARIES} openblas)
 
 add_subdirectory(segmentation)
@@ -131,9 +131,9 @@ set(SOURCES_ANALYZER
     loganalyzer/detailviewer.cpp
 
     genericfunctions.cpp
-    disparity_utils.cpp
+    disparity_toolkit/disparity_utils.cpp
     taskanalysis.cpp
-    stereotask.cpp
+    disparity_toolkit/stereotask.cpp
 )
 
 set(QTHEADERS_ANALYZER

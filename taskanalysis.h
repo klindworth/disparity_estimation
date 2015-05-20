@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef TASKANALYSIS_H
 #define TASKANALYSIS_H
 
-#include "disparity_map.h"
+#include "disparity_toolkit/disparity_map.h"
 
 #include <opencv2/core/core.hpp>
 

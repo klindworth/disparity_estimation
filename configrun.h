@@ -26,11 +26,11 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include "disparity_map.h"
+#include "disparity_toolkit/disparity_map.h"
 #include <opencv2/core/core.hpp>
 #include <functional>
 
-#include "region_optimizer.h"
+#include "optimizer/region_optimizer.h"
 #include <segmentation/segmentation.h>
 
 class stereo_task;

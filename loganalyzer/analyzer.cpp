@@ -20,8 +20,8 @@
 
 #include "genericfunctions.h"
 #include "taskanalysis.h"
-#include "disparity_utils.h"
-#include "stereotask.h"
+#include "disparity_toolkit/disparity_utils.h"
+#include "disparity_toolkit/stereotask.h"
 #include "detailviewer.h"
 
 #include <cvio/hdf5internals.h>

@@ -2,7 +2,7 @@
 #define CONVERTER_TO_REGION_H_
 
 #include <opencv2/core/core.hpp>
-#include "disparity_range.h"
+#include "disparity_toolkit/disparity_range.h"
 
 template<typename calculator>
 void calculate_region_generic(single_stereo_task& task, const cv::Mat& base, const cv::Mat& match, std::vector<disparity_region>& regions, int delta)

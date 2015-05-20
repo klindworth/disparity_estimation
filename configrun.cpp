@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparity_region.h"
 #include "genericfunctions.h"
 #include "debugmatstore.h"
-#include "disparity_utils.h"
+#include "disparity_toolkit/disparity_utils.h"
 #include "taskanalysis.h"
 #include <segmentation/segmentation.h>
 #include "it_metrics.h"

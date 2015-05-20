@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "debugmatstore.h"
 #include <segmentation/intervals.h>
 #include <segmentation/intervals_algorithms.h>
-#include "disparity_utils.h"
+#include "disparity_toolkit/disparity_utils.h"
 #include "disparity_region_algorithms.h"
 
 #include <iostream>

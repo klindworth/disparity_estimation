@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "gradient_disparitywise.h"
 
 #include "genericfunctions.h"
-#include "stereotask.h"
+#include "disparity_toolkit/stereotask.h"
 #include "costmap_creators.h"
 #include "disparitywise_calculator.h"
 #include <cmath>

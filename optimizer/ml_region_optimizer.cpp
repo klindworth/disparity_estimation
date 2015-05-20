@@ -30,9 +30,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparity_region_algorithms.h"
 #include <segmentation/intervals.h>
 #include <segmentation/intervals_algorithms.h>
-#include "disparity_utils.h"
+#include "disparity_toolkit/disparity_utils.h"
 #include "genericfunctions.h"
-#include "disparity_range.h"
+#include "disparity_toolkit/disparity_range.h"
 
 #include <fstream>
 #include <boost/lexical_cast.hpp>

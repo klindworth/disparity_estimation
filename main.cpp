@@ -31,7 +31,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "regionwindow.h"
 #include "debugmatstore.h"
 
-#include "stereotask.h"
+#include "disparity_toolkit/stereotask.h"
 #include "imagestore.h"
 #include "initial_disparity.h"
 #include "costmap_utils.h"
@@ -42,7 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "configrun.h"
 
 #include "it_metrics.h"
-#include "disparity_utils.h"
+#include "disparity_toolkit/disparity_utils.h"
 #include "refinement.h"
 
 #include "ml_region_optimizer.h"

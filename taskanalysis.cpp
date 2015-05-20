@@ -28,7 +28,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <opencv2/imgproc/imgproc.hpp>
 
-#include "stereotask.h"
+#include "disparity_toolkit/stereotask.h"
 #include "genericfunctions.h"
 #include <boost/math/common_factor.hpp>
 

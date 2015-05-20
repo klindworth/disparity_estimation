@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef IT_METRICS_H
 #define IT_METRICS_H
 
-#include "stereotask.h"
+#include "disparity_toolkit/stereotask.h"
 #include "sliding_entropy.h"
 #include "costmap_creators.h"
 

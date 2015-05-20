@@ -26,7 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "regionwindow.h"
 #include "ui_regionwindow.h"
 
-#include "disparity_utils.h"
+#include "disparity_toolkit/disparity_utils.h"
 #include "disparity_region.h"
 #include "regionwidget.h"
 #include <QTableWidgetItem>

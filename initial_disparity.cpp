@@ -35,7 +35,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "sliding_entropy.h"
 #include "it_metrics.h"
 #include "costmap_creators.h"
-#include "disparity_utils.h"
+#include "disparity_toolkit/disparity_utils.h"
 #include <segmentation/intervals.h>
 #include <segmentation/intervals_algorithms.h>
 #include <segmentation/segmentation.h>

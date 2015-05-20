@@ -29,7 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 
 #include <vector>
-#include "stereotask.h"
+#include "disparity_toolkit/stereotask.h"
 #include <segmentation/region_descriptor.h>
 #include <segmentation/segmentation.h>
 
