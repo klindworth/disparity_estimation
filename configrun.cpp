@@ -95,8 +95,8 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pa
 
 		cvio::hdf5file hfile(filename + ".hdf5");
 
-		save_disparity(hfile, disparity.first,  "/results/left_disparity");
-		save_disparity(hfile, disparity.second, "/results/right_disparity");
+		save_disparity(hfile, disparity.first,  "/results/" + task.name + "/left_disparity");
+		save_disparity(hfile, disparity.second, "/results/" + task.name + "/right_disparity");
 	}
 
 	if(task.groundLeft.data)
@@ -157,7 +157,7 @@ void logged_run(task_collection& testset, disparity_estimator_algo& disparity_es
 
 		//matstore.startNewTask(ctask.name, ctask);
 		fs << "{:";
-		single_logged_run(ctask, disparity_estimator, fs, filename + "_" + ctask.name);
+		single_logged_run(ctask, disparity_estimator, fs, filename);
 		fs << "}";
 	}
 	fs << "]";
@@ -248,7 +248,7 @@ void singleClassicRun(const stereo_task& task, const classic_search_config& conf
 
 	for(std::size_t i = 0; i < resultLeft.size(); ++i)
 	{
-		std::string fullfilename = filename + names[i] + "_" + task.name;
+		std::string fullfilename = filename + names[i];
 		std::pair<disparity_map, disparity_map> disparity {resultLeft[i], resultRight[i]};
 
 		write_logged_data(*(fs[i]), fullfilename, disparity, task, total_runtime, config.windowsize/2);

@@ -233,7 +233,7 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 
 	cv::FileStorage fs(m_resultsPath.absoluteFilePath(m_currentFilename).toStdString(), cv::FileStorage::READ);
 
-	QString prefix = base+ "_" + name;
+	QString prefix = base;//+ "_" + name;
 
 	ui->compare->reset(std::vector<QString>{base});
 
@@ -259,8 +259,8 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 			std::cout << abs_prefix << std::endl;
 			cvio::hdf5file hfile(abs_prefix + ".hdf5");
 
-			disparity_map disp_left  = load_disparity(hfile, "/results/left_disparity",  subsampling);
-			disparity_map disp_right = load_disparity(hfile, "/results/right_disparity", subsampling);
+			disparity_map disp_left  = load_disparity(hfile, "/results/" + cname.toStdString() + "/left_disparity",  subsampling);
+			disparity_map disp_right = load_disparity(hfile, "/results/" + cname.toStdString() + "/right_disparity", subsampling);
 
 			task_analysis analysis(task, disp_left, disp_right, windowsize/2);
 
@@ -512,7 +512,7 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 			for(cv::FileNodeIterator it = node.begin(); it != node.end(); ++it)
 			{
 				QString name = read_string("taskname", *it);
-				QString prefix = base+ "_" + name;
+				QString prefix = base;//+ "_" + name;
 
 				std::string base_folder = m_basePath.absolutePath().toStdString();
 				std::string result_path = m_resultsPath.absolutePath().toStdString();
@@ -524,8 +524,8 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 
 				cvio::hdf5file hfile(abs_prefix + ".hdf5");
 
-				disparity_map disp_left  = load_disparity(hfile, "/results/left_disparity",  subsampling);
-				disparity_map disp_right = load_disparity(hfile, "/results/right_disparity", subsampling);
+				disparity_map disp_left  = load_disparity(hfile, "/results/" + name.toStdString() + "/left_disparity",  subsampling);
+				disparity_map disp_right = load_disparity(hfile, "/results/" + name.toStdString() + "/right_disparity", subsampling);
 
 				task_analysis analysis(task, disp_left, disp_right, windowsize/2);
 
