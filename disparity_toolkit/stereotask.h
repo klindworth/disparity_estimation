@@ -46,11 +46,7 @@ public:
 class stereo_task
 {
 public:
-	//stereo_task(const std::string& name, const cv::Mat& pleft, const cv::Mat& pright, int dispRange);
-	//stereo_task(const std::string& name, const std::string &nameLeft, const std::string &nameRight, int dispRange);
-	//stereo_task(const std::string& name, const std::string &nameLeft, const std::string &nameRight, const std::string &nameGroundLeft, const std::string &nameGroundRight, unsigned char subsamplingGroundTruth, int dispRange);
 	stereo_task(const std::string& name, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, const std::string& nameOccLeft, const std::string& nameOccRight, unsigned char subsamplingGroundTruth, int dispRange);
-	//stereo_task(const std::string& filename);
 	//void write(cv::FileNode& node) const;
 	bool valid() const;
 
@@ -63,15 +59,11 @@ public:
 	single_stereo_task forward, backward;
 
 	//static construction functions
-	//static stereo_task construct(const std::string& name, const cv::Mat& pleft, const cv::Mat& pright, int dispRange);
-	//static stereo_task construct(const std::string& name, const std::string &nameLeft, const std::string &nameRight, int dispRange);
 	static stereo_task load_from_file(const std::string& filename);
 	static stereo_task load_from_filestorage(const cv::FileStorage& fs, const std::string& base_path = "");
 	static stereo_task load_from_filestorage(const cv::FileNode& fs, const std::string& base_path = "");
 
 private:
-	//void load_from_storage(const cv::FileStorage& fs);
-
 	void init_single_tasks();
 	void load_images(const std::string& nameLeft, const std::string& nameRight);
 	void load_ground_truth(const std::string &nameGroundLeft, const std::string &nameGroundRight, int subsampling);

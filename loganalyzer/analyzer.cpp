@@ -216,28 +216,6 @@ void Analyzer::on_pbRefresh_clicked()
 	optimizeWidth(ui->twOverview);
 }
 
-stereo_task load_task(cv::FileNodeIterator it, std::string name, std::string base_folder)
-{
-	/*std::string leftGround, rightGround, left, right, leftOcc, rightOcc;
-	int dispRange, groundSubsampling;
-	(*it)["left"] >> left;
-	(*it)["right"] >> right;
-	(*it)["occLeft"] >> leftOcc;
-	(*it)["occRight"] >> rightOcc;
-	(*it)["groundLeft"] >> leftGround;
-	(*it)["groundRight"] >> rightGround;
-	(*it)["dispRange"] >> dispRange;
-	(*it)["groundTruthSubsampling"] >> groundSubsampling;
-
-	std::vector<std::string*> pathToTransform {&leftGround, &rightGround, &left, &right, &leftOcc, &rightOcc};
-	for(std::string* cpath : pathToTransform)
-		*cpath = base_folder + "/" + *cpath;
-
-	return stereo_task(name, left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);*/
-
-	return stereo_task::load_from_filestorage(*it, base_folder);
-}
-
 disparity_map load_disparity(cvio::hdf5file& hfile, const std::string& path, int default_subsampling)
 {
 	cvio::hdf5dataset dataset_right(hfile, path);
@@ -276,7 +254,7 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 			std::string result_path = m_resultsPath.absolutePath().toStdString();
 			std::string abs_prefix = result_path + "/" + prefix.toStdString();
 
-			stereo_task task = load_task(it, name.toStdString(), m_basePath.absolutePath().toStdString());
+			stereo_task task = stereo_task::load_from_filestorage(*it, m_basePath.absolutePath().toStdString());
 
 			std::cout << abs_prefix << std::endl;
 			cvio::hdf5file hfile(abs_prefix + ".hdf5");
@@ -540,7 +518,7 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 				std::string result_path = m_resultsPath.absolutePath().toStdString();
 				std::string abs_prefix = result_path + "/" + prefix.toStdString();
 
-				stereo_task task = load_task(it, name.toStdString(), base_folder);
+				stereo_task task = stereo_task::load_from_filestorage(*it, base_folder);
 
 				std::cout << abs_prefix << std::endl;
 

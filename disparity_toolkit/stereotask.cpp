@@ -97,28 +97,6 @@ stereo_task create_from_storage(const storage_type& fs, const std::string& base_
 	return stereo_task(name, left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
 }
 
-/*void stereo_task::load_from_storage(const cv::FileStorage& fs)
-{
-	fs["name"] >> this->name;
-	fs["dispRange"] >> this->dispRange;
-	fs["groundTruthSubsampling"] >> this->groundTruthSubsampling;
-
-	load_images((std::string)fs["left"], (std::string)fs["right"]);
-	load_ground_truth((std::string)fs["groundLeft"], (std::string)fs["groundRight"], this->groundTruthSubsampling);
-	load_occ((std::string)fs["occLeft"], (std::string)fs["occRight"]);
-
-	init_single_tasks();
-}*/
-
-/*stereo_task::stereo_task(const std::string& filename)
-{
-	cv::FileStorage fs(filename + ".yml", cv::FileStorage::READ);
-	if(fs.isOpened())
-		load_from_storage(fs);
-	else
-		std::cerr << "opening task failed: " << filename << std::endl;
-}*/
-
 stereo_task stereo_task::load_from_file(const std::string& filename)
 {
 	cv::FileStorage fs(filename + ".yml", cv::FileStorage::READ);
@@ -137,15 +115,6 @@ stereo_task stereo_task::load_from_filestorage(const cv::FileNode& fs, const std
 {
 	return create_from_storage(fs, base_path);
 }
-
-/*stereo_task stereo_task::construct(const std::string& pname, const cv::Mat& pleft, const cv::Mat& pright, int dispRange) : left(pleft), right(pright), name(pname)
-{
-	cv::cvtColor(left,  leftGray,  CV_BGR2GRAY);
-	cv::cvtColor(right, rightGray, CV_BGR2GRAY);
-	this->dispRange = dispRange;
-
-	init_single_tasks();
-}*/
 
 void stereo_task::load_images(const std::string& nameLeft, const std::string& nameRight)
 {
@@ -191,26 +160,6 @@ void stereo_task::load_ground_truth(const std::string& nameGroundLeft, const std
 		std::cout << "no ground truth data for right image" << std::endl;
 	}
 }
-
-/*stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, int dispRange) : name(pname)
-{
-	load_images(nameLeft, nameRight);
-	this->dispRange = dispRange;
-
-	init_single_tasks();
-}*/
-
-/*stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, unsigned char subsamplingGroundTruth, int dispRange) : name(pname)
-{
-	groundTruthSubsampling = subsamplingGroundTruth;
-	this->dispRange = dispRange;
-
-	load_images(nameLeft, nameRight);
-	load_ground_truth(nameGroundLeft, nameGroundRight, groundTruthSubsampling);
-	estimate_occ();
-
-	init_single_tasks();
-}*/
 
 /*void StereoTask::write(cv::FileNode& node) const
 {
