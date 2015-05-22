@@ -365,7 +365,7 @@ std::pair<disparity_map, disparity_map> initial_disparity_algo::operator ()(ster
 {
 	std::cout << "task: " << task.name << std::endl;
 	//int subsampling = 1; //TODO avoid this
-	int subsampling = task.groundTruthSubsampling;
+	int subsampling = task.ground_truth_sampling;
 	matstore.start_new_task(task.name, task);
 	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling, *m_optimizer);
 }

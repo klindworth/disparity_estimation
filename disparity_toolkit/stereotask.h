@@ -34,27 +34,28 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class single_stereo_task
 {
 public:
-	//single_stereo_task(const disparity_range& prange) : range(prange) {}
+	single_stereo_task(const disparity_range& prange) : range(prange) {}
 	//std::string name, fullname;
 	cv::Mat base, match, baseGray, matchGray;
 	disparity_map groundTruth;
 	cv::Mat_<unsigned char> occ;
-	disparity_range range;
+	const disparity_range range;
 };
 
 /// Class for saving a specific stereo processing task. It can be loaded from a yaml file, or you construct one by passing all the image paths
 class stereo_task
 {
 public:
-	stereo_task(const std::string& name, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, const std::string& nameOccLeft, const std::string& nameOccRight, unsigned char subsamplingGroundTruth, int dispRange);
+	stereo_task(const std::string& name, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, const std::string& nameOccLeft, const std::string& nameOccRight, unsigned char subsamplingGroundTruth, int disp_range);
 	//void write(cv::FileNode& node) const;
 	bool valid() const;
 
 	cv::Mat left, right, leftGray, rightGray, occLeft, occRight, algoLeft, algoRight;
 	disparity_map groundLeft, groundRight;
-	int dispRange;
-	unsigned char groundTruthSubsampling;
+
+	unsigned char ground_truth_sampling;
 	std::string name, filenameLeft, filenameRight, filenameGroundLeft, filenameGroundRight, filenameOccLeft, filenameOccRight;
+	const int disp_range;
 
 	single_stereo_task forward, backward;
 
@@ -74,7 +75,7 @@ private:
 template<typename charT, typename traits>
 inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, traits>& stream, const stereo_task& task)
 {
-	stream << "left: " << task.filenameLeft << "\nright: " << task.filenameRight << "\ndispRange: " << task.dispRange;
+	stream << "left: " << task.filenameLeft << "\nright: " << task.filenameRight << "\ndispRange: " << task.disp_range;
 	stream << "\ngroundLeft: " << task.filenameGroundLeft << "\ngroundRight: " << task.filenameGroundRight;
 	stream << "\noccLeft: " << task.filenameOccLeft << "\noccRight: " << task.filenameOccRight;
 	stream << "\nocc-left-valid: " << (task.occLeft.data != 0) << "\nocc-right-valid: " << (task.occRight.data != 0);

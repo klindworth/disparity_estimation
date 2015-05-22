@@ -34,31 +34,17 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "genericfunctions.h"
 #include "disparity_utils.h"
 
-cv::Mat estimated_occlusion_map(const disparity_map& disparity, bool invert = false)
+cv::Mat_<unsigned char> estimated_occlusion_map(const disparity_map& disparity)
 {
-	cv::Mat occ;
-	if(!invert)
-		occ = disparity::occlusion_stat<short>(disparity / disparity.sampling);
-	else
-	{
-		cv::Mat_<short> dispN = cv::Mat(disparity.size(), CV_16SC1);
-		const short* src = disparity[0];
-		short* dst = dispN.ptr<short>(0);
-		for(unsigned int i = 0; i < dispN.total(); ++i)
-			*dst++ = - *src++ / disparity.sampling;
-
-		occ  = disparity::occlusion_stat(dispN);
-	}
+	cv::Mat_<unsigned char> occ = disparity::occlusion_stat<short>(disparity, 1.0f/disparity.sampling);
 
 	unsigned char* ptr = occ.data;
 	for(unsigned int i = 0; i < occ.total(); ++i)
 	{
-		if(*ptr > 0)
-			*ptr = 255;
+		*ptr = *ptr > 0 ? 255 : 0;
 		++ptr;
 	}
 	return occ;
-
 }
 
 template<typename storage_type>
@@ -190,21 +176,23 @@ void stereo_task::load_occ(const std::string& nameOccLeft, const std::string& na
 void stereo_task::estimate_occ()
 {
 	if(groundLeft.data && !occRight.data)
-		occRight = estimated_occlusion_map(groundLeft, true);
+		occRight = estimated_occlusion_map(groundLeft);
 
 
 	if(groundRight.data && !occLeft.data)
-		occLeft = estimated_occlusion_map(groundRight, false);
+		occLeft = estimated_occlusion_map(groundRight);
 }
 
-stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, const std::string& nameOccLeft, const std::string& nameOccRight, unsigned char subsamplingGroundTruth, int dispRange) : name(pname)
+stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, const std::string& nameOccLeft, const std::string& nameOccRight, unsigned char subsamplingGroundTruth, int dispRange)
+	: name(pname), disp_range(dispRange), forward(disparity_range(-dispRange+1, 0)), backward(disparity_range(0, dispRange-1))
 {
-	groundTruthSubsampling = subsamplingGroundTruth;
-	this->dispRange = dispRange;
+	ground_truth_sampling = subsamplingGroundTruth;
 
 	load_images(nameLeft, nameRight);
-	load_ground_truth(nameGroundLeft, nameGroundRight, groundTruthSubsampling);
+	load_ground_truth(nameGroundLeft, nameGroundRight, ground_truth_sampling);
 	load_occ(nameOccLeft, nameOccRight);
+
+	estimate_occ();
 
 	init_single_tasks();
 }
@@ -220,11 +208,11 @@ bool stereo_task::valid() const
 cv::FileStorage& operator<<(cv::FileStorage& stream, const stereo_task& task)
 {
 	stream << "name" << task.name;
-	stream << "left" << task.filenameLeft << "right" << task.filenameRight << "dispRange" << task.dispRange;
+	stream << "left" << task.filenameLeft << "right" << task.filenameRight << "dispRange" << task.disp_range;
 	stream << "groundLeft" << task.filenameGroundLeft << "groundRight" << task.filenameGroundRight;
 	stream << "occLeft" << task.filenameOccLeft << "occRight" << task.filenameOccRight;
 	stream << "occ-left-valid" << (task.occLeft.data != 0) << "occ-right-valid" << (task.occRight.data != 0);
-	stream << "groundTruthSubsampling" << task.groundTruthSubsampling;
+	stream << "groundTruthSubsampling" << task.ground_truth_sampling;
 	return stream;
 }
 
@@ -238,7 +226,6 @@ void stereo_task::init_single_tasks()
 	forward.matchGray = rightGray;
 	forward.occ = occLeft;
 	forward.groundTruth = groundLeft;
-	forward.range = disparity_range(-dispRange+1, 0);
 
 	//backward.name = name;
 	//backward.fullname = name + "-backward";
@@ -248,7 +235,6 @@ void stereo_task::init_single_tasks()
 	backward.matchGray = leftGray;
 	backward.occ = occRight;
 	backward.groundTruth = groundRight;
-	backward.range = disparity_range(0, dispRange-1);
 }
 
 TaskTestSet::TaskTestSet(const std::string& filename) : task_collection(filename)

@@ -26,12 +26,12 @@ public:
 template<typename region_type, typename InsertIterator>
 void region_ground_truth(const std::vector<region_type>& regions, const cv::Mat_<short>& gt, InsertIterator it)
 {
-	for(std::size_t i = 0; i < regions.size(); ++i)
+	for(const region_type& cregion : regions)
 	{
 		int sum = 0;
 		int count = 0;
 
-		intervals::foreach_region_point(regions[i].lineIntervals.begin(), regions[i].lineIntervals.end(), [&](cv::Point pt){
+		intervals::foreach_region_point(cregion.lineIntervals.begin(), cregion.lineIntervals.end(), [&](cv::Point pt){
 			short value = gt(pt);
 			if(value != 0)
 			{

@@ -47,7 +47,6 @@ public:
 class disparity_range
 {
 public:
-	disparity_range() : _start(0), _end(0), _offset(0) {}
 	disparity_range(int start, int end) : _start(start), _end(end), _offset(start) { assert(valid());}
 	disparity_range(int start, int end, int offset) : _start(start), _end(end), _offset(offset) {assert(valid());}
 
@@ -146,7 +145,7 @@ public:
 	}*/
 
 private:
-	int _start, _end, _offset;
+	const int _start, _end, _offset;
 };
 
 #endif

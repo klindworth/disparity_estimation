@@ -232,7 +232,7 @@ void singleClassicRun(const stereo_task& task, const classic_search_config& conf
 	else
 		std::cerr << "invalid quantizer" << std::endl;
 
-	int sampling = task.groundTruthSubsampling;
+	int sampling = task.ground_truth_sampling;
 
 	resultLeft.push_back(disparity::create_from_costmap(sliding_gradient(task.forward, config.windowsize), task.forward.range.start(), sampling));
 	resultRight.push_back(disparity::create_from_costmap(sliding_gradient(task.backward, config.windowsize), task.backward.range.start(), sampling));

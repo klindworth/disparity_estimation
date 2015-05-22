@@ -24,7 +24,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "disparity_region.h"
-#include "disparity_toolkit/genericfunctions.h"
 #include "sparse_counter.h"
 #include "disparity_toolkit/disparity_utils.h"
 
@@ -53,37 +52,26 @@ std::vector<region_interval> filtered_region(int width, const std::vector<region
 
 void determine_corresponding_regions(const cv::Mat_<int>& labelsMatch, disparity_region& region, const disparity_range& drange)
 {
-	const int dispRange = drange.size();
-	region.corresponding_regions = std::vector<std::vector<corresponding_region>>(dispRange);
+	region.corresponding_regions = std::vector<std::vector<corresponding_region>>(drange.size());
 	//TODO segment boxfilter?
 	sparse_histogramm hist;
-	for(int i = 0; i < dispRange; ++i)
+	for(int d = drange.start(); d <= drange.end(); ++d)
 	{
-		int cdisparity = i + drange.start();
+		std::size_t idx = drange.index(d);
 		hist.reset();
-		foreach_warped_region_point(region.lineIntervals.begin(), region.lineIntervals.end(), labelsMatch.cols, cdisparity, [&](cv::Point pt)
+		foreach_warped_region_point(region.lineIntervals.begin(), region.lineIntervals.end(), labelsMatch.cols, d, [&](cv::Point pt)
 		{
 			hist.increment(labelsMatch(pt));
 		});
 
-		region.corresponding_regions[i].reserve(hist.size());
+		region.corresponding_regions[idx].reserve(hist.size());
 		double normalizer = hist.total() > 0 ? 1.0/hist.total() : 0.0;
 		auto hend = hist.cend();
 		for(auto it = hist.cbegin(); it != hend; ++it)
 		{
 			double mutual_percent = (double)it->second * normalizer;
-			region.corresponding_regions[i].push_back(corresponding_region(it->first, mutual_percent));
+			region.corresponding_regions[idx].push_back(corresponding_region(it->first, mutual_percent));
 		}
-		/*for(auto it = hist.begin(); it != hist.end(); ++it)
-		{
-			double mutual_percent = (double)it->second * normalizer;
-			region.corresponding_regions[i].push_back(corresponding_region(it->first, mutual_percent));
-		}*/
-		/*for(const auto& it : hist)
-		{
-			double mutual_percent = (double)it.second * normalizer;
-			region.corresponding_regions[i].push_back(corresponding_region(it.first, mutual_percent));
-		}*/
 	}
 }
 
@@ -95,7 +83,8 @@ void check_corresponding_regions(const region_container& base, const region_cont
 		{
 			for(const corresponding_region& cmutual : cdisp)
 			{
-				assert(cmutual.index < match.regions.size());
+				if(cmutual.index < match.regions.size())
+					throw std::logic_error("");
 			}
 		}
 	}
@@ -149,11 +138,7 @@ disparity_map disparity_by_segments(const region_container& container)
 
 void refresh_warped_regions(region_container& container)
 {
-	const std::size_t regions_count = container.regions.size();
-	#pragma omp parallel for default(none) shared(container)
-	for(std::size_t i = 0; i < regions_count; ++i)
-	{
-		disparity_region& cregion = container.regions[i];
+	parallel_region(container.regions.begin(), container.regions.end(), [&](disparity_region& cregion) {
 		cregion.warped_interval.clear();
 		cregion.warped_interval.reserve(cregion.lineIntervals.size());
 		cregion.warped_interval = filtered_region(container.task.base.cols, cregion.lineIntervals, cregion.disparity);
@@ -162,9 +147,7 @@ void refresh_warped_regions(region_container& container)
 			cinterval.lower += cregion.disparity;
 			cinterval.upper += cregion.disparity;
 		}
-
-		//cregion.out_of_image = cregion.size - getSizeOfRegion(cregion.warped_interval);
-	}
+	});
 }
 
 corresponding_region disparity_region::get_corresponding_region(std::size_t idx, std::size_t disparity_idx)
