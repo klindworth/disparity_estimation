@@ -61,30 +61,81 @@ cv::Mat estimated_occlusion_map(const disparity_map& disparity, bool invert = fa
 
 }
 
-stereo_task::stereo_task(const std::string& filename)
+template<typename storage_type>
+std::string determine_path(const storage_type& storage, const std::string& name, const boost::filesystem::path& base_path)
 {
-	cv::FileStorage stream(filename + ".yml", cv::FileStorage::READ);
-	if(stream.isOpened())
+	std::string temp;
+	storage[name] >> temp;
+	if(temp == "")
+		return "";
+	else
 	{
-		stream["name"] >> this->name;
-		stream["dispRange"] >> this->dispRange;
-		stream["groundTruthSubsampling"] >> this->groundTruthSubsampling;
-
-		load_images((std::string)stream["left"], (std::string)stream["right"]);
-		load_ground_truth((std::string)stream["groundLeft"], (std::string)stream["groundRight"], this->groundTruthSubsampling);
-		load_occ((std::string)stream["occLeft"], (std::string)stream["occRight"]);
-
-		init_single_tasks();
+		boost::filesystem::path result_path = base_path / temp;
+		return result_path.string();
 	}
+}
+
+template<typename storage_type>
+stereo_task create_from_storage(const storage_type& fs, const std::string& base_pathname = "")
+{
+	std::string name;
+	int dispRange, groundSubsampling;
+
+	fs["dispRange"] >> dispRange;
+	fs["groundTruthSubsampling"] >> groundSubsampling;
+	fs["name"] >> name;
+
+	boost::filesystem::path base_path = base_pathname;
+
+	std::string left  = determine_path(fs, "left",  base_path);
+	std::string right = determine_path(fs, "right", base_path);
+	std::string leftGround  = determine_path(fs, "groundLeft",  base_path);
+	std::string rightGround = determine_path(fs, "groundRight", base_path);
+	std::string leftOcc  = determine_path(fs, "occLeft",  base_path);
+	std::string rightOcc = determine_path(fs, "occRight", base_path);
+
+	return stereo_task(name, left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
+}
+
+/*void stereo_task::load_from_storage(const cv::FileStorage& fs)
+{
+	fs["name"] >> this->name;
+	fs["dispRange"] >> this->dispRange;
+	fs["groundTruthSubsampling"] >> this->groundTruthSubsampling;
+
+	load_images((std::string)fs["left"], (std::string)fs["right"]);
+	load_ground_truth((std::string)fs["groundLeft"], (std::string)fs["groundRight"], this->groundTruthSubsampling);
+	load_occ((std::string)fs["occLeft"], (std::string)fs["occRight"]);
+
+	init_single_tasks();
+}*/
+
+/*stereo_task::stereo_task(const std::string& filename)
+{
+	cv::FileStorage fs(filename + ".yml", cv::FileStorage::READ);
+	if(fs.isOpened())
+		load_from_storage(fs);
 	else
 		std::cerr << "opening task failed: " << filename << std::endl;
-}
+}*/
 
 stereo_task stereo_task::load_from_file(const std::string& filename)
 {
-	stereo_task task(filename);
+	cv::FileStorage fs(filename + ".yml", cv::FileStorage::READ);
+	if(fs.isOpened())
+		return create_from_storage(fs);
+	else
+		throw std::runtime_error("opening task failed: " + filename);
+}
 
-	return task;
+stereo_task stereo_task::load_from_filestorage(const cv::FileStorage& fs, const std::string& base_path)
+{
+	return create_from_storage(fs, base_path);
+}
+
+stereo_task stereo_task::load_from_filestorage(const cv::FileNode& fs, const std::string& base_path)
+{
+	return create_from_storage(fs, base_path);
 }
 
 /*stereo_task stereo_task::construct(const std::string& pname, const cv::Mat& pleft, const cv::Mat& pright, int dispRange) : left(pleft), right(pright), name(pname)
@@ -149,7 +200,7 @@ void stereo_task::load_ground_truth(const std::string& nameGroundLeft, const std
 	init_single_tasks();
 }*/
 
-stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, unsigned char subsamplingGroundTruth, int dispRange) : name(pname)
+/*stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, const std::string& nameRight, const std::string& nameGroundLeft, const std::string& nameGroundRight, unsigned char subsamplingGroundTruth, int dispRange) : name(pname)
 {
 	groundTruthSubsampling = subsamplingGroundTruth;
 	this->dispRange = dispRange;
@@ -159,7 +210,7 @@ stereo_task::stereo_task(const std::string& pname, const std::string& nameLeft, 
 	estimate_occ();
 
 	init_single_tasks();
-}
+}*/
 
 /*void StereoTask::write(cv::FileNode& node) const
 {
@@ -396,7 +447,7 @@ folder_testset::folder_testset(const std::string& filename) : task_collection(fi
 
 		std::cout << cfilename << std::endl;
 
-		tasks.emplace_back(cfilename, file_left, file_right, file_dispLeft, file_dispRight, subsamplingGroundTruth, dispRange);
+		tasks.emplace_back(cfilename, file_left, file_right, file_dispLeft, file_dispRight, "", "", subsamplingGroundTruth, dispRange);
 	}
 
 	std::cout << tasks.size() << " tasks found" << std::endl;

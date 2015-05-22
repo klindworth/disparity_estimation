@@ -218,7 +218,7 @@ void Analyzer::on_pbRefresh_clicked()
 
 stereo_task load_task(cv::FileNodeIterator it, std::string name, std::string base_folder)
 {
-	std::string leftGround, rightGround, left, right, leftOcc, rightOcc;
+	/*std::string leftGround, rightGround, left, right, leftOcc, rightOcc;
 	int dispRange, groundSubsampling;
 	(*it)["left"] >> left;
 	(*it)["right"] >> right;
@@ -233,13 +233,15 @@ stereo_task load_task(cv::FileNodeIterator it, std::string name, std::string bas
 	for(std::string* cpath : pathToTransform)
 		*cpath = base_folder + "/" + *cpath;
 
-	return stereo_task(name, left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);
+	return stereo_task(name, left, right, leftGround, rightGround, leftOcc, rightOcc, groundSubsampling, dispRange);*/
+
+	return stereo_task::load_from_filestorage(*it, base_folder);
 }
 
 disparity_map load_disparity(cvio::hdf5file& hfile, const std::string& path, int default_subsampling)
 {
 	cvio::hdf5dataset dataset_right(hfile, path);
-	int subsampling = dataset_right.get_attribute("subsampling", default_subsampling);
+	int subsampling = dataset_right.get_attribute("sampling", default_subsampling);
 	std::cout << "subsampling_right: " << subsampling << std::endl;
 
 	return disparity_map(hfile.load(path), subsampling);

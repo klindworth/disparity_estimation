@@ -24,7 +24,7 @@ set(HEADERS
 
 option(ENABLE_SLIC "Enables SLIC. Forces you to use the GPL as license" ON)
 option(ENABLE_MEANSHIFT "Enables the original meanshift implementation of the EDISON library" ON)
-option(ENABLE_CRSLIC "Enables contour relaxed slic" ON)
+option(ENABLE_CRSLIC "Enables contour relaxed slic" OFF)
 
 if(ENABLE_SLIC)
     set(SOURCES ${SOURCES}
