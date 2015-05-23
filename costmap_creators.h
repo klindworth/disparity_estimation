@@ -166,6 +166,7 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 
 	return cost_map;
 }
+
 }
 //! Calculates pointwise (no window involved) the disparity. cost aggregator must be passed as a function object, returns a cost map
 template<typename cost_class, typename data_type>

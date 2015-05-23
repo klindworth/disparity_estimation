@@ -25,82 +25,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "genericfunctions.h"
 
-#include <fstream>
-#include <string>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <stdexcept>
-
 cv::Mat cutImageBorder(const cv::Mat& input, int windowsize)
 {
 	assert(input.dims == 2);
 	cv::Mat result = cv::Mat(input, cv::Range(windowsize/2, input.rows-windowsize/2-1), cv::Range(windowsize/2, input.cols-windowsize/2-1));
 	return result.clone();
-}
-
-cv::Mat lowerDimensionality(const cv::Mat& input)
-{
-	assert(input.dims == 3);
-	cv::Mat result(input.size[0]*input.size[1], input.size[2], input.type());
-	int data_size = input.total()*input.elemSize();
-	memcpy(result.data, input.data, data_size);
-
-	return result;
-}
-
-void mat_to_stream(const cv::Mat& input, std::ostream& ostream)
-{
-	assert(input.data);
-
-	int type = input.type();
-	ostream.write((char*)&type, sizeof(int));
-	ostream.write((char*)&(input.dims), sizeof(int));
-	int elems = 1;
-	for(int i = 0; i < input.dims; ++i)
-	{
-		ostream.write((char*)&(input.size[i]), sizeof(int));
-		elems *= input.size[i];
-	}
-	ostream.write(input.ptr<char>(0), elems*input.elemSize());
-}
-
-void mat_to_file(const cv::Mat& input, const std::string& filename)
-{
-	std::ofstream ostream(filename, std::ofstream::binary);
-	mat_to_stream(input, ostream);
-	ostream.close();
-}
-
-cv::Mat stream_to_mat(std::istream& istream)
-{
-	//assert(istream.is_open());
-	int type;
-	istream.read((char*)&type, sizeof(int));
-	int dims;
-	istream.read((char*)&dims, sizeof(int));
-	int elems = 1;
-	std::vector<int> sz(dims);
-
-	for(int i = 0; i < dims; ++i)
-	{
-		//istream >> sz[i];
-		istream.read((char*)&(sz[i]), sizeof(int));
-		elems *= sz[i];
-		//std::cout << sz[i] << std::endl;
-	}
-	cv::Mat output(dims, sz.data(), type);
-	istream.read(output.ptr<char>(0), elems*output.elemSize());//check elemSize
-
-	return output;
-}
-
-cv::Mat file_to_mat(const std::string& filename)
-{
-	std::ifstream istream(filename, std::ifstream::binary);
-	if(!istream.is_open())
-		throw std::runtime_error(filename + " couldn't opened");
-
-	cv::Mat output = stream_to_mat(istream);
-	istream.close();
-	return output;
 }
 

@@ -80,7 +80,7 @@ void save_disparity(cvio::hdf5file& hfile, const disparity_map& disp, const std:
 	dataset.set_attribute("sampling", disp.sampling);
 }
 
-void write_logged_data(cv::FileStorage& fs, const std::string& filename, std::pair<disparity_map, disparity_map>& disparity, const stereo_task& task, int total_runtime, int ignore_border = 0)
+void write_logged_data(cv::FileStorage& fs, const std::string& filename, const std::pair<disparity_map, disparity_map>& disparity, const stereo_task& task, int total_runtime, int ignore_border = 0)
 {
 	bool logging = true;
 

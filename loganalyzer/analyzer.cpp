@@ -225,6 +225,87 @@ disparity_map load_disparity(cvio::hdf5file& hfile, const std::string& path, int
 	return disparity_map(hfile.load(path), subsampling);
 }
 
+void show_detail_window(stereo_task& task, task_analysis& analysis, disparity_map& disp_left, disparity_map& disp_right)
+{
+	cv::Mat warpedLeft   = disparity::warp_image<cv::Vec3b>(task.left,  disp_left,  cv::Vec3b(0,0,0), 1.0f/disp_left.sampling);
+	cv::Mat warpedRight  = disparity::warp_image<cv::Vec3b>(task.right, disp_right, cv::Vec3b(0,0,0), 1.0f/disp_right.sampling);
+
+	cv::Mat disp_left_img  = disparity::create_image(disp_left);
+	cv::Mat disp_right_img = disparity::create_image(disp_right);
+	cv::Mat disp_left_img_color, disp_right_img_color;
+	cv::cvtColor(disp_left_img, disp_left_img_color, CV_GRAY2BGR);
+	cv::cvtColor(disp_right_img, disp_right_img_color, CV_GRAY2BGR);
+
+	//PCL
+	/*pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc (new pcl::PointCloud<pcl::PointXYZRGB>());
+	pc->height = disp_left.rows;
+	pc->width = disp_left.cols;
+	pc->is_dense = true;
+std::stringstream stream = generate_latex(rows, setnames);
+
+	int total_points = task.left.total();
+	pc->reserve(total_points);
+
+	for(int y = 0; y < disp_left.rows; ++y)
+	{
+		for(int x = 0; x < disp_left.cols; ++x)
+		{
+			cv::Vec3b ccolor = task.left.at<cv::Vec3b>(y,x);
+			short disp = disp_left.at<short>(y,x);
+
+			pcl::PointXYZRGB point(ccolor[2], ccolor[1], ccolor[0]);
+			point.x = x;
+			point.y = y;
+			point.z = (task.dispRange-std::abs(disp))*3;
+			pc->push_back(point);
+		}
+	}
+
+	pcl::visualization::CloudViewer viewerpc("Cloud Viewer");
+	viewerpc.showCloud(pc);
+
+	while (!viewerpc.wasStopped ())
+		;
+	*/
+	//PCL-END
+
+	std::vector<std::pair<QString, cv::Mat>> images;
+	images.push_back(std::make_pair("left", task.left));
+	images.push_back(std::make_pair("right", task.right));
+	images.push_back(std::make_pair("left disp", disp_left_img));
+	images.push_back(std::make_pair("right disp", disp_right_img));
+	images.push_back(std::make_pair("left error", analysis.diff_mat_left));
+	images.push_back(std::make_pair("right error", analysis.diff_mat_right));
+	images.push_back(std::make_pair("left warped to right", warpedLeft));
+	images.push_back(std::make_pair("right warped to left", warpedRight));
+
+	bool mix = false;
+	cv::Mat mixedLeft, mixedRight;
+	if(mix)
+	{
+		mixedLeft  = 0.5*task.left  + 0.5*warpedRight;
+		mixedRight = 0.5*task.right + 0.5*warpedLeft;
+	}
+	else
+	{
+		mixedLeft  = task.left  + warpedRight;
+		mixedRight = task.right + warpedLeft;
+	}
+	images.push_back(std::make_pair("left mix", mixedLeft));
+	images.push_back(std::make_pair("right mix", mixedRight));
+
+	cv::Mat img_disp_left_overlay  = 0.7*disp_left_img_color  + 0.3*task.left;
+	cv::Mat img_disp_right_overlay = 0.7*disp_right_img_color + 0.3*task.right;
+	images.push_back(std::make_pair("left disp image overlay", img_disp_left_overlay));
+	images.push_back(std::make_pair("right disp image overlay", img_disp_right_overlay));
+
+	std::cout << "images added " << images.size() << std::endl;
+
+	DetailViewer *viewer = new DetailViewer();
+	viewer->setMatList(images);
+	viewer->show();
+}
+
 void Analyzer::setSubTask(const QString& base, const QString& name)
 {
 	m_currentFilename = base + ".yml";
@@ -233,16 +314,11 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 
 	cv::FileStorage fs(m_resultsPath.absoluteFilePath(m_currentFilename).toStdString(), cv::FileStorage::READ);
 
-	QString prefix = base;//+ "_" + name;
-
 	ui->compare->reset(std::vector<QString>{base});
 
-	int windowsize, subsampling;
+	int windowsize;
 	fs["windowsize"] >> windowsize;
-	fs["subsampling"] >> subsampling;
-	std::cout << "subsampling: " << subsampling << std::endl;
-	if(subsampling == 0)
-		subsampling = 1;
+
 	cv::FileNode node = fs["analysis"];
 	for(cv::FileNodeIterator it = node.begin(); it != node.end(); ++it)
 	{
@@ -251,100 +327,23 @@ void Analyzer::setSubTask(const QString& base, const QString& name)
 		{
 			std::cout << "found" << std::endl;
 
-			std::string result_path = m_resultsPath.absolutePath().toStdString();
-			std::string abs_prefix = result_path + "/" + prefix.toStdString();
+			std::string hdf_abspath = m_resultsPath.absoluteFilePath(base + ".hdf5").toStdString();
 
 			stereo_task task = stereo_task::load_from_filestorage(*it, m_basePath.absolutePath().toStdString());
 
-			std::cout << abs_prefix << std::endl;
-			cvio::hdf5file hfile(abs_prefix + ".hdf5");
+			std::cout << hdf_abspath << std::endl;
+			cvio::hdf5file hfile(hdf_abspath);
 
-			disparity_map disp_left  = load_disparity(hfile, "/results/" + cname.toStdString() + "/left_disparity",  subsampling);
-			disparity_map disp_right = load_disparity(hfile, "/results/" + cname.toStdString() + "/right_disparity", subsampling);
+			disparity_map disp_left  = load_disparity(hfile, "/results/" + cname.toStdString() + "/left_disparity",  task.ground_truth_sampling);
+			disparity_map disp_right = load_disparity(hfile, "/results/" + cname.toStdString() + "/right_disparity", task.ground_truth_sampling);
 
 			task_analysis analysis(task, disp_left, disp_right, windowsize/2);
 
-			cv::Mat warpedLeft   = disparity::warp_image<cv::Vec3b>(task.left,  disp_left,  cv::Vec3b(0,0,0), 1.0f/disp_left.sampling);
-			cv::Mat warpedRight  = disparity::warp_image<cv::Vec3b>(task.right, disp_right, cv::Vec3b(0,0,0), 1.0f/disp_right.sampling);
-
-			cv::Mat disp_left_img  = disparity::create_image(disp_left);
-			cv::Mat disp_right_img = disparity::create_image(disp_right);
-			cv::Mat disp_left_img_color, disp_right_img_color;
-			cv::cvtColor(disp_left_img, disp_left_img_color, CV_GRAY2BGR);
-			cv::cvtColor(disp_right_img, disp_right_img_color, CV_GRAY2BGR);
-
-			//PCL
-			/*pcl::PointCloud<pcl::PointXYZRGB>::Ptr pc (new pcl::PointCloud<pcl::PointXYZRGB>());
-			pc->height = disp_left.rows;
-			pc->width = disp_left.cols;
-			pc->is_dense = true;
-	std::stringstream stream = generate_latex(rows, setnames);
-
-			int total_points = task.left.total();
-			pc->reserve(total_points);
-
-			for(int y = 0; y < disp_left.rows; ++y)
-			{
-				for(int x = 0; x < disp_left.cols; ++x)
-				{
-					cv::Vec3b ccolor = task.left.at<cv::Vec3b>(y,x);
-					short disp = disp_left.at<short>(y,x);
-
-					pcl::PointXYZRGB point(ccolor[2], ccolor[1], ccolor[0]);
-					point.x = x;
-					point.y = y;
-					point.z = (task.dispRange-std::abs(disp))*3;
-					pc->push_back(point);
-				}
-			}
-
-			pcl::visualization::CloudViewer viewerpc("Cloud Viewer");
-			viewerpc.showCloud(pc);
-
-			while (!viewerpc.wasStopped ())
-				;
-			*/
-			//PCL-END
-
-			std::vector<std::pair<QString, cv::Mat>> images;
-			images.push_back(std::make_pair("left", task.left));
-			images.push_back(std::make_pair("right", task.right));
-			images.push_back(std::make_pair("left disp", disp_left_img));
-			images.push_back(std::make_pair("right disp", disp_right_img));
-			images.push_back(std::make_pair("left error", analysis.diff_mat_left));
-			images.push_back(std::make_pair("right error", analysis.diff_mat_right));
-			images.push_back(std::make_pair("left warped to right", warpedLeft));
-			images.push_back(std::make_pair("right warped to left", warpedRight));
-
-			bool mix = false;
-			cv::Mat mixedLeft, mixedRight;
-			if(mix)
-			{
-				mixedLeft  = 0.5*task.left  + 0.5*warpedRight;
-				mixedRight = 0.5*task.right + 0.5*warpedLeft;
-			}
-			else
-			{
-				mixedLeft  = task.left  + warpedRight;
-				mixedRight = task.right + warpedLeft;
-			}
-			images.push_back(std::make_pair("left mix", mixedLeft));
-			images.push_back(std::make_pair("right mix", mixedRight));
-
-			cv::Mat img_disp_left_overlay  = 0.7*disp_left_img_color  + 0.3*task.left;
-			cv::Mat img_disp_right_overlay = 0.7*disp_right_img_color + 0.3*task.right;
-			images.push_back(std::make_pair("left disp image overlay", img_disp_left_overlay));
-			images.push_back(std::make_pair("right disp image overlay", img_disp_right_overlay));
-
-			std::cout << "images added " << images.size() << std::endl;
-
-			DetailViewer *viewer = new DetailViewer();
-			viewer->setMatList(images);
-			viewer->show();
+			show_detail_window(task, analysis, disp_left, disp_right);
 
 			//mainwindow
-			std::vector<cv::Mat> imagesLeft {disp_left_img, analysis.diff_mat_left};
-			std::vector<cv::Mat> imagesRight {disp_right_img, analysis.diff_mat_right};
+			std::vector<cv::Mat> imagesLeft {disparity::create_image(disp_left), analysis.diff_mat_left};
+			std::vector<cv::Mat> imagesRight {disparity::create_image(disp_right), analysis.diff_mat_right};
 			ui->compare->addRow(name + " (forward)", imagesLeft);
 			ui->compare->addRow(name + " (backward)", imagesRight);
 		}
@@ -502,30 +501,24 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 
 			cv::FileStorage fs(m_resultsPath.absoluteFilePath(m_currentFilename).toStdString(), cv::FileStorage::READ);
 
-			int windowsize, subsampling;
+			int windowsize;
 			fs["windowsize"] >> windowsize;
-			fs["subsampling"] >> subsampling;
-			if(subsampling == 0)
-				subsampling = 1;
-			std::cout << "subsampling: " << subsampling << std::endl;
+
 			cv::FileNode node = fs["analysis"];
 			for(cv::FileNodeIterator it = node.begin(); it != node.end(); ++it)
 			{
 				QString name = read_string("taskname", *it);
-				QString prefix = base;//+ "_" + name;
 
-				std::string base_folder = m_basePath.absolutePath().toStdString();
-				std::string result_path = m_resultsPath.absolutePath().toStdString();
-				std::string abs_prefix = result_path + "/" + prefix.toStdString();
+				std::string hdf_abs_path = m_resultsPath.absoluteFilePath(base + ".hdf5").toStdString();
 
-				stereo_task task = stereo_task::load_from_filestorage(*it, base_folder);
+				stereo_task task = stereo_task::load_from_filestorage(*it, m_basePath.absolutePath().toStdString());
 
-				std::cout << abs_prefix << std::endl;
+				std::cout << hdf_abs_path << std::endl;
 
-				cvio::hdf5file hfile(abs_prefix + ".hdf5");
+				cvio::hdf5file hfile(hdf_abs_path);
 
-				disparity_map disp_left  = load_disparity(hfile, "/results/" + name.toStdString() + "/left_disparity",  subsampling);
-				disparity_map disp_right = load_disparity(hfile, "/results/" + name.toStdString() + "/right_disparity", subsampling);
+				disparity_map disp_left  = load_disparity(hfile, "/results/" + task.name + "/left_disparity",  task.ground_truth_sampling);
+				disparity_map disp_right = load_disparity(hfile, "/results/" + task.name + "/right_disparity", task.ground_truth_sampling);
 
 				task_analysis analysis(task, disp_left, disp_right, windowsize/2);
 

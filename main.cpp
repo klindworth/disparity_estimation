@@ -191,7 +191,7 @@ int main(int argc, char *argv[])
 	clas_config.soft = true;
 	clas_config.quantizer = 8;
 
-	//classicLoggedRun(testset, clas_config);
+	classicLoggedRun(testset, clas_config);
 
 	cv::FileStorage fs(configfile, cv::FileStorage::READ);
 	if(!fs.isOpened())

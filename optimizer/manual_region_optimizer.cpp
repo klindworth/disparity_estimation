@@ -158,24 +158,23 @@ void refreshOptimizationBaseValues(region_container& base, const region_containe
 {
 	int pot_trunc = 15;
 
-	const short dispMin = base.task.range.start();
-	const short dispRange = base.task.range.size();
+	const disparity_range crange = base.task.range;
 
 	std::vector<manual_optimizer_feature_calculator> hyp_vec(omp_get_max_threads(), manual_optimizer_feature_calculator(base, match));
 
 	parallel_region(base.regions.begin(), base.regions.end(), [&](disparity_region& baseRegion) {
 		int thread_idx = omp_get_thread_num();
 
-		baseRegion.optimization_energy = cv::Mat_<float>(dispRange, 1, 100.0f);
+		baseRegion.optimization_energy = cv::Mat_<float>(crange.size(), 1, 100.0f);
 
 		disparity_range drange = task_subrange(base.task, baseRegion.base_disparity, delta);
 
 		hyp_vec[thread_idx].update(pot_trunc, baseRegion, drange);
 		for(short d = drange.start(); d <= drange.end(); ++d)
 		{
-			std::vector<corresponding_region>& cregionvec = baseRegion.corresponding_regions[d-dispMin];
+			std::vector<corresponding_region>& cregionvec = baseRegion.corresponding_regions[crange.index(d)];
 			if(!cregionvec.empty())
-				baseRegion.optimization_energy(d-dispMin) = stat_eval.evaluate_hypthesis(hyp_vec[thread_idx].get_disparity_hypothesis((d - drange.start())));
+				baseRegion.optimization_energy(crange.index(d)) = stat_eval.evaluate_hypthesis(hyp_vec[thread_idx].get_disparity_hypothesis(crange.index(d)));
 		}
 	});
 }

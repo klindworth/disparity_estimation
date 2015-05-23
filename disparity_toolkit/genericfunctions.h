@@ -29,15 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <opencv2/core/core.hpp>
 #include <string>
 
-//! Saves a matrix to a binary file
-void mat_to_file(const cv::Mat& input , const std::string &filename);
-
-//! Opens a binary file and constructs a matrix out of it
-cv::Mat file_to_mat(const std::string &filename);
-
-cv::Mat stream_to_mat(std::istream& istream);
-void mat_to_stream(const cv::Mat& input, std::ostream& ostream);
-
 inline cv::Mat subwindow(const cv::Mat& image, int x, int y, int windowsize)
 {
 	assert(x >= windowsize/2 && y >= windowsize/2 && x < image.cols- windowsize/2 && y < image.rows-windowsize/2 && windowsize % 2 == 1);
@@ -281,6 +272,5 @@ std::size_t min_idx(const std::vector<T>& src, std::size_t preferred = 0)
 
 
 cv::Mat cutImageBorder(const cv::Mat &input, int windowsize);
-cv::Mat lowerDimensionality(const cv::Mat &input);
 
 #endif // GENERICFUNCTIONS_H
