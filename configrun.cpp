@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "debugmatstore.h"
 #include "disparity_toolkit/disparity_utils.h"
 #include "disparity_toolkit/taskanalysis.h"
+#include "disparity_toolkit/task_collection.h"
 #include <segmentation/segmentation.h>
 #include "it_metrics.h"
 #include "refinement.h"

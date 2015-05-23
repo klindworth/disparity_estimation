@@ -84,37 +84,4 @@ inline std::basic_ostream<charT, traits>& operator<<(std::basic_ostream<charT, t
 
 cv::FileStorage& operator<<(cv::FileStorage& stream, const stereo_task& task);
 
-class task_collection
-{
-public:
-	task_collection(const std::string& filename) : name(filename) {}
-	task_collection() = default;
-	std::string name;
-	std::vector<stereo_task> tasks;
-};
-
-/// Container for stereo_tasks. It can read a testset file, which contain the filenames for the single stereo_tasks
-class TaskTestSet : public task_collection
-{
-public:
-	TaskTestSet () {}
-	TaskTestSet(const std::string& filename);
-};
-
-cv::FileStorage& operator<<(cv::FileStorage& stream, const TaskTestSet& testset);
-
-///constructs a task_collection by reading a directory full of image files, so you don't have to create a yaml file per image.
-class folder_testset : public task_collection
-{
-public:
-	folder_testset(const std::string& filename);
-
-	std::string left, right, dispLeft, dispRight;
-	std::string fileextension_images, fileextension_gt;
-	std::vector<std::string> filenames;
-
-	int dispRange;
-	unsigned char subsamplingGroundTruth;
-};
-
 #endif // STEREOTASK_H

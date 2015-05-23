@@ -26,6 +26,7 @@ set(SOURCES
     disparity_toolkit/genericfunctions.cpp
     disparity_toolkit/stereotask.cpp
     disparity_toolkit/disparity_utils.cpp
+    disparity_toolkit/task_collection.cpp
 
     metrics/pixelwise/gradient_disparitywise.cpp
     metrics/pixelwise/sncc_disparitywise_calculator.cpp
@@ -73,6 +74,7 @@ set(HEADERS
     disparity_toolkit/disparity_range.h
     disparity_toolkit/taskanalysis.h
     disparity_toolkit/genericfunctions.h
+    disparity_toolkit/task_collection.h
 
     optimizer/region_optimizer.h
     optimizer/manual_region_optimizer.h
@@ -140,6 +142,7 @@ set(SOURCES_ANALYZER
     disparity_toolkit/disparity_utils.cpp
     disparity_toolkit/taskanalysis.cpp
     disparity_toolkit/stereotask.cpp
+    disparity_toolkit/task_collection.cpp
 )
 
 set(QTHEADERS_ANALYZER

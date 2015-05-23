@@ -47,6 +47,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "ml_region_optimizer.h"
 #include "manual_region_optimizer.h"
+#include "disparity_toolkit/task_collection.h"
 
 #include <opencv2/highgui/highgui.hpp>
 
