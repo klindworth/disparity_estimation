@@ -37,7 +37,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class region_interval
 {
 public:
-	inline void init(int y, int x_lower, int x_upper)
+	inline void init(int y, int x_lower, int x_upper) noexcept
 	{
 		assert(y >= 0);
 		assert(x_lower >= 0);
@@ -50,9 +50,13 @@ public:
 	}
 
 	region_interval() noexcept {}
-	region_interval(int y, int x_lower, int x_upper)
+	constexpr region_interval(int y, int x_lower, int x_upper) noexcept : y(y), lower(x_lower), upper(x_upper)
 	{
-		init(y, x_lower, x_upper);
+		//init(y, x_lower, x_upper);
+		/*assert(y >= 0);
+		assert(x_lower >= 0);
+		assert(x_upper >= 0);
+		assert(x_upper >= x_lower);*/
 	}
 
 	int y;
@@ -60,9 +64,14 @@ public:
 	int upper;
 
 	//! Moves the interval in x-direction
-	inline void move(int offset) {
+	/*inline void move(int offset) noexcept {
 		lower += offset;
 		upper += offset;
+	}*/
+
+	//! Creates a moved version of the interval
+	inline region_interval moved(int offset) const noexcept {
+		return region_interval(y, lower + offset, upper + offset);
 	}
 
 	/**
@@ -71,13 +80,25 @@ public:
 	 * @param offset The amount of pixels, which the interval moves in x direction
 	 * @param width Width of the image
 	 */
-	inline void move(int offset, int width) {
+	inline void move(int offset, int width) noexcept {
 		lower = std::min(width, std::max(0, lower + offset));
 		upper = std::min(width, std::max(0, upper + offset));
 	}
 
+	/**
+	 * @brief move Creates a moved version of the interval in x-direction. The values are capped to valid values.
+	 * Valid means, the interval is within the image. Therefore you have to pass additionaly the witdth of the image.
+	 * @param offset The amount of pixels, which the interval moves in x direction
+	 * @param width Width of the image
+	 */
+	inline region_interval moved(int offset, int width) const noexcept {
+		int tlower = std::min(width, std::max(0, lower + offset));
+		int tupper = std::min(width, std::max(0, upper + offset));
+		return region_interval(y, tlower, tupper);
+	}
+
 	//! Returns the length (in x direction) of the interval
-	inline int length() const
+	inline int length() const noexcept
 	{
 		assert(upper - lower >= 0);
 		return upper - lower;

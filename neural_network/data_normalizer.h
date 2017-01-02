@@ -28,6 +28,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <vector>
 #include <iostream>
+#include <random>
+#include <numeric>
+#include <iterator>
 
 namespace neural_network
 {
@@ -50,13 +53,13 @@ private:
 		for(int k = 0; k < onetimesize; ++k)
 			sums[vector_size+k] += func(*ptr++, vector_size+k);
 
-		assert(std::distance(data.data(), ptr) == (int)data.size());
+		assert(std::distance(data.data(), ptr) == static_cast<int>(data.size()));
 	}
 
 	template<typename lambda_type>
 	void gather_statistic(const std::vector<std::vector<T>>& data, std::vector<T>& sums, int& count, lambda_type func)
 	{
-		assert((int)sums.size() == vector_size + onetimesize);
+		assert(static_cast<int>(sums.size()) == vector_size + onetimesize);
 		std::fill(sums.begin(), sums.end(), 0);
 		count = 0;
 
@@ -172,7 +175,7 @@ void randomize_dataset(std::vector<T>& samples, std::vector<short>& samples_gt)
 {
 	assert(samples.size() == samples_gt.size());
 	std::mt19937 rng;
-	std::uniform_int_distribution<> dist(0, samples.size() - 1);
+	std::uniform_int_distribution<std::size_t> dist(0, samples.size() - 1);
 	for(std::size_t i = 0; i < samples.size(); ++i)
 	{
 		std::size_t exchange_idx = dist(rng);

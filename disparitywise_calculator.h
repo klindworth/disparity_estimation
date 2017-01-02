@@ -74,12 +74,12 @@ inline int calculate_row_length(const cv::Mat& src, int d)
 	return src.cols - std::abs(d);
 }
 
-inline int calculate_base_offset(int d)
+inline constexpr int calculate_base_offset(int d)
 {
 	return std::max(-d, 0);
 }
 
-inline int calculate_match_offset(int d)
+inline constexpr int calculate_match_offset(int d)
 {
 	return std::max(d, 0);
 }

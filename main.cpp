@@ -188,13 +188,13 @@ int main(int argc, char *argv[])
 	}*/
 
 	classic_search_config clas_config;
-	clas_config.windowsize = 17;
+	clas_config.windowsize = 13;
 	clas_config.soft = true;
 	clas_config.quantizer = 8;
 
 	classicLoggedRun(testset, clas_config);
 
-	cv::FileStorage fs(configfile, cv::FileStorage::READ);
+	/*cv::FileStorage fs(configfile, cv::FileStorage::READ);
 	if(!fs.isOpened())
 	{
 		std::cerr << "failed to open config" << std::endl;
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
 		optimizer = std::make_shared<ml_region_optimizer>();
 	initial_disparity_algo algo(config, refconfig, optimizer);
 
-	/*bool training = true;
+	bool training = false;
 	if(training)
 	{
 		algo.train(testset.tasks);
@@ -235,20 +235,20 @@ int main(int argc, char *argv[])
 	}*/
 
 	//algo(testset);
-	logged_run(testset, config, refconfig);
+	//logged_run(testset, config, refconfig);
 
 	ImageStore imviewer;
 	imviewer.refreshList(matstore);
 	imviewer.show();
 
 
-	if(config.verbose)
+	/*if(config.verbose)
 	{
 		RegionWindow *viewer = new RegionWindow();
 		viewer->setStore(&matstore, &config);
 		viewer->setData(matstore.tasks.back().left, matstore.tasks.back().right);
 		viewer->show();
-	}
+	}*/
 
 	return app.exec();
 }

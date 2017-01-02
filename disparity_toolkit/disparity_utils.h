@@ -39,7 +39,7 @@ namespace disparity {
  * E.g. absmax(-4, 3) returns -4
  */
 template<typename T>
-inline T absmax(const T& v1, const T& v2)
+inline constexpr T absmax(const T& v1, const T& v2)
 {
 	if(std::abs(v1) > std::abs(v2))
 		return v1;
@@ -238,7 +238,7 @@ T disparity_interpolate(const T* cost_ptr, std::size_t min_d, std::size_t range)
 	};
 
 	//T ndisp;
-	if(min_d > 0 && min_d < range-2 && //check range
+	if(min_d > 0 && min_d+1 < range && //check range
 		(cost_ptr[min_d-1]-2.0f*cost_ptr[min_d]+cost_ptr[min_d+1]) > 0)// avoid division by zero (that part is taken from the denominator)
 	{
 		return min_d + interpolation(cost_ptr[min_d-1], cost_ptr[min_d], cost_ptr[min_d+1]);
@@ -264,7 +264,7 @@ disparity_map wta_disparity_sampling(cv::Mat base, data_type data, const dispari
 		{
 			const disparity_range crange = range.restrict_to_image(x, base.size[1]);
 
-			short cdisp = 0;
+			int cdisp = 0;
 			cost_type min_cost = std::numeric_limits<cost_type>::max();
 
 			for(int d = crange.start(); d <= crange.end(); ++d)
@@ -277,7 +277,10 @@ disparity_map wta_disparity_sampling(cv::Mat base, data_type data, const dispari
 					cdisp = d;
 				}
 			}
-
+			assert(crange.size() >= 0);
+			assert(crange.size() <= static_cast<int>(cost_temp[omp_get_thread_num()].size()));
+			assert(crange.index(cdisp) < cost_temp[omp_get_thread_num()].size());
+			assert(crange.index(cdisp) >= 0);
 			result(y,x) = disparity_interpolate(cost_temp[omp_get_thread_num()].data(), crange.index(cdisp), crange.size()) * sampling + range.start()*sampling;
 		}
 	}
@@ -310,7 +313,7 @@ short minimal_cost_disparity_with_interpolation(const T* cost_ptr, disparity_ran
 }
 
 disparity_map create_from_costmap(const cv::Mat &cost_map_org, int dispMin, int sampling);
-cv::Mat create_image(const cv::Mat &disparity);
+cv::Mat_<unsigned char> create_image(const cv::Mat_<short> &disparity);
 
 }
 

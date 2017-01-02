@@ -35,7 +35,10 @@ private slots:
 	void on_horizontalSlider_valueChanged(int value);
 
 private:
-	QString m_currentFilename, m_notesFilename;
+	QString tasknotes(QString base);
+
+
+	QString m_notesFilename;
 	QString m_text;
 	QDir m_basePath, m_resultsPath;
 	Ui::Analyzer *ui;

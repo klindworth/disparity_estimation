@@ -265,7 +265,7 @@ TEST(SimpleNN, GradientDoubleVectorLayer)
 	for(int i = 0; i < 15; ++i)
 	{
 		std::cout << "epoch: " << i << std::endl;
-		net.training(input, output,2);
+		net.training_single_epoch(input, output,2);
 		net.test(input, output);
 	}
 

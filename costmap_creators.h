@@ -34,16 +34,40 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace costmap_creators
 {
+
+template<typename T>
+cv::Mat_<T> create_cost_map(const cv::Mat& image, int range, T default_value)
+{
+	int sz[] = {image.size[0], image.size[1], range};
+	return cv::Mat_<T>(3, sz, default_value);
+}
+
+template<typename T>
+cv::Mat_<T> create_cost_map(const cv::Mat& image, const disparity_range& range, T default_value)
+{
+	return create_cost_map<T>(image, range.size(), default_value);
+}
+
+template<typename T, typename lambda_func>
+inline void transform_range(cv::Mat& cost_map, int y, int x, const disparity_range& crange, lambda_func func)
+{
+	T *result_ptr = cost_map.ptr<T>(y,x, crange.index(crange.start()));
+	for(int d = crange.start(); d <= crange.end(); ++d)
+	{
+		*result_ptr++ = func(y, x, d);
+	}
+}
+
 namespace sliding_window
 {
+
 template<typename cost_class>
 cv::Mat joint_fixed_size(const cv::Mat& base, const cv::Mat& match, const disparity_range range, const int windowsize)
 {
 	assert(windowsize > 0);
 
 	using prob_table_type = typename cost_class::result_type;
-	int sz[] = {base.rows, base.cols, range.size()};
-	cv::Mat cost_map = cv::Mat_<prob_table_type>(3, sz, static_cast<prob_table_type>(std::numeric_limits<prob_table_type>::max()/3));
+	cv::Mat cost_map = create_cost_map<prob_table_type>(base, range, std::numeric_limits<prob_table_type>::max()/3);
 
 	const int border = windowsize/2;
 
@@ -66,11 +90,10 @@ cv::Mat joint_fixed_size(const cv::Mat& base, const cv::Mat& match, const dispar
 			cost_agg.prepare_window(thread_data, windowBase);
 			const disparity_range crange = range.restrict_to_image(x, base.cols, border);
 
-			prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, crange.index(crange.start()));
-			for(int d = crange.start(); d <= crange.end(); ++d)
-			{
-				*result_ptr++ = cost_agg.increm(thread_data, x+d);
-			}
+			transform_range<prob_table_type>(cost_map, y, x, crange, [&](int, int x, int d){
+				return cost_agg.increm(thread_data, x+d);
+			});
+
 			windowBase.adjustROI(0,0,-1,1);
 		}
 	}
@@ -84,8 +107,7 @@ cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, const dis
 	int min_windowsize = 7;
 
 	typedef float prob_table_type;
-	int sz[] = {base.rows, base.cols, range.size()};
-	cv::Mat cost_map(3, sz, CV_32FC1, cv::Scalar(8));
+	cv::Mat cost_map = create_cost_map<prob_table_type>(base, range, 8);
 
 	const int y_min = min_windowsize/2;
 	const int y_max = base.rows - min_windowsize/2;
@@ -99,7 +121,7 @@ cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, const dis
 	#pragma omp parallel for private(thread_data)
 	for(int y = y_min; y < y_max; ++y)
 	{
-		cost_agg.prepareRow(thread_data, y);
+		cost_agg.prepare_row(thread_data, y);
 
 		for(int x = x_min; x < x_max; ++x)
 		{
@@ -111,11 +133,9 @@ cv::Mat joint_flexible_size(const cv::Mat& base, const cv::Mat& match, const dis
 
 				const disparity_range crange = range.restrict_to_image(x, base.cols, cwindowsize[1]/2);
 
-				prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, range.index(crange.start()));
-				for(int d = crange.start(); d <= crange.end(); ++d)
-				{
-					*result_ptr++ = cost_agg.increm(thread_data, x, d);
-				}
+				transform_range<prob_table_type>(cost_map, y, x, crange, [&](int, int x, int d) {
+					return cost_agg.increm(thread_data, x, d);
+				});
 			}
 		}
 	}
@@ -128,8 +148,7 @@ template<typename cost_class>
 cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat& match, const cv::Mat& windowsizes, const cv::Mat& rangeCenter, int disparity_delta, const disparity_range range_bound, unsigned int min_windowsize, unsigned int max_windowsize)
 {
 	typedef float prob_table_type;
-	int sz[] = {base.rows, base.cols, disparity_delta*2+1};
-	cv::Mat cost_map(3, sz, CV_32FC1, cv::Scalar(8));
+	cv::Mat cost_map = create_cost_map<prob_table_type>(base, disparity_delta*2+1, 8);
 
 	const int y_min = min_windowsize/2;
 	const int y_max = base.rows - min_windowsize/2;
@@ -155,11 +174,9 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 			{
 				cost_agg.prepare_window(thread_data, x, cwindowsize[1], cwindowsize[0] );
 
-				prob_table_type *result_ptr = cost_map.ptr<prob_table_type>(y,x, crange.index(crange.start()));
-				for(int d = crange.start(); d <= crange.end(); ++d)
-				{
-					*result_ptr++ = cost_agg.increm(thread_data, x, d);
-				}
+				transform_range<prob_table_type>(cost_map, y, x, crange, [&](int, int x, int d) {
+					return cost_agg.increm(thread_data, x, d);
+				});
 			}
 		}
 	}
@@ -172,8 +189,7 @@ cv::Mat flexible_size_flexible_disparityrange(const cv::Mat& base, const cv::Mat
 template<typename cost_class, typename data_type>
 cv::Mat calculate_pixelwise(cv::Mat base, data_type data, const disparity_range range)
 {
-	int sz[]  = {base.size[0], base.size[1], range.size()};
-	cv::Mat result = cv::Mat(3, sz, CV_32FC1, cv::Scalar(std::numeric_limits<float>::max()));
+	cv::Mat result = create_cost_map<float>(base, range, std::numeric_limits<float>::max());
 
 	cost_class cost_agg(base, data, range.start());
 
@@ -184,12 +200,9 @@ cv::Mat calculate_pixelwise(cv::Mat base, data_type data, const disparity_range 
 		{
 			const disparity_range crange = range.restrict_to_image(x, base.size[1]);
 
-			float *result_ptr = result.ptr<float>(y,x, crange.index(crange.start()));
-
-			for(int d = crange.start(); d <= crange.end(); ++d)
-			{
-				*result_ptr++ = cost_agg(y,x,d);
-			}
+			transform_range<float>(result, y, x, crange, [&](int y, int x, int d) {
+				return cost_agg(y, x, d);
+			});
 		}
 	}
 
@@ -227,6 +240,7 @@ cv::Mat disparitywise_calculator(cost_type cost_func, window_type window_sum, cv
 {
 	int sz[] = {base_size.height, base_size.width, range.size()};
 	cv::Mat_<float> result = cv::Mat(3, sz, CV_32FC1, cv::Scalar(std::numeric_limits<float>::max()));
+	//cv::Mat_<float> result = costmap_creators::sliding_window::create_cost_map(base)
 
 	#pragma omp parallel for
 	for(int d = range.start(); d <= range.end(); ++d)

@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "disparity_toolkit/disparity_map.h"
 
 #include <opencv2/core/core.hpp>
+#include <numeric>
 
 class stereo_task;
 class single_stereo_task;

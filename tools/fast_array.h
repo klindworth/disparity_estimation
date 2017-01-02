@@ -32,7 +32,7 @@ template<typename T, int tsize>
 class fast_array
 {
 public:
-	static const int size = tsize;
+	static constexpr int size = tsize;
 
 	fast_array() {
 		data = static_cast<T*>(cv::fastMalloc(size*sizeof(T)));
@@ -83,9 +83,9 @@ template<typename T, int tsize, int tsize2>
 class fast_array2d
 {
 public:
-	static const int size = tsize*tsize2;
-	static const int step1 = tsize;
-	static const int step2 = tsize2;
+	static constexpr int size = tsize*tsize2;
+	static constexpr int step1 = tsize;
+	static constexpr int step2 = tsize2;
 
 	fast_array2d() {
 		data = static_cast<T*>(cv::fastMalloc(size*sizeof(T)));

@@ -308,7 +308,7 @@ std::stringstream stream = generate_latex(rows, setnames);
 
 void Analyzer::setSubTask(const QString& base, const QString& name)
 {
-	m_currentFilename = base + ".yml";
+	QString m_currentFilename = base + ".yml";
 
 	std::cout << m_currentFilename.toStdString() << std::endl;
 
@@ -354,18 +354,10 @@ void Analyzer::setTask(const QString& base)
 {
 	ui->compare->reset(std::vector<QString>{base});
 
-	m_currentFilename = base + ".yml";
 	m_notesFilename = base + ".txt";
 
-	if(m_resultsPath.exists(m_notesFilename))
-	{
-		QFile file(m_resultsPath.absoluteFilePath(m_notesFilename));
-		file.open(QFile::ReadOnly);
-		QTextStream noteStream(&file);
-		ui->teNotes->setText(noteStream.readAll());
-	}
-	else
-		ui->teNotes->setText("");
+	ui->teNotes->setText(tasknotes(base));
+
 	ui->pbSave->setVisible(true);
 	ui->teNotes->setVisible(true);
 }
@@ -411,7 +403,7 @@ void Analyzer::on_cbCumulative_clicked()
 std::string generate_latex(const std::vector<std::unique_ptr<CompareRow>>& rows, const std::vector<QString>& setnames)
 {
 	assert(rows.size() > 0);
-	assert(rows[0].hist.size() > 0);
+	assert(rows[0]->hist.size() > 0);
 	std::stringstream stream;
 	std::size_t trunc = 6;
 	int cols = std::min(rows[0]->hist[0].size(), trunc);
@@ -471,6 +463,20 @@ std::string generate_latex(const std::vector<std::unique_ptr<CompareRow>>& rows,
 	return stream.str();
 }
 
+QString Analyzer::tasknotes(QString base)
+{
+	QString notesFilename = base + ".txt";
+	if(m_resultsPath.exists(notesFilename))
+	{
+		QFile file(m_resultsPath.absoluteFilePath(notesFilename));
+		file.open(QFile::ReadOnly);
+		QTextStream noteStream(&file);
+		return noteStream.readAll();
+	}
+	else
+		return QString();
+}
+
 void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 {
 	std::vector<std::unique_ptr<CompareRow>> rows;
@@ -484,19 +490,9 @@ void Analyzer::setTasks(QList<QTreeWidgetItem*> items)
 		if(!item->parent())
 		{
 			QString base = item->text(0);
-			m_currentFilename = base + ".yml";
-			QString notesFilename = base + ".txt";
+			QString m_currentFilename = base + ".yml";
 
-			if(m_resultsPath.exists(notesFilename))
-			{
-				QFile file(m_resultsPath.absoluteFilePath(notesFilename));
-				file.open(QFile::ReadOnly);
-				QTextStream noteStream(&file);
-				notes.push_back(noteStream.readAll());
-			}
-			else
-				notes.push_back(QString());
-
+			notes.push_back(tasknotes(base));
 			setnames.push_back(base);
 
 			cv::FileStorage fs(m_resultsPath.absoluteFilePath(m_currentFilename).toStdString(), cv::FileStorage::READ);

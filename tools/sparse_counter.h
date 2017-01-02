@@ -140,22 +140,4 @@ private:
 typedef sparse_counter<std::pair<int, int>, sparse_counter_compare_yx> sparse_2d_histogramm;
 typedef sparse_counter<int, sparse_counter_compare_val> sparse_histogramm;
 
-namespace std {
-	sparse_histogramm::iterator begin(sparse_histogramm& hist) {
-		return hist.begin();
-	}
-
-	sparse_histogramm::iterator end(sparse_histogramm& hist) {
-		return hist.end();
-	}
-
-	sparse_histogramm::const_iterator begin(const sparse_histogramm& hist) {
-		return hist.cbegin();
-	}
-
-	sparse_histogramm::const_iterator end(const sparse_histogramm& hist) {
-		return hist.cend();
-	}
-}
-
 #endif // SPARSE_COUNTER_H

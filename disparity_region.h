@@ -79,6 +79,11 @@ struct region_container : public segmentation_image<disparity_region>
 	//std::vector<short> disparity;
 };
 
+/**
+ * @brief disparity_by_segments Creates a disparity map (pixelwise!) from a region container (segmentwise disparity!)
+ * @param container Container with segments/regions
+ * @return A disparity_map, a cv::Mat with an additional field for the used sampling
+ */
 disparity_map disparity_by_segments(const region_container& container);
 
 int reenumerate_segmentation_labels(cv::Mat& labels, int old_count);
@@ -86,6 +91,14 @@ void replace_neighbor_idx(std::vector<region_descriptor>& regions, std::size_t o
 
 void determine_corresponding_regions(region_container& base, const region_container& match, int delta);
 void refresh_warped_regions(region_container& container);
+
+/**
+ * @brief filtered_region This function cuts of the region parts that will be not within the image boundaries after moving d pixels. The function will not move the region!
+ * @param width With of the image (boundary)
+ * @param old_region Vector with the region (region intervals)
+ * @param d Amount of pixels the regions will hypotetically moved
+ * @return Newly created vector with smaller unmoved regions
+ */
 std::vector<region_interval> filtered_region(int width, const std::vector<region_interval> &pixel_idx, int d);
 
 #endif // REGION_H

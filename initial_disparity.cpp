@@ -51,94 +51,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "sncc_disparitywise_calculator.h"
 #include "disparity_region_algorithms.h"
 #include "converter_to_region.h"
-#include "sad_disparitywise.h"
 
-class sliding_sad_threaddata
-{
-public:
-	cv::Mat m_base;
-	int cwindowsizeX;
-	int cwindowsizeY;
-	int crow;
-	int cbase_x;
-};
-
-class sliding_sad
-{
-public:
-	typedef float prob_table_type;
-	typedef sliding_sad_threaddata thread_type;
-private:
-
-	cv::Mat m_base, m_match;
-
-public:
-	inline sliding_sad(const cv::Mat& base, const cv::Mat& match, const disparity_range&, unsigned int /*max_windowsize*/) : m_base(base), m_match(match)
-	{
-	}
-
-	//prepares a row for calculation
-	inline void prepare_row(thread_type& thread, int y)
-	{
-		thread.crow = y;
-	}
-
-	inline void prepare_window(thread_type& thread, int x, int cwindowsizeX, int cwindowsizeY)
-	{
-		thread.cwindowsizeX = cwindowsizeX;
-		thread.cwindowsizeY = cwindowsizeY;
-		//copy the window for L1 Cache friendlieness
-		thread.cbase_x = x;
-		thread.m_base = subwindow(m_base, x, thread.crow, cwindowsizeX, cwindowsizeY).clone();
-	}
-
-	inline prob_table_type increm(thread_type& thread, int x, int d)
-	{
-		cv::Mat match_window = subwindow(m_match, x+d, thread.crow, thread.cwindowsizeX, thread.cwindowsizeY).clone();
-
-		return cv::norm(thread.m_base, match_window, cv::NORM_L1)/match_window.total()/256;
-	}
-};
-
-class sliding_sncc
-{
-public:
-	typedef float prob_table_type;
-	typedef sliding_sad_threaddata thread_type;
-
-private:
-	cv::Mat m_base, m_match;
-	std::vector<cv::Mat_<float> > results;
-
-public:
-	inline sliding_sncc(const cv::Mat& base, const cv::Mat& match, const disparity_range& range, unsigned int) : m_base(base), m_match(match)
-	{
-		sncc_disparitywise_calculator sncc(base, match);
-		results.resize(range.size());
-		for(int d = range.start(); d <= range.end(); ++d)
-			results[std::abs(d)] = sncc(d);
-	}
-
-	//prepares a row for calculation
-	inline void prepare_row(thread_type& thread, int y)
-	{
-		thread.crow = y;
-	}
-
-	inline void prepare_window(thread_type& thread, int x, int cwindowsizeX, int cwindowsizeY)
-	{
-		thread.cwindowsizeX = cwindowsizeX;
-		thread.cwindowsizeY = cwindowsizeY;
-		thread.cbase_x = x;
-	}
-
-	inline prob_table_type increm(thread_type& thread, int x, int d)
-	{
-		int d_offset = d < 0 ? d : 0;
-		return cv::norm(subwindow(results[std::abs(d)], x+d_offset, thread.crow, thread.cwindowsizeX, thread.cwindowsizeY))/thread.cwindowsizeX/thread.cwindowsizeY;
-	}
-};
-
+#include "metrics/sliding_sad.h"
+#include "metrics/sliding_sncc.h"
 
 typedef std::function<void(single_stereo_task&, const cv::Mat&, const cv::Mat&, std::vector<disparity_region>&, int)> disparity_region_func;
 
@@ -364,7 +279,6 @@ initial_disparity_algo::initial_disparity_algo(initial_disparity_config &config,
 std::pair<disparity_map, disparity_map> initial_disparity_algo::operator ()(stereo_task& task)
 {
 	std::cout << "task: " << task.name << std::endl;
-	//int subsampling = 1; //TODO avoid this
 	int subsampling = task.ground_truth_sampling;
 	matstore.start_new_task(task.name, task);
 	return segment_based_disparity_it(task, m_config, m_refconfig, subsampling, *m_optimizer);
@@ -373,8 +287,13 @@ std::pair<disparity_map, disparity_map> initial_disparity_algo::operator ()(ster
 void initial_disparity_algo::train(std::vector<stereo_task>& tasks)
 {
 	m_optimizer->set_training_mode(true);
+	int completed = 0;
 	for(stereo_task& ctask : tasks)
+	{
 		operator ()(ctask);
+		++completed;
+		std::cout << "completed: " << completed << "/" << tasks.size() << std::endl;
+	}
 	m_optimizer->training();
 }
 
@@ -382,5 +301,46 @@ void initial_disparity_algo::writeConfig(cv::FileStorage &fs)
 {
 	fs << m_config;
 	fs << m_refconfig;
+}
+
+cv::FileStorage& operator<<(cv::FileStorage& stream, const initial_disparity_config& config)
+{
+	stream << "metric_type" << config.metric_type;
+	stream << "configname" << config.name;
+	stream << "dilate" << static_cast<int>(config.dilate) << "refinement" << config.enable_refinement;
+	stream << "verbose" << config.verbose;
+	stream << "dilate_grow" << config.dilate_grow << "dilate_step" << config.dilate_step;
+	stream << "region_refinement_delta" << config.region_refinement_delta;
+	stream << "region_refinement_rounds" << config.region_refinement_rounds;
+
+	stream << config.segmentation;
+	stream << config.optimizer;
+	return stream;
+}
+
+void readInitialDisparityConfig(const cv::FileNode& stream, initial_disparity_config& config)
+{
+	int dilate;
+	stream["metric_type"] >> config.metric_type;
+	stream["configname"] >> config.name;
+	stream["dilate_step"] >> config.dilate_step;
+	stream["dilate_grow"] >> config.dilate_grow;
+	stream["dilate"] >> dilate;
+	stream["region_refinement_delta"] >> config.region_refinement_delta;
+	stream["region_refinement_rounds"] >> config.region_refinement_rounds;
+
+	config.dilate = static_cast<unsigned int>(dilate);
+	stream["refinement"] >> config.enable_refinement;
+
+	stream["verbose"] >> config.verbose;
+
+	stream >> config.segmentation;
+	stream >> config.optimizer;
+}
+
+cv::FileStorage& operator>>(cv::FileStorage& stream, initial_disparity_config& config)
+{
+	readInitialDisparityConfig(stream.root(), config);
+	return stream;
 }
 

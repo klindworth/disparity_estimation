@@ -9,10 +9,11 @@ TaskTestSet::TaskTestSet(const std::string& filename) : task_collection(filename
 	if(!stream.isOpened())
 		std::cerr << "failed to open " << filename << std::endl;
 
-	std::vector<std::string> taskFilenames;
+	std::vector<cv::String> taskFilenames;
 	stream["tasks"] >> taskFilenames;
 
-	for(const std::string& cname : taskFilenames)
+	//for(const std::string& cname : taskFilenames)
+	for(const cv::String& cname : taskFilenames)
 		tasks.push_back(stereo_task::load_from_file(cname));
 }
 

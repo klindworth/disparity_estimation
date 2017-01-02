@@ -27,11 +27,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SNCC_CALCULATOR_H
 
 #include <opencv2/core/core.hpp>
+#include <vector>
+#include <array>
 
 struct sncc_task_cache
 {
-	sncc_task_cache(int cols) : coltemp(3, std::vector<float>(cols+2)), box_temp(cols), boxcol_temp(cols+2), replace_idx(2) {}
-	std::vector<std::vector<float>> coltemp;
+	sncc_task_cache(std::size_t cols) : box_temp(cols), boxcol_temp(cols+2), replace_idx(2)
+	{
+		coltemp.fill(std::vector<float>(cols+2));
+	}
+	std::array<std::vector<float>, 3> coltemp;
 	std::vector<float> box_temp;
 	std::vector<float> boxcol_temp;
 	int replace_idx;

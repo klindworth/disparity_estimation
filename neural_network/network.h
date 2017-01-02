@@ -40,9 +40,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <omp.h>
 #include <neural_network/blas_wrapper.h>
 #include <neural_network/layer.h>
+#include <neural_network/settings.h>
 
 namespace neural_network
 {
+
 template<typename T>
 class network
 {
@@ -110,7 +112,7 @@ public:
 		}
 
 		//std::cout << "result: " << (float)correct/data.size() << ", approx5: " << (float)approx_correct/data.size() << ", approx10: " << (float)approx_correct2/data.size() << std::endl;
-		return (float)correct/data.size();
+		return static_cast<float>(correct)/data.size();
 	}
 
 	std::vector<T> output(const T* data)
@@ -151,7 +153,7 @@ public:
 
 	int predict(const std::vector<T>& data)
 	{
-		assert((int)data.size() == layers.front()->input_dimension());
+		assert(static_cast<int>(data.size()) == layers.front()->input_dimension());
 		return this->predict(data.data());
 	}
 
@@ -174,7 +176,7 @@ public:
 	{
 		assert(gt_idx >= 0 && gt_idx < out_dim);
 		if(gt_idx < 0 || gt_idx >= out_dim)
-			throw std::runtime_error("invalid ground truth value");
+			throw std::runtime_error("invalid ground truth value: index: " + std::to_string(gt_idx) + ", outdim: " + std::to_string(out_dim));
 		std::vector<T> gt(out_dim, 0.0); //for softmax
 		//std::vector<T> gt(out_dim, -1.0); //for tanh
 		gt[gt_idx] = 1.0;
@@ -187,14 +189,14 @@ public:
 		update_weights(batch_size);
 	}
 
-	void training(const std::vector<std::vector<T>>& data, const std::vector<short>& gt, std::size_t batch_size)
+	void training_single_epoch(const std::vector<std::vector<T>>& data, const std::vector<short>& gt, std::size_t batch_size)
 	{
 		for(auto& clayer : layers)
 			clayer->set_phase(layer_base<T>::phase::Training);
 
 		assert(data.size() == gt.size());
 
-		std::size_t batch_count = std::ceil((float)data.size() / batch_size);
+		std::size_t batch_count = std::ceil(static_cast<float>(data.size()) / batch_size);
 
 		for(std::size_t i = 0; i < batch_count; ++i)
 		{
@@ -215,17 +217,17 @@ public:
 			clayer->set_phase(layer_base<T>::phase::Testing);
 	}
 
-	void training(const std::vector<std::vector<T>>& data, const std::vector<short>& gt, std::size_t batch_size, std::size_t epochs, std::size_t training_error_calculation, bool reset_weights = true)
+	void training(const std::vector<std::vector<T>>& data, const std::vector<short>& gt, training_settings settings, bool reset_weights = true)
 	{
 		if(reset_weights)
 			this->reset_weights();
-		for(std::size_t i = 0; i < epochs; ++i)
+		for(std::size_t i = 0; i < settings.epochs; ++i)
 		{
 			std::cout << "epoch: " << i << std::endl;
-			training(data, gt, batch_size);
-			if(training_error_calculation != 0)
+			training_single_epoch(data, gt, settings.batch_size);
+			if(settings.training_error_calculation != 0)
 			{
-				if(i % training_error_calculation == 0)
+				if(i % settings.training_error_calculation == 0)
 				{
 					float res = test(data, gt);
 					if(i > 7 && res < 0.10)
@@ -251,7 +253,7 @@ public:
 
 			for(std::size_t i = 0; i < epochs; ++i)
 			{
-				training(data, gt, batch_size);
+				training_single_epoch(data, gt, batch_size);
 				if(training_error_calculation != 0)
 				{
 					if(i % training_error_calculation == 0)

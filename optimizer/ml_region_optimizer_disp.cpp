@@ -133,7 +133,7 @@ void ml_region_optimizer_disp::prepare_training_sample(std::vector<short>& dst_g
 	dst_gt.reserve(dst_gt.size() + base.regions.size());
 	std::vector<short> gt;
 	gt.reserve(base.regions.size());
-	region_ground_truth(base.regions, base.task.groundTruth, std::back_inserter(gt));
+	average_region_ground_truth(base.regions, base.task.groundTruth, std::back_inserter(gt));
 
 	const int crange = base.task.range.size();
 

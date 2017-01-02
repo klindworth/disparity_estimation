@@ -94,12 +94,12 @@ public:
 template<typename T>
 struct mutual_information_calc
 {
-	static inline T calculate(T joint_entropy, T base_entropy, T match_entropy)
+	static inline constexpr T calculate(T joint_entropy, T base_entropy, T match_entropy)
 	{
 		return -std::max(base_entropy + match_entropy - joint_entropy, static_cast<T>(0));
 	}
 
-	static inline T upper_bound() {
+	static inline constexpr T upper_bound() {
 		return 0;
 	}
 };
@@ -107,12 +107,12 @@ struct mutual_information_calc
 template<typename T>
 struct variation_of_information_calc
 {
-	static inline T calculate(T joint_entropy, T base_entropy, T match_entropy)
+	static inline constexpr T calculate(T joint_entropy, T base_entropy, T match_entropy)
 	{
 		return 2*joint_entropy-base_entropy-match_entropy;
 	}
 
-	static inline T upper_bound() {
+	static inline constexpr T upper_bound() {
 		return 8;
 	}
 };
@@ -120,13 +120,13 @@ struct variation_of_information_calc
 template<typename T>
 struct normalized_variation_of_information_calc
 {
-	static inline T calculate(T joint_entropy, T base_entropy, T match_entropy)
+	static inline constexpr T calculate(T joint_entropy, T base_entropy, T match_entropy)
 	{
 		return 1.0f-(base_entropy+match_entropy-joint_entropy)/std::max(joint_entropy, std::numeric_limits<T>::min());
 	}
 
 
-	static inline T upper_bound() {
+	static inline constexpr T upper_bound() {
 		return 1;
 	}
 };
@@ -134,12 +134,12 @@ struct normalized_variation_of_information_calc
 template<typename T>
 struct normalized_information_distance_calc
 {
-	static inline T calculate(T joint_entropy, T base_entropy, T match_entropy)
+	static inline constexpr T calculate(T joint_entropy, T base_entropy, T match_entropy)
 	{
 		return 1-(base_entropy+match_entropy-joint_entropy)/std::max(std::max(base_entropy, match_entropy), std::numeric_limits<T>::min());
 	}
 
-	static inline T upper_bound() {
+	static inline constexpr T upper_bound() {
 		return 1;
 	}
 };

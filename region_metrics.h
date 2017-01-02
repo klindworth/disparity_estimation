@@ -26,10 +26,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef REGION_METRICS_H
 #define REGION_METRICS_H
 
+#include <utility>
 #include "sliding_entropy.h"
 #include <segmentation/intervals.h>
 #include "costmap_creators.h"
 #include "costmap_utils.h"
+#include <segmentation/region_descriptor.h>
 
 
 template<int bins>

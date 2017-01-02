@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "manual_region_optimizer.h"
 
 #include <omp.h>
+#include <random>
 
 #include "disparity_region.h"
 #include "disparity_toolkit/genericfunctions.h"

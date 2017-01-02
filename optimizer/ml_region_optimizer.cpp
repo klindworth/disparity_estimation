@@ -102,7 +102,7 @@ void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, st
 	dst_gt.reserve(dst_gt.size() + base.regions.size());
 	std::vector<short> gt;
 	gt.reserve(base.regions.size());
-	region_ground_truth(base.regions, base.task.groundTruth, std::back_inserter(gt));
+	average_region_ground_truth(base.regions, base.task.groundTruth, std::back_inserter(gt));
 
 	const int crange = base.task.range.size();
 
@@ -156,7 +156,7 @@ void ml_region_optimizer_base::run(region_container& left, region_container& rig
 		}
 
 		std::vector<short> gt;
-		region_ground_truth(left.regions, left.task.groundTruth, std::back_inserter(gt));
+		average_region_ground_truth(left.regions, left.task.groundTruth, std::back_inserter(gt));
 
 		result_eps_calculator diff_calc = get_region_comparision(left.regions, gt);
 		matstore.add_mat(get_region_gt_error_image(left, gt), "gt_diff");
@@ -203,9 +203,13 @@ void ml_region_optimizer::reset_internal()
 ml_region_optimizer::ml_region_optimizer()
 {
 	reset_internal();
-	training_iteration = 0;
+	training_iteration = 2;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
+
+	_settings.batch_size = 64;
+	_settings.epochs = 61;
+	_settings.training_error_calculation = 4;
 }
 
 ml_region_optimizer::~ml_region_optimizer()
@@ -217,7 +221,7 @@ void ml_region_optimizer::reset(const region_container& /*left*/, const region_c
 	reset_internal();
 }
 
-void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename)
+void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename, neural_network::training_settings settings)
 {
 	int crange = 164;
 
@@ -246,8 +250,7 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 	int pass = ml_region_optimizer::vector_size;
 
 	init_network(net, crange, nvector, pass);
-
-	net.training(samples, samples_gt, 64, 61, 4);
+	net.training(samples, samples_gt, settings);
 
 	std::ofstream ostream(filename);
 	ostream.precision(17);
@@ -261,8 +264,8 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 
 void ml_region_optimizer::training()
 {
-	training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + ".txt");
-	training_internal(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + ".txt");
+	training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + ".txt", _settings);
+	training_internal(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + ".txt", _settings);
 }
 
 void ml_feature_calculator::update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange)

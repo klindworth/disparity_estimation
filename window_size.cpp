@@ -80,18 +80,20 @@ inline float compare_disparity(const cv::Mat& plabel_window, int clabel, const s
 	short cdisparity = disparities[clabel];
 	const int* csubwindow_ptr = label_window.ptr<int>(0);
 	const unsigned short totalpixel = label_window.cols*label_window.rows;
-	const int* end_ptr = csubwindow_ptr + totalpixel;
+	//const int* end_ptr = csubwindow_ptr + totalpixel;
 
 	const int trunc = 3;
 	std::array<int, trunc+1> label_counter;
 	std::fill(label_counter.begin(), label_counter.end(), 0);
 
-	//for(unsigned short i = 0; i < totalpixel; ++i)
-	while(csubwindow_ptr != end_ptr)
+	for(unsigned short i = 0; i < totalpixel; ++i)
+	//while(csubwindow_ptr != end_ptr)
 	{
-		int current_label = *csubwindow_ptr++;
+		//int current_label = *csubwindow_ptr++;
 		//unsigned char disp_dev = std::min(std::abs(disparities[current_label] - cdisparity), trunc);
-		auto disp_dev = std::min(std::abs(disparities[current_label] - cdisparity), trunc);
+		//auto disp_dev = std::min(std::abs(disparities[current_label] - cdisparity), trunc);
+		//auto disp_dev = std::min(std::abs(disparities[*csubwindow_ptr++] - cdisparity), trunc);
+		auto disp_dev = std::min(std::abs(disparities[csubwindow_ptr[i]] - cdisparity), trunc);
 
 		assert(disp_dev <= trunc); //disp_dev >= 0
 		++(label_counter[disp_dev]);

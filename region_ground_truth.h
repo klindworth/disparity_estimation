@@ -23,8 +23,14 @@ public:
 	void operator+=(const result_eps_calculator& other);
 };
 
+/**
+ * Averages the ground truth value within a region.
+ * @param regions A vector with regions and their shape descriptors
+ * @param gt A matrix (dimension equals images size) with a ground truth values pixelwise
+ * @param Insert iterator for. in which the regionwise ground truth value will be inserted. Afterwards this container should contain as many new  elements like the regions container
+ */
 template<typename region_type, typename InsertIterator>
-void region_ground_truth(const std::vector<region_type>& regions, const cv::Mat_<short>& gt, InsertIterator it)
+void average_region_ground_truth(const std::vector<region_type>& regions, const cv::Mat_<short>& gt, InsertIterator it)
 {
 	for(const region_type& cregion : regions)
 	{

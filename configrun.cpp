@@ -26,6 +26,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "configrun.h"
 
 #include <ctime>
+#include <chrono>
 
 #include "initial_disparity.h"
 #include "disparity_region.h"
@@ -112,21 +113,84 @@ void write_logged_data(cv::FileStorage& fs, const std::string& filename, const s
 	}
 }
 
+class single_time_logger
+{
+public:
+	single_time_logger() : ended(false) {
+		start();
+	}
+
+	std::chrono::milliseconds::rep end() {
+		if(!ended)
+		{
+			endpoint = std::chrono::system_clock::now();
+			ended = true;
+		}
+		return std::chrono::duration_cast<std::chrono::milliseconds>(endpoint - startpoint).count();
+	}
+
+	~single_time_logger() {
+		unsigned int total_runtime = static_cast<unsigned int>(end());
+		std::cout << "runtime: " << total_runtime << " ms" << std::endl;
+	}
+
+private:
+	void start() {
+		startpoint = std::chrono::system_clock::now();
+	}
+
+	std::chrono::system_clock::time_point startpoint, endpoint;
+	bool ended;
+};
+
+struct time_logger_entry
+{
+	std::chrono::system_clock::time_point start, end;
+	std::string name;
+};
+
+class time_logger
+{
+public:
+	time_logger() {}
+
+	void start(const char* name) {
+		current.start = std::chrono::system_clock::now();
+		current.name = name;
+	}
+
+	void end() {
+		current.end = std::chrono::system_clock::now();
+		entries.push_back(current);
+	}
+
+private:
+	time_logger_entry current;
+	std::vector<time_logger_entry> entries;
+};
+
+class time_logger_function
+{
+public:
+	time_logger_function(time_logger& logger, const char* name) : _logger(logger) {
+		_logger.start(name);
+	}
+
+	~time_logger_function() {
+		_logger.end();
+	}
+
+private:
+	time_logger& _logger;
+};
+
 std::pair<disparity_map, disparity_map> single_logged_run(stereo_task& task, disparity_estimator_algo& disparity_estimator, cv::FileStorage& fs, const std::string& filename)
 {
-
-	std::time_t starttime;
-	std::time(&starttime);
+	single_time_logger tlog;
 
 	std::pair<disparity_map, disparity_map> disparity = disparity_estimator(task);
 
-	std::time_t endtime;
-	std::time(&endtime);
-	int total_runtime = std::difftime(endtime, starttime);
-	std::cout << "runtime: " << total_runtime << std::endl;
-	std::cout << "finished" << std::endl;
-
-	write_logged_data(fs, filename, disparity, task, total_runtime);
+	write_logged_data(fs, filename, disparity, task, tlog.end());
 
 	return disparity;
 }
@@ -213,25 +277,28 @@ void it_both_sides(std::vector<disparity_map>& resultLeft, std::vector<disparity
 	disparity::create_from_costmap(sliding_gradient(task.backward, windowsize), task.backward.range.start(), 1);
 }*/
 
+template<int quantization = 16>
+void it_both_sides_runner(std::vector<disparity_map>& result_left, std::vector<disparity_map>& result_right, const stereo_task& task, const classic_search_config& config, int pquantization)
+{
+	if(quantization != pquantization)
+		it_both_sides_runner<quantization/2>(result_left, result_right, task, config, pquantization);
+	else
+		it_both_sides<quantization>(result_left, result_right, task, config);
+}
+
+template<>
+void it_both_sides_runner<0>(std::vector<disparity_map>& , std::vector<disparity_map>& , const stereo_task& , const classic_search_config&, int)
+{
+	throw std::invalid_argument("invalid quantization (valid arguments: 1,2,4,8,16)");
+}
+
 void singleClassicRun(const stereo_task& task, const classic_search_config& config, const std::string& filename, std::vector<std::unique_ptr<cv::FileStorage>>& fs, const std::vector<std::string>& names)
 {
 	std::vector<disparity_map> resultLeft, resultRight;
 
-	std::time_t starttime;
-	std::time(&starttime);
+	single_time_logger tlog;
 
-	if(config.quantizer == 1)
-		it_both_sides<1>(resultLeft, resultRight, task, config);
-	else if(config.quantizer == 2)
-		it_both_sides<2>(resultLeft, resultRight, task, config);
-	else if(config.quantizer == 4)
-		it_both_sides<4>(resultLeft, resultRight, task, config);
-	else if(config.quantizer == 8)
-		it_both_sides<8>(resultLeft, resultRight, task, config);
-	else if(config.quantizer == 16)
-		it_both_sides<16>(resultLeft, resultRight, task, config);
-	else
-		std::cerr << "invalid quantizer" << std::endl;
+	it_both_sides_runner(resultLeft, resultRight, task, config, config.quantizer);
 
 	int sampling = task.ground_truth_sampling;
 
@@ -243,9 +310,7 @@ void singleClassicRun(const stereo_task& task, const classic_search_config& conf
 	sncc_disparitywise_calculator sncc_b(task.rightGray, task.leftGray);
 	resultRight.push_back(disparity::create_from_costmap(simple_window_disparitywise_calculator(sncc_b, cv::Size(config.windowsize, config.windowsize), task.right.size(), task.backward.range),task.backward.range.start(), sampling));
 
-	std::time_t endtime;
-	std::time(&endtime);
-	int total_runtime = std::difftime(endtime, starttime);
+	int total_runtime = tlog.end();
 
 	for(std::size_t i = 0; i < resultLeft.size(); ++i)
 	{
@@ -264,7 +329,7 @@ void classicLoggedRun(task_collection& taskset, classic_search_config& config)
 	std::string filename = "results/" + dateString() + "_" + timestampString();
 	for(std::string& cname : names)
 	{
-		fs.push_back(std::unique_ptr<cv::FileStorage>(new cv::FileStorage (filename + cname + ".yml", cv::FileStorage::WRITE)));
+		fs.push_back(std::make_unique<cv::FileStorage>(filename + cname + ".yml", cv::FileStorage::WRITE));
 		*(fs.back()) << "testset" << taskset.name;
 		*(fs.back()) << "analysis" << "[";
 	}
@@ -297,44 +362,5 @@ void classicLoggedRun(task_collection& taskset, classic_search_config& config)
 	}
 }
 
-cv::FileStorage& operator<<(cv::FileStorage& stream, const initial_disparity_config& config)
-{
-	stream << "metric_type" << config.metric_type;
-	stream << "configname" << config.name;
-	stream << "dilate" << (int)config.dilate << "refinement" << config.enable_refinement;
-	stream << "verbose" << config.verbose;
-	stream << "dilate_grow" << config.dilate_grow << "dilate_step" << config.dilate_step;
-	stream << "region_refinement_delta" << config.region_refinement_delta;
-	stream << "region_refinement_rounds" << config.region_refinement_rounds;
 
-	stream << config.segmentation;
-	stream << config.optimizer;
-	return stream;
-}
-
-void readInitialDisparityConfig(const cv::FileNode& stream, initial_disparity_config& config)
-{
-	int dilate;
-	stream["metric_type"] >> config.metric_type;
-	stream["configname"] >> config.name;
-	stream["dilate_step"] >> config.dilate_step;
-	stream["dilate_grow"] >> config.dilate_grow;
-	stream["dilate"] >> dilate;
-	stream["region_refinement_delta"] >> config.region_refinement_delta;
-	stream["region_refinement_rounds"] >> config.region_refinement_rounds;
-
-	config.dilate = dilate;
-	stream["refinement"] >> config.enable_refinement;
-
-	stream["verbose"] >> config.verbose;
-
-	stream >> config.segmentation;
-	stream >> config.optimizer;
-}
-
-cv::FileStorage& operator>>(cv::FileStorage& stream, initial_disparity_config& config)
-{
-	readInitialDisparityConfig(stream.root(), config);
-	return stream;
-}
 

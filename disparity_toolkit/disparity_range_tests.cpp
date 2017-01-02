@@ -5,11 +5,14 @@
 TEST(DispRange, SubPos)
 {
 	disparity_range test1(0,128);
+	EXPECT_EQ(129, test1.size());
+
 	disparity_range test2 = test1.subrange(64, 10);
 
 	EXPECT_EQ(54, test2.start());
 	EXPECT_EQ(74, test2.end());
 	EXPECT_EQ(54, test2.index(54));
+	EXPECT_EQ(21, test2.size());
 }
 
 TEST(DispRange, SubNeg)
@@ -20,6 +23,8 @@ TEST(DispRange, SubNeg)
 	EXPECT_EQ(-74, test2.start());
 	EXPECT_EQ(-54, test2.end());
 	EXPECT_EQ(74, test2.index(-54));
+	EXPECT_EQ(129, test1.size());
+	EXPECT_EQ(21, test2.size());
 }
 
 TEST(DispRange, SubSpacePos)

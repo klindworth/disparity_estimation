@@ -79,8 +79,8 @@ void MiniPlot::paintEvent(QPaintEvent *)
 		m_ready = true;
 		QPainter painter(this);
 
-		QPalette pal = QPalette(foregroundRole());
-		QColor penColor(pal.color(QPalette::Text));
+		QPalette pal = QPalette();
+		QColor penColor(pal.color(QPalette::WindowText));
 		QPen pen;
 		pen.setColor(penColor);
 		painter.setPen(pen);

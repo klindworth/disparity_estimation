@@ -30,6 +30,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vector>
 #include <neural_network/blas_wrapper.h>
 #include <stdexcept>
+#include <omp.h>
+#include <iterator>
+#include <algorithm>
+#include <cassert>
 
 namespace neural_network
 {

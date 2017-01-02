@@ -65,6 +65,9 @@ public:
 	bool verbose;
 };
 
+cv::FileStorage& operator<<(cv::FileStorage& stream, const initial_disparity_config& config);
+cv::FileStorage& operator>>(cv::FileStorage& stream, initial_disparity_config& config);
+
 class initial_disparity_algo : public disparity_estimator_algo
 {
 public:

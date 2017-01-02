@@ -2,6 +2,7 @@
 #define DISPARITY_REGION_ALGORITHMS_H
 
 #include "disparity_region.h"
+#include <numeric>
 
 template<typename T>
 inline void parallel_region(std::vector<disparity_region>& regions, T func)
@@ -52,36 +53,51 @@ void foreach_warped_region_point(Iterator it, Iterator end, int width, int d, la
 }
 
 template<typename lambda_type>
-float corresponding_regions_average(const std::vector<disparity_region>& container, const std::vector<corresponding_region>& cdisp, lambda_type func)
-{
-	float result = 0.0f;
-	for(const corresponding_region& cval : cdisp)
-	{
-		result += cval.percent * func(container[cval.index]);
-	}
-	return result;
-}
-
-template<typename lambda_type>
 float corresponding_regions_average_by_index(const std::vector<corresponding_region>& cdisp, lambda_type func)
 {
-	float result = 0.0f;
+	return std::accumulate(cdisp.begin(), cdisp.end(), 0.0f, [&](float lhs, const corresponding_region& cval){
+		return std::fma(lhs, cval.percent, func(cval.index));
+	});
+
+	/*float result = 0.0f;
 	for(const corresponding_region& cval : cdisp)
 	{
 		result += cval.percent * func(cval.index);
 	}
-	return result;
+	return result;*/
+}
+
+template<typename lambda_type>
+float corresponding_regions_average(const std::vector<disparity_region>& container, const std::vector<corresponding_region>& cdisp, lambda_type func)
+{
+	return corresponding_regions_average_by_index(cdisp, [&](auto idx) {
+		return func(container[idx]);
+	});
+	/*return std::accumulate(cdisp.begin(), cdisp.end(), 0.0f, [&](float lhs, const corresponding_region& cval){
+		return std::fma(lhs, cval.percent, func(container[cval.index]));
+	});*/
+
+	/*float result = 0.0f;
+	for(const corresponding_region& cval : cdisp)
+	{
+		result += cval.percent * func(container[cval.index]);
+	}
+	return result;*/
 }
 
 template<typename T>
 float corresponding_regions_average_by_vector(const std::vector<corresponding_region>& cdisp, const std::vector<T>& vec)
 {
-	float result = 0.0f;
+	return std::accumulate(cdisp.begin(), cdisp.end(), 0.0f, [&](float lhs, const corresponding_region& cval){
+		return std::fma(lhs, cval.percent, vec[cval.index]);
+	});
+
+	/*float result = 0.0f;
 	for(const corresponding_region& cval : cdisp)
 	{
 		result += cval.percent * vec[cval.index];
 	}
-	return result;
+	return result;*/
 }
 
 template<typename lambda_type>

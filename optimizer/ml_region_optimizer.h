@@ -30,6 +30,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region_ground_truth.h"
 #include <memory>
 
+#include "neural_network/settings.h"
+
 class single_stereo_task;
 
 namespace neural_network
@@ -87,6 +89,8 @@ protected:
 	void prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta);
 	void optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename);
 	void reset_internal();
+
+	neural_network::training_settings _settings;
 };
 
 #endif

@@ -1,6 +1,12 @@
 #ifndef ENTROPY_H
 #define ENTROPY_H
 
+#include <cmath>
+#include <cassert>
+#include <numeric>
+#include <vector>
+#include <opencv2/core/mat.hpp>
+
 /*
 Copyright (c) 2014, Kai Klindworth
 All rights reserved.
@@ -44,8 +50,20 @@ inline void joint_entropy_result_reset(result_type& result, unsigned int& normal
 {
 	auto ccounter = counter(cleft, cright);
 	counter(cleft, cright) = 0;
+	assert(ccounter < entropy_table.size());
 	result += entropy_table[ccounter];
 	normalize_counter += ccounter;
+}
+
+template<typename result_type>
+inline void fill_entropytable(std::vector<result_type>& entropy_table, const int size)
+{
+	assert(size > 0);
+	entropy_table.resize(size+1);
+
+	entropy_table[0] = 0;
+	for(int i = 1; i < size+1; ++i)
+		entropy_table[i] = i*std::log(i);
 }
 
 template<typename result_type>
@@ -73,6 +91,7 @@ struct soft_entropy
 		for(int i = border_bins(); i < bins-border_bins(); ++i)
 		{
 			normalize_counter += *counter_ptr;
+			assert(*counter_ptr < entropy_table.size());
 			result += entropy_table[*counter_ptr++];
 		}
 		return normalize(result, normalize_counter);
@@ -89,6 +108,7 @@ struct soft_entropy
 			{
 				auto ccounter = counter(i,j);
 				normalize_counter += ccounter;
+				assert(ccounter < entropy_table.size());
 				result += entropy_table[ccounter];
 			}
 		}
@@ -126,12 +146,7 @@ struct soft_entropy
 
 	static inline void fill_entropytable(std::vector<result_type>& entropy_table, int size)
 	{
-		assert(size > 0);
-		entropy_table.resize(size);
-
-		entropy_table[0] = 0;
-		for(int i = 1; i < size; ++i)
-			entropy_table[i] = i*std::log(i);
+		costmap_creators::entropy::fill_entropytable(entropy_table, size);
 	}
 
 	template<typename counter_type, typename data_type>
@@ -189,6 +204,7 @@ struct simplified_soft_entropy
 		for(int i = 0; i < bins; ++i)
 		{
 			normalize_counter += *counter_ptr;
+			assert(*counter_ptr < entropy_table.size());
 			result += entropy_table[*counter_ptr++];
 		}
 		return normalize(result, normalize_counter);
@@ -207,6 +223,7 @@ struct simplified_soft_entropy
 		{
 			auto ccounter = *counter_ptr++;
 			normalize_counter += ccounter;
+			assert(ccounter < entropy_table.size());
 			result += entropy_table[ccounter];
 		}
 
@@ -235,12 +252,7 @@ struct simplified_soft_entropy
 
 	static inline void fill_entropytable(std::vector<result_type>& entropy_table, int size)
 	{
-		assert(size > 0);
-		entropy_table.resize(size);
-
-		entropy_table[0] = 0;
-		for(int i = 1; i < size; ++i)
-			entropy_table[i] = i*std::log(i);
+		costmap_creators::entropy::fill_entropytable(entropy_table, size);
 	}
 
 	template<typename counter_type, typename data_type>
@@ -360,12 +372,7 @@ struct verysoft_entropy
 
 	static inline void fill_entropytable(std::vector<result_type>& entropy_table, int size)
 	{
-		assert(size > 0);
-		entropy_table.resize(size);
-
-		entropy_table[0] = 0;
-		for(int i = 1; i < size; ++i)
-			entropy_table[i] = i*std::log(i);
+		costmap_creators::entropy::fill_entropytable(entropy_table, size);
 	}
 
 	template<typename counter_type, typename data_type>

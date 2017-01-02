@@ -6,13 +6,12 @@ find_package(Qt5Widgets)
 find_package(OpenCV REQUIRED core imgproc highgui)
 find_package(Boost REQUIRED filesystem system)
 find_package(HDF5 REQUIRED)
-find_package(OpenMP)
+find_package(OpenMP REQUIRED)
 find_package(Doxygen)
 #include(${QT_USE_FILE})
 
 
 set(SOURCES
-    main.cpp
     debugmatstore.cpp
     costmap_utils.cpp
     disparity_region.cpp
@@ -43,7 +42,6 @@ set(SOURCES
 )
 
 set(HEADERS
-    fast_array.h
     debugmatstore.h
     costmap_creators.h
     costmap_utils.h
@@ -53,7 +51,7 @@ set(HEADERS
     window_size.h
     region_metrics.h
     refinement.h
-    sparse_counter.h
+
     initial_disparity.h
 
     disparity_region.h
@@ -67,6 +65,8 @@ set(HEADERS
     metrics/entropy.h
     metrics/it_metrics.h
     metrics/sliding_entropy.h
+	metrics/sliding_sad.h
+	metrics/sliding_sncc.h
 
     disparity_toolkit/stereotask.h
     disparity_toolkit/disparity_utils.h
@@ -86,6 +86,10 @@ set(HEADERS
     neural_network/blas_wrapper.h
     neural_network/layer.h
     neural_network/data_normalizer.h
+	neural_network/settings.h
+
+	tools/sparse_counter.h
+	tools/fast_array.h
 )
 
 set(QTHEADERS
@@ -104,10 +108,13 @@ set(FORMS
 qt5_wrap_cpp(HEADERS_MOC ${QTHEADERS})
 qt5_wrap_ui(FORMS_HEADERS ${FORMS})
 
-include_directories(. gui neural_network loganalyzer optimizer metrics/pixelwise metrics ${CMAKE_CURRENT_BINARY_DIR})
+set (CMAKE_CXX_STANDARD 14)
+
+include_directories(. gui neural_network loganalyzer optimizer metrics/pixelwise metrics tools /usr/include/openblas /usr/include/cvio ${CMAKE_CURRENT_BINARY_DIR})
 add_definitions(${QT_DEFINITIONS})
 
 add_executable(${PROJECT_NAME}
+	main.cpp
     ${QTHEADERS}
     ${HEADERS}
     ${SOURCES}
@@ -116,17 +123,28 @@ add_executable(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-    Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} cvio cvsegmentation_lib openblas
+	Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} cvio cvsegmentation_lib openblas gomp
 )
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++11 -O0 -fsanitize=address -fsanitize=undefined")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -Wall -Wextra -Wnoexcept -std=c++11 -DNDEBUG -O3")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++14 -Og -fsanitize=address -fsanitize=undefined")
+#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${OpenMP_CXX_FLAGS} -Wall -Wextra -std=c++14 -O0")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${OpenMP_CXX_FLAGS} -Wall -Wextra -Wnoexcept -std=c++14 -DNDEBUG -O3 -march=native")
 
 enable_testing()
 find_package(GTest REQUIRED)
 include_directories(${GTEST_INCLUDE_DIRS})
-add_executable(${PROJECT_NAME}_tests neural_network/tests.cpp neural_network/network.h disparity_toolkit/disparity_utils_tests.cpp disparity_toolkit/disparity_range_tests.cpp)
-target_link_libraries(${PROJECT_NAME}_tests ${OpenCV_LIBS} ${GTEST_BOTH_LIBRARIES} openblas)
+add_executable(${PROJECT_NAME}_tests
+	${QTHEADERS}
+	${HEADERS}
+	${SOURCES}
+	${HEADERS_MOC}
+	${FORMS_HEADERS}
+	neural_network/tests.cpp
+	neural_network/network.h
+	disparity_toolkit/disparity_utils_tests.cpp
+	disparity_toolkit/disparity_range_tests.cpp
+	disparity_region_tests.cpp)
+target_link_libraries(${PROJECT_NAME}_tests Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} cvio cvsegmentation_lib ${GTEST_BOTH_LIBRARIES} openblas gomp)
 
 add_subdirectory(segmentation)
 
@@ -164,7 +182,7 @@ set_target_properties(${PROJECT_NAME}_loganalyzer PROPERTIES AUTOMOC TRUE)
 #set_target_properties(${PROJECT_NAME}_loganalyzer PROPERTIES AUTOUIC TRUE)
 
 target_link_libraries(${PROJECT_NAME}_loganalyzer
-    Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} cvio cvsegmentation_lib
+	Qt5::Widgets ${OpenCV_LIBS} ${Boost_LIBRARIES} ${HDF5_LIBRARIES} cvio cvsegmentation_lib gomp
 )
 
 if(DOXYGEN_FOUND)

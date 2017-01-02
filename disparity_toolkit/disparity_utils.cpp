@@ -49,7 +49,7 @@ disparity_map create_from_costmap(const cv::Mat& cost_map, int dispMin, int samp
 	return disparity_map(result, sampling);
 }
 
-cv::Mat create_image(const cv::Mat& disparity)
+cv::Mat_<unsigned char> create_image(const cv::Mat_<short>& disparity)
 {
 	assert(disparity.type() == CV_16SC1);
 
@@ -57,8 +57,8 @@ cv::Mat create_image(const cv::Mat& disparity)
 	double maxd;
 	cv::minMaxIdx(disparity, &mind, &maxd);
 
-	short mins = mind;
-	short maxs = maxd;
+	short mins = static_cast<short>(mind);
+	short maxs = static_cast<short>(maxd);
 	float scale = 255.0f/(maxs-mins);
 
 	cv::Mat temp;
@@ -67,7 +67,7 @@ cv::Mat create_image(const cv::Mat& disparity)
 	else
 		temp = (disparity - mins)*-scale+255;
 
-	cv::Mat result;
+	cv::Mat_<unsigned char> result;
 	temp.convertTo(result, CV_8U);
 
 	return result;

@@ -67,29 +67,33 @@ sncc_disparitywise_calculator::sncc_disparitywise_calculator(const cv::Mat& pbas
 	//std::cout << "init: " << cv::getCPUTickCount() - start << std::endl;
 }
 
-inline void prepare_line(float *temp, const float* base, const float* match, int cols)
+
+typedef float* __restrict__ data_ptr;
+typedef const float* __restrict__ data_cptr;
+
+inline void prepare_line(data_ptr temp, data_cptr base, data_cptr match, int cols)
 {
 	for(int x = 0; x < cols; ++x)
 		*temp++ = *base++ * *match++;
 }
 
-void sncc_kernel_row(float* result, const float* mu_base, const float* mu_match, const float* sigma_base_inv, const float* sigma_match_inv, int cols, int row_stride, const float* base, const float *match, sncc_task_cache& cache, int y)
+void sncc_kernel_row(data_ptr result, data_cptr mu_base, data_cptr mu_match, data_cptr sigma_base_inv, data_cptr sigma_match_inv, int cols, int row_stride, data_cptr base, data_cptr match, sncc_task_cache& cache, int y)
 {
 	const float norm_factor = 1.0/9.0f;
 
 	prepare_line(cache.coltemp[cache.replace_idx].data(), base+(y+2)*(row_stride+2), match+(y+2)*(row_stride+2), cols+2);
 	cache.replace_idx = (cache.replace_idx+1) %3;
 
-	const float *temp_1 = cache.coltemp[0].data();
-	const float *temp_2 = cache.coltemp[1].data();
-	const float *temp_3 = cache.coltemp[2].data();
+	data_cptr temp_1 = cache.coltemp[0].data();
+	data_cptr temp_2 = cache.coltemp[1].data();
+	data_cptr temp_3 = cache.coltemp[2].data();
 
 	for(int x = 0; x < cols+2; ++x)
 	{
 		cache.boxcol_temp[x] = *temp_1++ + *temp_2++ + *temp_3++;
 	}
 
-	const float* boxcol_temp_ptr = cache.boxcol_temp.data();
+	data_cptr boxcol_temp_ptr = cache.boxcol_temp.data();
 	for(int x = 0; x < cols; ++x)
 	{
 		float sum = 0.0f;
@@ -101,7 +105,7 @@ void sncc_kernel_row(float* result, const float* mu_base, const float* mu_match,
 		cache.box_temp[x] = sum;
 	}
 
-	const float *box_ptr = cache.box_temp.data();
+	data_cptr box_ptr = cache.box_temp.data();
 
 	for(int x = 0; x < cols; ++x)
 	{
@@ -109,7 +113,7 @@ void sncc_kernel_row(float* result, const float* mu_base, const float* mu_match,
 	}
 }
 
-void sncc_kernel(float* result, const float* mu_base, const float* mu_match, const float* sigma_base_inv, const float* sigma_match_inv, int rows, int cols, int row_stride, const float* base, const float *match, sncc_task_cache& cache)
+void sncc_kernel(data_ptr result, const data_cptr mu_base, const data_cptr mu_match, const data_cptr sigma_base_inv, const data_cptr sigma_match_inv, int rows, int cols, int row_stride, const data_cptr base, const data_cptr match, sncc_task_cache& cache)
 {
 	for(int i = 0; i < 2; ++i)
 		prepare_line(cache.coltemp[i].data(), base + i*(row_stride+2), match + i*(row_stride+2), cols+2);
@@ -118,11 +122,11 @@ void sncc_kernel(float* result, const float* mu_base, const float* mu_match, con
 	for(int y = 0; y < rows; ++y)
 	{
 		const int y_offset = y*row_stride;
-		const float* mu_base_ptr = mu_base + y_offset;
-		const float* mu_match_ptr = mu_match + y_offset;
-		const float* sigma_base_inv_ptr = sigma_base_inv + y_offset;
-		const float* sigma_match_inv_ptr = sigma_match_inv + y_offset;
-		float* result_ptr = result+y*cols;
+		const data_cptr mu_base_ptr = mu_base + y_offset;
+		const data_cptr mu_match_ptr = mu_match + y_offset;
+		const data_cptr sigma_base_inv_ptr = sigma_base_inv + y_offset;
+		const data_cptr sigma_match_inv_ptr = sigma_match_inv + y_offset;
+		data_ptr result_ptr = result+y*cols;
 
 		sncc_kernel_row(result_ptr, mu_base_ptr, mu_match_ptr, sigma_base_inv_ptr, sigma_match_inv_ptr, cols, row_stride, base, match, cache, y);
 	}
@@ -139,6 +143,7 @@ cv::Mat_<float> sncc_disparitywise_calculator::operator()(int d)
 	cv::Mat_<float> result(cv::Size(row_length, rows), 100.0f);
 
 	int thread_idx = omp_get_thread_num();
+	assert(cache.size() > thread_idx);
 	sncc_kernel(result[0], mu_base[0] + offset_base, mu_match[0] + offset_match, sigma_base_inv[0] + offset_base, sigma_match_inv[0] + offset_match, rows, row_length, base_float.cols - 2, base_float.ptr<float>() + offset_base, match_float.ptr<float>() + offset_match, cache[thread_idx]);
 
 	return result;
