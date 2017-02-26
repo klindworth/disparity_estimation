@@ -173,7 +173,8 @@ int main(int argc, char *argv[])
 	//std::string configfile = "tasks/config-irvl.yml";
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";
 	//std::string configfile = "tasks/config-big-msslic.yml";
-	std::string configfile = "tasks/config-small-msslic-current-sncc.yml";
+	//std::string configfile = "tasks/config-small-msslic-current-sncc.yml";
+	std::string configfile = "tasks/config-small-msslic.yml";
 	//std::string configfile = "tasks/config-debug.yml";
 	//std::string configfile = "tasks/config-kit-refine2.yml";
 	//std::string configfile = "tasks/config-kit2.yml";
@@ -187,14 +188,14 @@ int main(int argc, char *argv[])
 		return 1;
 	}*/
 
-	classic_search_config clas_config;
+	/*classic_search_config clas_config;
 	clas_config.windowsize = 13;
 	clas_config.soft = true;
 	clas_config.quantizer = 8;
 
-	classicLoggedRun(testset, clas_config);
+	classicLoggedRun(testset, clas_config);*/
 
-	/*cv::FileStorage fs(configfile, cv::FileStorage::READ);
+	cv::FileStorage fs(configfile, cv::FileStorage::READ);
 	if(!fs.isOpened())
 	{
 		std::cerr << "failed to open config" << std::endl;
@@ -206,7 +207,7 @@ int main(int argc, char *argv[])
 	config.optimizer.prop_eval = prop_eval;
 	config.optimizer.prop_eval2 = prop_eval2;
 	//config.optimization_rounds = 3;
-	config.verbose = true;
+	//config.verbose = true;
 	//config.enable_refinement = false;
 
 	refinement_config refconfig;
@@ -223,7 +224,7 @@ int main(int argc, char *argv[])
 		optimizer = std::make_shared<ml_region_optimizer>();
 	initial_disparity_algo algo(config, refconfig, optimizer);
 
-	bool training = false;
+	/*bool training = false;
 	if(training)
 	{
 		algo.train(testset.tasks);
@@ -235,20 +236,20 @@ int main(int argc, char *argv[])
 	}*/
 
 	//algo(testset);
-	//logged_run(testset, config, refconfig);
+	logged_run(testset, config, refconfig);
 
 	ImageStore imviewer;
 	imviewer.refreshList(matstore);
 	imviewer.show();
 
 
-	/*if(config.verbose)
+	if(config.verbose)
 	{
 		RegionWindow *viewer = new RegionWindow();
 		viewer->setStore(&matstore, &config);
 		viewer->setData(matstore.tasks.back().left, matstore.tasks.back().right);
 		viewer->show();
-	}*/
+	}
 
 	return app.exec();
 }

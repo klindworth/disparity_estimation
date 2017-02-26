@@ -157,7 +157,7 @@ void manual_optimizer_feature_calculator::update(short pot_trunc, const disparit
 
 void refreshOptimizationBaseValues(region_container& base, const region_container& match, const disparity_hypothesis_weight_vector& stat_eval, int delta)
 {
-	int pot_trunc = 15;
+	int pot_trunc = 10;
 
 	const disparity_range crange = base.task.range;
 

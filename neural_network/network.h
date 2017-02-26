@@ -230,6 +230,7 @@ public:
 				if(i % settings.training_error_calculation == 0)
 				{
 					float res = test(data, gt);
+					std::cout << "res: " << res << std::endl;
 					if(i > 7 && res < 0.10)
 					{
 						this->reset_weights();

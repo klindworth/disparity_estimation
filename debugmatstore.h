@@ -36,7 +36,7 @@ class region_container;
 class debug_task_store
 {
 public:
-	debug_task_store() {}
+	debug_task_store() = default;
 	debug_task_store(const std::string& pname, stereo_task* ptask) : name(pname), task(ptask) {}
 	std::string name;
 	std::vector<std::pair<cv::Mat, std::string> > simpleMatrices;
@@ -47,7 +47,7 @@ public:
 class debug_store
 {
 public:
-	debug_store();
+	debug_store() = default;
 	void start_new_task(const std::string &name, stereo_task& task);
 	void set_region_container(std::shared_ptr<region_container>& left, std::shared_ptr<region_container>& right);
 	void add_mat(const cv::Mat &mat, const char* name);

@@ -56,7 +56,7 @@ template<typename lambda_type>
 float corresponding_regions_average_by_index(const std::vector<corresponding_region>& cdisp, lambda_type func)
 {
 	return std::accumulate(cdisp.begin(), cdisp.end(), 0.0f, [&](float lhs, const corresponding_region& cval){
-		return std::fma(lhs, cval.percent, func(cval.index));
+		return std::fma(cval.percent, func(cval.index), lhs);
 	});
 
 	/*float result = 0.0f;
@@ -73,9 +73,6 @@ float corresponding_regions_average(const std::vector<disparity_region>& contain
 	return corresponding_regions_average_by_index(cdisp, [&](auto idx) {
 		return func(container[idx]);
 	});
-	/*return std::accumulate(cdisp.begin(), cdisp.end(), 0.0f, [&](float lhs, const corresponding_region& cval){
-		return std::fma(lhs, cval.percent, func(container[cval.index]));
-	});*/
 
 	/*float result = 0.0f;
 	for(const corresponding_region& cval : cdisp)
@@ -89,7 +86,7 @@ template<typename T>
 float corresponding_regions_average_by_vector(const std::vector<corresponding_region>& cdisp, const std::vector<T>& vec)
 {
 	return std::accumulate(cdisp.begin(), cdisp.end(), 0.0f, [&](float lhs, const corresponding_region& cval){
-		return std::fma(lhs, cval.percent, vec[cval.index]);
+		return std::fma(cval.percent, vec[cval.index], lhs);
 	});
 
 	/*float result = 0.0f;
@@ -146,7 +143,7 @@ std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& bas
 	for(const auto& cpair : neighbors)
 	{
 		assert(cpair.first < container.size());
-		float diff = color_trunc - std::min(cv::norm(base_color - container[cpair.first].average_color), color_trunc);
+		float diff = static_cast<float>(color_trunc - std::min(cv::norm(base_color - container[cpair.first].average_color), color_trunc));
 
 		result += diff*func(container[cpair.first]);
 		sum_weight += diff;
@@ -155,16 +152,16 @@ std::pair<float,float> getColorWeightedNeighborhoodsAverage(const cv::Vec3d& bas
 	return std::make_pair(result/sum_weight, sum_weight);
 }
 
-inline float gather_neighbor_color_weights(std::vector<float>& weights, const cv::Vec3d& base_color, double color_trunc, const std::vector<disparity_region>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors)
+template<typename lambda_func>
+inline float gather_neighbor_color_weights_internal(std::vector<float>& weights, const cv::Vec3d& base_color, double color_trunc, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors, lambda_func func)
 {
-	std::size_t nsize = neighbors.size();
+	const std::size_t nsize = neighbors.size();
 	weights.resize(nsize);
 
 	float sum_weight = 0.0f;
 	for(std::size_t i = 0; i < nsize; ++i)
 	{
-		assert(neighbors[i].first < container.size());
-		float diff = color_trunc - std::min(cv::norm(base_color - container[neighbors[i].first].average_color), color_trunc);
+		float diff = static_cast<float>(color_trunc - std::min(cv::norm(base_color - func(i)), color_trunc));
 
 		weights[i] = diff;
 		sum_weight += diff;
@@ -173,21 +170,23 @@ inline float gather_neighbor_color_weights(std::vector<float>& weights, const cv
 	return std::max(std::numeric_limits<float>::min(), sum_weight);
 }
 
+inline float gather_neighbor_color_weights(std::vector<float>& weights, const cv::Vec3d& base_color, double color_trunc, const std::vector<disparity_region>& container, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors)
+{
+	auto neighbor_color = [&](std::size_t i) {
+		assert(neighbors[i].first < container.size());
+		return container[neighbors[i].first].average_color;
+	};
+
+	return gather_neighbor_color_weights_internal(weights, base_color, color_trunc, neighbors, neighbor_color);
+}
+
 inline float gather_neighbor_color_weights_from_cache(std::vector<float>& weights, const cv::Vec3d& base_color, double color_trunc, const std::vector<cv::Vec3d>& color_cache, const std::vector<std::pair<std::size_t, std::size_t>>& neighbors)
 {
-	std::size_t nsize = neighbors.size();
-	weights.resize(nsize);
+	auto neighbor_color = [&](std::size_t i) {
+		return color_cache[neighbors[i].first];
+	};
 
-	float sum_weight = 0.0f;
-	for(std::size_t i = 0; i < nsize; ++i)
-	{
-		float diff = color_trunc - std::min(cv::norm(base_color - color_cache[neighbors[i].first]), color_trunc) + 0.001f;
-
-		weights[i] = diff;
-		sum_weight += diff;
-	}
-
-	return std::max(std::numeric_limits<float>::min(), sum_weight);
+	return gather_neighbor_color_weights_internal(weights, base_color, color_trunc, neighbors, neighbor_color);
 }
 
 #endif //DISPARITY_REGION_ALGORITHMS_H

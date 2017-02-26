@@ -47,8 +47,10 @@ public:
 class disparity_range
 {
 public:
-	constexpr disparity_range(int start, int end) noexcept : _start(start), _end(end), _offset(start) { assert(valid()); }
-	constexpr disparity_range(int start, int end, int offset) noexcept : _start(start), _end(end), _offset(offset) { assert(valid()); }
+	using disparity_type = int;
+
+	constexpr disparity_range(disparity_type start, disparity_type end) noexcept : _start(start), _end(end), _offset(start) { assert(valid()); }
+	constexpr disparity_range(disparity_type start, disparity_type end, disparity_type offset) noexcept : _start(start), _end(end), _offset(offset) { assert(valid()); }
 	//disparity_range(int start, int end) : _start(start), _end(end), _offset(start) { assert(valid());}
 	//disparity_range(int start, int end, int offset) : _start(start), _end(end), _offset(offset) {assert(valid());}
 
@@ -61,12 +63,12 @@ public:
 	 * @param delta Number of elements before and after the pivot element which should belong to the new range
 	 * @return The newly created range
 	 */
-	constexpr disparity_range subrange(int pivot, int delta) const
+	constexpr disparity_range subrange(disparity_type pivot, disparity_type delta) const
 	{
 		assert(pivot >= _start && pivot <= _end);
 
-		const int start = std::max(_start, pivot - delta);
-		const int end = std::min(_end, pivot + delta);
+		const disparity_type start = std::max<disparity_type>(_start, pivot - delta);
+		const disparity_type end = std::min<disparity_type>(_end, pivot + delta);
 
 		return disparity_range(start, end, _offset);
 	}
@@ -78,24 +80,24 @@ public:
 	 * @param delta
 	 * @return
 	 */
-	constexpr disparity_range subrange_with_subspace(int pivot, int delta) const
+	constexpr disparity_range subrange_with_subspace(disparity_type pivot, disparity_type delta) const
 	{
 		assert(pivot >= _start && pivot <= _end);
 
-		const int start = std::max(_start, pivot - delta);
-		const int end = std::min(_end, pivot + delta);
-		const int offset = pivot - delta;
+		const disparity_type start = std::max<disparity_type>(_start, pivot - delta);
+		const disparity_type end = std::min<disparity_type>(_end, pivot + delta);
+		const disparity_type offset = pivot - delta;
 
 		return disparity_range(start, end, offset); //FIXME: old offset ignored
 	}
 
-	constexpr disparity_range restrict_to_image(int pt, int image_size, int border_size = 0) const
+	constexpr disparity_range restrict_to_image(disparity_type pt, disparity_type image_size, disparity_type border_size = 0) const
 	{
-		const int min_pt = border_size;
-		const int max_pt = image_size - border_size - 1;
+		const disparity_type min_pt = border_size;
+		const disparity_type max_pt = image_size - border_size - 1;
 
-		const int disp_start = std::min(std::max(pt + _start, min_pt), max_pt) - pt;
-		const int disp_end   = std::min(std::max(pt + _end,   min_pt), max_pt) - pt;
+		const disparity_type disp_start = std::min(std::max<disparity_type>(pt + _start, min_pt), max_pt) - pt;
+		const disparity_type disp_end   = std::min(std::max<disparity_type>(pt + _end,   min_pt), max_pt) - pt;
 
 		return disparity_range(disp_start, disp_end, _offset);
 	}
@@ -105,19 +107,19 @@ public:
 		return disparity_range(_start, _end);
 	}
 
-	inline constexpr std::size_t index(int d) const
+	inline constexpr std::size_t index(disparity_type d) const
 	{
 		assert(valid_disparity(d));
 
 		return d-_offset;
 	}
 
-	inline constexpr int disparity_at_index(std::size_t index) const
+	inline constexpr disparity_type disparity_at_index(std::size_t index) const
 	{
 		return index+_offset;
 	}
 
-	constexpr bool valid_disparity(int d) const
+	constexpr bool valid_disparity(disparity_type d) const
 	{
 		return d >= _start && d <= _end;
 	}
@@ -127,10 +129,10 @@ public:
 		return _start <= _end;
 	}
 
-	inline constexpr int start() const { return _start; }
-	inline constexpr int end() const { return _end; }
-	inline constexpr int size() const { return _end - _start + 1; }
-	inline constexpr int offset() const { return _offset; }
+	inline constexpr disparity_type start() const { return _start; }
+	inline constexpr disparity_type end() const { return _end; }
+	inline constexpr disparity_type size() const { return _end - _start + 1; }
+	inline constexpr disparity_type offset() const { return _offset; }
 
 	/*template<typename lambda_type>
 	void foreach_disparity(lambda_type func)
@@ -147,7 +149,7 @@ public:
 	}*/
 
 private:
-	const int _start, _end, _offset;
+	const disparity_type _start, _end, _offset;
 };
 
 #endif

@@ -39,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 template<typename T>
 inline T abs_pott(const T& v1, const T& v2, const T& trunc)
 {
-	return std::min((T)std::abs(v1 - v2), trunc);
+	return std::min<T>(std::abs(v1 - v2), trunc);
 }
 
 class region_container;

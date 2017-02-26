@@ -47,13 +47,7 @@ inline int countLabels(cv::Mat window, int clabel)
 {
 	assert(window.isContinuous());
 	int* csubwindow_ptr = window.ptr<int>(0);
-	int labelcount = 0;
-	for(int i = 0; i < window.cols*window.rows; ++i)
-	{
-		if(*csubwindow_ptr++ == clabel)
-			++labelcount;
-	}
-	return labelcount;
+	return static_cast<int>(std::count(csubwindow_ptr, csubwindow_ptr + window.cols*window.rows + 1, clabel));
 }
 
 inline float countLabelsDisp(cv::Mat window, int clabel, const std::vector<disparity_region>& regions)

@@ -129,12 +129,12 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 	}
 
 	const float p = 0.9;
-	const std::array<float,3> penalties{1.0f, 1/p, 1/(p*p)};
+	const std::array<float,3> penalties{1.0f, 1.0f/p, 1.0f/(p*p)};
 
 	std::cout << "region" << std::endl;
 	//calculate regioncost
 	//pragma omp parallel for
-	for(int d = task.range.start(); d <= task.range.end(); ++d)
+	for(disparity_range::disparity_type d = task.range.start(); d <= task.range.end(); ++d)
 	{
 		for(std::size_t i = 0; i < regions_count; ++i)
 		{
@@ -145,8 +145,8 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 				//std::size_t idx = d - drange.start();
 				const std::size_t row_count = regions[i].lineIntervals.size();
 
-				const int delta_neg = std::max(drange.start(), d - 2) - d;
-				const int delta_pos = std::min(drange.end(), d + 2) - d;
+				const disparity_range::disparity_type delta_neg = std::max<disparity_range::disparity_type>(drange.start(), d - 2) - d;
+				const disparity_range::disparity_type delta_pos = std::min<disparity_range::disparity_type>(drange.end(), d + 2) - d;
 
 				float region_costs = 0.0f;
 				int region_size = 0;

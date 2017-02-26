@@ -29,6 +29,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "region_optimizer.h"
 #include "region_ground_truth.h"
 #include <memory>
+#include <vector>
 
 #include "neural_network/settings.h"
 
@@ -48,6 +49,29 @@ public:
 	void update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange);
 };
 
+template<typename T>
+struct feature_vector {
+	feature_vector(int vector_size, int vector_size_per_disp, int range_size, bool merged = false)
+		: vector_size(vector_size), vector_size_per_disp(vector_size_per_disp), range_size(range_size), merged(false) {
+
+	}
+
+	std::size_t index(int disp) const {
+		if(!merged)
+			return vector_size_per_disp*std::abs(disp);
+		else
+			return vector_size_per_disp*2*std::abs(disp);
+	}
+
+	std::size_t index() const {
+		return vector_size_per_disp;
+	}
+
+	std::vector<T> data;
+	int vector_size, vector_size_per_disp, range_size;
+	bool merged;
+};
+
 class ml_region_optimizer_base : public region_optimizer
 {
 public:
@@ -55,7 +79,7 @@ public:
 
 
 protected:
-	std::vector<std::vector<float>> optimization_vectors_left, optimization_vectors_right;
+	std::vector<std::vector<float>> feature_vectors_left, feature_vectors_right;
 
 	std::vector<std::vector<double>> samples_left, samples_right;
 	std::vector<short> samples_gt_left, samples_gt_right;

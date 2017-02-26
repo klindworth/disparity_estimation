@@ -114,7 +114,7 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 	tree->setColumnCount(header.size());
 	tree->setHeaderLabels(header);
 
-	int pot_trunc = 15;
+	int pot_trunc = 10;
 
 	std::vector<stat_t> other_stat(match.regions.size());
 	for(std::size_t i = 0; i < match.regions.size(); ++i)

@@ -81,16 +81,16 @@ std::vector<region_interval> exposureVector(const cv::Mat& occlusionMap)
 	std::vector<region_interval> exposure;
 
 	const cv::Mat_<unsigned char> occ = occlusionMap;
-	intervals::turn_value_into_intervals(occ, std::back_inserter(exposure), (unsigned char)0);
+	intervals::turn_value_into_intervals(occ, std::back_inserter(exposure), (unsigned char)0u);
 
 	cv::Mat_<unsigned char> temp = cv::Mat(occlusionMap.size(), CV_8UC1, cv::Scalar(0));
-	intervals::set_region_value<unsigned char>(temp, exposure, (unsigned char)255);
+	intervals::set_region_value<unsigned char>(temp, exposure, (unsigned char)255u);
 	exposure.clear();
 
 	cv::erode(temp, temp, cv::Mat(3,3, CV_8UC1, cv::Scalar(1)));
 	matstore.add_mat(temp, "exposure");
 
-	intervals::turn_value_into_intervals(temp, std::back_inserter(exposure), (unsigned char)255);
+	intervals::turn_value_into_intervals(temp, std::back_inserter(exposure), (unsigned char)255u);
 
 	return exposure;
 }
@@ -190,7 +190,7 @@ std::pair<disparity_map, disparity_map> segment_based_disparity_it(stereo_task& 
 	}
 	else
 	{
-		const int quantizer = 8;
+		const int quantizer = 4;
 		typedef normalized_information_distance_calc<float> it_metric;
 		//typedef normalized_variation_of_information_calc<float> it_metric;
 		//typedef variation_of_information_calc<float> it_metric;

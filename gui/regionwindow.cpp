@@ -293,7 +293,7 @@ void RegionWindow::on_pbOptimize_clicked()
 		float e_other = corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cregion.optimization_energy(-disparity-match.task.range.start());});
 		float e_base = baseRegion.optimization_energy(disparity-base.task.range.start());
 
-		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& cregion){return cstat.confidence2;}), std::numeric_limits<float>::min());
+		float confidence = std::max(corresponding_regions_average(match.regions, other_regions, [&](const disparity_region& ){return cstat.confidence2;}), std::numeric_limits<float>::min());
 		//float mi_confidence = getOtherRegionsAverage(match.regions, other_regions, [&](const SegRegion& cregion){return cregion.confidence(-disparity-match.task.dispMin);});
 
 		//float stddev_sum = stddev + baseRegion.stats.stddev;
@@ -302,7 +302,7 @@ void RegionWindow::on_pbOptimize_clicked()
 
 		//float rating = disp_pot * baseRegion.stats.stddev/stddev + e_base;
 		//float rating = e_other + e_base;
-		float rating;
+		float rating = -1.0f;
 		if(choosen == 1)
 			rating = (cstat.confidence2 *e_base+confidence*e_other) / (confidence + cstat.confidence2)+pot_factor*disp_pot;
 		//else if(choosen == 2)

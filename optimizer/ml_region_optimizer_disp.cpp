@@ -95,7 +95,7 @@ void ml_region_optimizer_disp::optimize_ml(region_container& base, const region_
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
 		std::vector<double>& optimization_vector = region_optimization_vectors[omp_get_thread_num()];
-		merge_with_corresponding_optimization_vector<vector_size, vector_size_per_disp>(optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
+		merge_with_corresponding_feature_vector<vector_size, vector_size_per_disp>(optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
 
 
 		const double* temp_ptr = optimization_vector.data();
@@ -155,7 +155,7 @@ void ml_region_optimizer_disp::prepare_training_sample(std::vector<short>& dst_g
 		{
 			int sample_size = vector_size_per_disp*2+vector_size;
 			double *temp_ptr = temp_vector.data();
-			merge_with_corresponding_optimization_vector<vector_size, vector_size_per_disp>(temp_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task);
+			merge_with_corresponding_feature_vector<vector_size, vector_size_per_disp>(temp_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task);
 
 			auto copy_sample = [&](int disp, bool correct) {
 				dst_data.emplace_back(sample_size);

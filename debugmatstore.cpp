@@ -29,10 +29,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 debug_store matstore;
 
-debug_store::debug_store()
-{
-}
-
 void debug_store::start_new_task(const std::string& name, stereo_task &task)
 {
 	tasks.push_back(debug_task_store(name, &task));

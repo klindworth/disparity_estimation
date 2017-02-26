@@ -79,7 +79,7 @@ inline void prepare_line(data_ptr temp, data_cptr base, data_cptr match, int col
 
 void sncc_kernel_row(data_ptr result, data_cptr mu_base, data_cptr mu_match, data_cptr sigma_base_inv, data_cptr sigma_match_inv, int cols, int row_stride, data_cptr base, data_cptr match, sncc_task_cache& cache, int y)
 {
-	const float norm_factor = 1.0/9.0f;
+	const float norm_factor = 1.0f/9.0f;
 
 	prepare_line(cache.coltemp[cache.replace_idx].data(), base+(y+2)*(row_stride+2), match+(y+2)*(row_stride+2), cols+2);
 	cache.replace_idx = (cache.replace_idx+1) %3;
@@ -142,7 +142,7 @@ cv::Mat_<float> sncc_disparitywise_calculator::operator()(int d)
 	//cv::Mat_<float> result = prepare_result(cv::Size(row_length, rows), d, 100.0f);
 	cv::Mat_<float> result(cv::Size(row_length, rows), 100.0f);
 
-	int thread_idx = omp_get_thread_num();
+	unsigned int thread_idx = static_cast<unsigned int>(omp_get_thread_num());
 	assert(cache.size() > thread_idx);
 	sncc_kernel(result[0], mu_base[0] + offset_base, mu_match[0] + offset_match, sigma_base_inv[0] + offset_base, sigma_match_inv[0] + offset_match, rows, row_length, base_float.cols - 2, base_float.ptr<float>() + offset_base, match_float.ptr<float>() + offset_match, cache[thread_idx]);
 

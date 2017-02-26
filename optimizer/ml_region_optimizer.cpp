@@ -65,10 +65,19 @@ void refresh_base_optimization_vector_internal(std::vector<std::vector<float>>& 
 
 void ml_region_optimizer_base::refresh_base_optimization_vector(const region_container& left, const region_container& right, int delta)
 {
-	refresh_base_optimization_vector_internal(optimization_vectors_left, left, right, delta);
-	refresh_base_optimization_vector_internal(optimization_vectors_right, right, left, delta);
+	refresh_base_optimization_vector_internal(feature_vectors_left, left, right, delta);
+	refresh_base_optimization_vector_internal(feature_vectors_right, right, left, delta);
 }
 
+/**
+ * @brief ml_region_optimizer::optimize_ml
+ * @param base Region container
+ * @param match Region container
+ * @param optimization_vectors_base
+ * @param optimization_vectors_match
+ * @param delta
+ * @param filename
+ */
 void ml_region_optimizer::optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename)
 {
 	std::cout << "optimize" << std::endl;
@@ -78,26 +87,30 @@ void ml_region_optimizer::optimize_ml(region_container& base, const region_conta
 	if(!istream.is_open())
 		throw std::runtime_error("file not found: " + filename);
 
+	//load all normalization factors
 	data_normalizer<double> normalizer(istream);
+	//load weights
 	istream >> *nnet;
 
 	const std::size_t regions_count = base.regions.size();
 	const short sign = (base.task.range.start() < 0) ? -1 : 1;
 
-	std::vector<std::vector<double>> region_optimization_vectors(omp_get_max_threads(), std::vector<double>(base.task.range.size()*vector_size_per_disp*2+vector_size));
+	std::vector<std::vector<double>> region_feature_vectors(omp_get_max_threads(), std::vector<double>(base.task.range.size()*vector_size_per_disp*2+vector_size));
 	#pragma omp parallel for
 	for(std::size_t j = 0; j < regions_count; ++j)
 	{
-		std::vector<double>& optimization_vector = region_optimization_vectors[omp_get_thread_num()];
-		merge_with_corresponding_optimization_vector<ml_region_optimizer::vector_size, ml_region_optimizer::vector_size_per_disp>(optimization_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
-		normalizer.apply(optimization_vector);
-		base.regions[j].disparity = nnet->predict(optimization_vector) * sign;
+		std::vector<double>& feature_vector = region_feature_vectors[omp_get_thread_num()];
+		//merge feature vectors for a image region and corresponding (weighted) region, for all disparities.
+		merge_with_corresponding_feature_vector<ml_region_optimizer::vector_size, ml_region_optimizer::vector_size_per_disp>(feature_vector.data(), base.regions[j], optimization_vectors_base[j], optimization_vectors_match, match, delta, base.task);
+
+		normalizer.apply(feature_vector);
+		base.regions[j].disparity = nnet->predict(feature_vector) * sign;
 	}
 
 	refresh_warped_regions(base);
 }
 
-void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta)
+void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_feature_vectors, const std::vector<std::vector<float>>& match_feature_vectors, const region_container& base, const region_container& match, int delta)
 {
 	dst_gt.reserve(dst_gt.size() + base.regions.size());
 	std::vector<short> gt;
@@ -107,7 +120,7 @@ void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, st
 	const int crange = base.task.range.size();
 
 	const std::size_t regions_count = base.regions.size();
-	dst_data.reserve(dst_data.size() + base_optimization_vectors.size());
+	dst_data.reserve(dst_data.size() + base_feature_vectors.size());
 
 	assert(gt.size() == regions_count);
 	//#pragma omp parallel for default(none) shared(base, match, delta, normalization_vector)
@@ -118,7 +131,7 @@ void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, st
 		{
 			dst_data.emplace_back(vector_size_per_disp*2*crange+vector_size);
 			double *dst_ptr = dst_data.back().data();
-			merge_with_corresponding_optimization_vector<ml_region_optimizer::vector_size, ml_region_optimizer::vector_size_per_disp>(dst_ptr, base.regions[j], base_optimization_vectors[j], match_optimization_vectors, match, delta, base.task);
+			merge_with_corresponding_feature_vector<vector_size, vector_size_per_disp>(dst_ptr, base.regions[j], base_feature_vectors[j], match_feature_vectors, match, delta, base.task);
 
 			dst_gt.push_back(gt[j]);
 
@@ -132,29 +145,24 @@ void ml_region_optimizer::prepare_training_sample(std::vector<short>& dst_gt, st
 void ml_region_optimizer_base::run(region_container& left, region_container& right, const optimizer_settings& /*config*/, int refinement)
 {
 	refresh_base_optimization_vector(left, right, refinement);
+
+	const int optimization_iterations = training_mode ? training_iteration - 1: training_iteration; //in training mode, we want to learn the last optimization iteration, therefore optimize one interation less
+
+	for(int i = 0; i <= optimization_iterations; ++i)
+	{
+		optimize_ml(left, right, feature_vectors_left, feature_vectors_right, refinement, filename_left_prefix  + std::to_string(i) + ".txt");
+		optimize_ml(right, left, feature_vectors_right, feature_vectors_left, refinement, filename_right_prefix + std::to_string(i) + ".txt");
+
+		refresh_base_optimization_vector(left, right, refinement);
+	}
+
 	if(training_mode)
 	{
-		for(int i = 0; i < training_iteration; ++i)
-		{
-			optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + ".txt");
-			optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + ".txt");
-
-			refresh_base_optimization_vector(left, right, refinement);
-		}
-
-		prepare_training_sample(samples_gt_left, samples_left, optimization_vectors_left, optimization_vectors_right, left, right, refinement);
-		prepare_training_sample(samples_gt_right, samples_right, optimization_vectors_right, optimization_vectors_left, right, left, refinement);
+		prepare_training_sample(samples_gt_left,  samples_left,  feature_vectors_left, feature_vectors_right, left, right, refinement);
+		prepare_training_sample(samples_gt_right, samples_right, feature_vectors_right, feature_vectors_left, right, left, refinement);
 	}
 	else
 	{
-		for(int i = 0; i <= training_iteration; ++i)
-		{
-			optimize_ml(left, right, optimization_vectors_left, optimization_vectors_right, refinement, filename_left_prefix + std::to_string(i) + ".txt");
-			optimize_ml(right, left, optimization_vectors_right, optimization_vectors_left, refinement, filename_right_prefix + std::to_string(i) + ".txt");
-
-			refresh_base_optimization_vector(left, right, refinement);
-		}
-
 		std::vector<short> gt;
 		average_region_ground_truth(left.regions, left.task.groundTruth, std::back_inserter(gt));
 
@@ -170,7 +178,7 @@ void ml_region_optimizer_base::run(region_container& left, region_container& rig
 
 void init_network(network<double>& net, int crange, int nvector, int pass)
 {
-	//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
+	/*//net.emplace_layer<vector_extension_layer>(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
 	//net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
 	//net.emplace_layer<relu_layer>();
 	net.emplace_layer<vector_connected_layer>(nvector*2, nvector*2, pass);
@@ -182,7 +190,21 @@ void init_network(network<double>& net, int crange, int nvector, int pass)
 	//net.emplace_layer<fully_connected_layer>(crange);
 	//net.emplace_layer<relu_layer>();
 	net.emplace_layer<fully_connected_layer>(crange);
+	net.emplace_layer<softmax_output_layer>();*/
+
+	net.emplace_layer<vector_connected_layer>(nvector*2, nvector, pass);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<vector_connected_layer>(nvector, nvector*2, pass);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(nvector);
+	net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(nvector);
+	net.emplace_layer<relu_layer>();
+	//net.emplace_layer<fully_connected_layer>(4);
+	//net.emplace_layer<relu_layer>();
+	net.emplace_layer<fully_connected_layer>(crange);
 	net.emplace_layer<softmax_output_layer>();
+
 }
 
 void ml_region_optimizer::reset_internal()
@@ -190,7 +212,7 @@ void ml_region_optimizer::reset_internal()
 	samples_left.clear();
 	samples_right.clear();
 
-	const int crange = 164;
+	const int crange = 256 ;
 	int dims = crange * vector_size_per_disp*2+vector_size;
 	//int nvector = ml_region_optimizer::vector_size_per_disp + ml_region_optimizer::vector_size;
 	int nvector = ml_region_optimizer::vector_size_per_disp;
@@ -203,7 +225,7 @@ void ml_region_optimizer::reset_internal()
 ml_region_optimizer::ml_region_optimizer()
 {
 	reset_internal();
-	training_iteration = 2;
+	training_iteration = 0;
 	filename_left_prefix = "weights-left-";
 	filename_right_prefix = "weights-right-";
 
@@ -223,7 +245,7 @@ void ml_region_optimizer::reset(const region_container& /*left*/, const region_c
 
 void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename, neural_network::training_settings settings)
 {
-	int crange = 164;
+	int crange = 256;
 
 	std::cout << "start actual training" << std::endl;
 
@@ -273,20 +295,11 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 	const int range = drange.size();
 	const int dispMin = drange.offset();
 
-	neighbor_values neigh = get_neighbor_values(baseRegion, drange);
-
-	short left_neighbor_disp  = neigh.left.disparity;
-	short right_neighbor_disp = neigh.right.disparity;
-	short top_neighbor_disp = neigh.top.disparity;
-	short bottom_neighbor_disp = neigh.bottom.disparity;
-	float left_color_dev = neigh.left.color_dev;
-	float right_color_dev = neigh.right.color_dev;
-	float top_color_dev = neigh.top.color_dev;
-	float bottom_color_dev = neigh.bottom.color_dev;
+	const neighbor_values neigh = get_neighbor_values(baseRegion, drange);
 
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
 	result_vector.resize(range*ml_region_optimizer::vector_size_per_disp+ml_region_optimizer::vector_size);
-	float org_size = baseRegion.size();
+	const float org_size = baseRegion.size();
 	float *result_ptr = result_vector.data();
 	for(int i = 0; i < range; ++i)
 	{
@@ -298,18 +311,18 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 		*result_ptr++ = (float)occ_temp[i].first / org_size;
 		//*result_ptr++ = rel_cost_values[i];
 		int hyp_disp = std::abs(dispMin + i);
-		*result_ptr++ = left_neighbor_disp - hyp_disp;
-		*result_ptr++ = right_neighbor_disp - hyp_disp;
-		*result_ptr++ = top_neighbor_disp - hyp_disp;
-		*result_ptr++ = bottom_neighbor_disp - hyp_disp;
+		*result_ptr++ = neigh.left.disparity - hyp_disp;
+		*result_ptr++ = neigh.right.disparity - hyp_disp;
+		*result_ptr++ = neigh.top.disparity - hyp_disp;
+		*result_ptr++ = neigh.bottom.disparity - hyp_disp;
 		*result_ptr++ = warp_costs_values[i];
 	//}
 	//*result_ptr = baseRegion.disparity;
 	*result_ptr++ = *std::min_element(cost_values.begin(), cost_values.end());
-	*result_ptr++ = left_color_dev;
-	*result_ptr++ = right_color_dev;
-	*result_ptr++ = top_color_dev;
-	*result_ptr++ = bottom_color_dev;
+	*result_ptr++ = neigh.left.color_dev;
+	*result_ptr++ = neigh.right.color_dev;
+	*result_ptr++ = neigh.top.color_dev;
+	*result_ptr++ = neigh.bottom.color_dev;
 	*result_ptr++ = *std::min_element(warp_costs_values.begin(), warp_costs_values.end());
 	*result_ptr++ = *std::min_element(lr_pot_values.begin(), lr_pot_values.end());
 	*result_ptr++ = *std::min_element(neighbor_color_pot_values.begin(), neighbor_color_pot_values.end());
