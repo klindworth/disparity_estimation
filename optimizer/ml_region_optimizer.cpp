@@ -298,7 +298,8 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 	const neighbor_values neigh = get_neighbor_values(baseRegion, drange);
 
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
-	result_vector.resize(range*ml_region_optimizer::vector_size_per_disp+ml_region_optimizer::vector_size);
+	int feature_vector_size = range*ml_region_optimizer::vector_size_per_disp+ml_region_optimizer::vector_size;
+	result_vector.resize(feature_vector_size);
 	const float org_size = baseRegion.size();
 	float *result_ptr = result_vector.data();
 	for(int i = 0; i < range; ++i)
@@ -330,6 +331,8 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 	*result_ptr++ = stats.mean;
 	*result_ptr++ = stats.stddev;
 }
+
+	assert((result_ptr - result_vector.data()) == feature_vector_size);
 }
 
 float create_min_version(std::vector<float>::iterator start, std::vector<float>::iterator end, std::vector<float>::iterator ins)

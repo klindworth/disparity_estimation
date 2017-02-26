@@ -2,6 +2,7 @@
 #define CONVERTER_TO_REGION_H_
 
 #include <opencv2/core/core.hpp>
+#include <array>
 #include "disparity_toolkit/disparity_range.h"
 
 template<typename calculator>
@@ -128,7 +129,7 @@ void calculate_relaxed_region_generic(single_stereo_task& task, const cv::Mat& b
 		}
 	}
 
-	const float p = 0.9;
+	const float p = 0.9f;
 	const std::array<float,3> penalties{1.0f, 1.0f/p, 1.0f/(p*p)};
 
 	std::cout << "region" << std::endl;

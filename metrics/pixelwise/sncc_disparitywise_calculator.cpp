@@ -31,6 +31,27 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "disparitywise_calculator.h"
 
+#include <numeric>
+
+bool any_nan(cv::Mat_<float> src)
+{
+	for(auto it = src.begin(); it != src.end(); ++it)
+	{
+
+		if(std::isnan(*it))
+			return true;
+	}
+	return false;
+}
+
+void mat_clamp(cv::Mat_<float>& src, float min, float max)
+{
+	for(auto it = src.begin(); it != src.end(); ++it)
+	{
+		*it = std::max(std::min(*it, max), min);
+	}
+}
+
 sncc_disparitywise_calculator::sncc_disparitywise_calculator(const cv::Mat& pbase, const cv::Mat& pmatch)
 {
 	//long long start = cv::getCPUTickCount();
@@ -49,6 +70,8 @@ sncc_disparitywise_calculator::sncc_disparitywise_calculator(const cv::Mat& pbas
 	cv::sqrt(sq_base_box - mu_base_sq, sigma_base_inv);
 	cv::pow(sigma_base_inv, -1, sigma_base_inv);
 
+	mat_clamp(sigma_base_inv, -500, 500);
+
 	cv::Mat match_float_org;
 	pmatch.convertTo(match_float_org, CV_32F);
 	cv::copyMakeBorder(match_float_org, match_float, 1,1,1,1, cv::BORDER_DEFAULT);
@@ -62,9 +85,19 @@ sncc_disparitywise_calculator::sncc_disparitywise_calculator(const cv::Mat& pbas
 	cv::sqrt(sq_match_box - mu_match_sq, sigma_match_inv);
 	cv::pow(sigma_match_inv, -1, sigma_match_inv);
 
+	//sigma_match_inv = cv::max(sigma_match_inv, 500);
+	mat_clamp(sigma_match_inv, -500, 500);
+
 	cache = std::vector<sncc_task_cache>(omp_get_max_threads(), sncc_task_cache(pbase.cols));
 
 	//std::cout << "init: " << cv::getCPUTickCount() - start << std::endl;
+
+	assert(!any_nan(match_float));
+	assert(!any_nan(base_float));
+	assert(!any_nan(mu_base));
+	assert(!any_nan(mu_match));
+	assert(!any_nan(sigma_base_inv));
+	assert(!any_nan(sigma_match_inv));
 }
 
 
@@ -103,12 +136,21 @@ void sncc_kernel_row(data_ptr result, data_cptr mu_base, data_cptr mu_match, dat
 
 		sum *= norm_factor;
 		cache.box_temp[x] = sum;
+
+		assert(!std::isnan(sum));
 	}
 
 	data_cptr box_ptr = cache.box_temp.data();
 
 	for(int x = 0; x < cols; ++x)
 	{
+		/*assert(!std::isnan(*box_ptr));
+		assert(!std::isnan(*mu_base));
+		assert(!std::isnan(sum));
+		assert(!std::isnan(sum));
+		assert(!std::isnan(sum));*/
+
+		assert(!std::isnan(1.0f - (*box_ptr - *mu_base * *mu_match) * *sigma_base_inv * *sigma_match_inv));
 		*result++ = 1.0f - (*box_ptr++ - *mu_base++ * *mu_match++) * *sigma_base_inv++ * *sigma_match_inv++;
 	}
 }
@@ -142,9 +184,13 @@ cv::Mat_<float> sncc_disparitywise_calculator::operator()(int d)
 	//cv::Mat_<float> result = prepare_result(cv::Size(row_length, rows), d, 100.0f);
 	cv::Mat_<float> result(cv::Size(row_length, rows), 100.0f);
 
+	assert(!any_nan(result));
+
 	unsigned int thread_idx = static_cast<unsigned int>(omp_get_thread_num());
 	assert(cache.size() > thread_idx);
 	sncc_kernel(result[0], mu_base[0] + offset_base, mu_match[0] + offset_match, sigma_base_inv[0] + offset_base, sigma_match_inv[0] + offset_match, rows, row_length, base_float.cols - 2, base_float.ptr<float>() + offset_base, match_float.ptr<float>() + offset_match, cache[thread_idx]);
+
+	assert(!any_nan(result));
 
 	return result;
 }

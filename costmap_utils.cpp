@@ -64,6 +64,11 @@ void analyzeDisparityRange2(const disparity_region& region, stat_t& stats)
 	stats.confidence_variance = (float)minima_width/region.disparity_costs.total();
 }
 
+bool ignored_value(float cval)
+{
+	return cval == std::numeric_limits<float>::max() || cval == -std::numeric_limits<float>::max() || cval == std::numeric_limits<float>::infinity() || cval == -std::numeric_limits<float>::infinity();
+}
+
 void analyzeDisparityRange(stat_t& cstat, const float* src_ptr, const float* derived_ptr, int range)
 {
 	double mean = 0.0f;
@@ -76,7 +81,7 @@ void analyzeDisparityRange(stat_t& cstat, const float* src_ptr, const float* der
 	for(int k = 0; k < range; ++k)
 	{
 		float cval = src_ptr[k];
-		if(cval != std::numeric_limits<float>::max() && cval != -std::numeric_limits<float>::max())
+		if(!ignored_value(cval))
 		{
 			if(cval < minval)
 			{
@@ -92,7 +97,7 @@ void analyzeDisparityRange(stat_t& cstat, const float* src_ptr, const float* der
 	for(int k = 0; k < range; ++k)
 	{
 		float cval = src_ptr[k];
-		if(cval != std::numeric_limits<float>::max() && cval != -std::numeric_limits<float>::max())
+		if(!ignored_value(cval))
 			stddev += (cval-mean)*(cval-mean);
 	}
 	stddev /= meancounter;
@@ -103,7 +108,7 @@ void analyzeDisparityRange(stat_t& cstat, const float* src_ptr, const float* der
 	for(int k = 0; k < range; ++k)
 	{
 		float cval = src_ptr[k];
-		if(cval < mean-stddev && cval != std::numeric_limits<float>::max() && cval != -std::numeric_limits<float>::max())
+		if(!ignored_value(cval))
 		{
 			++outliecounter;
 			if(k > 0 && k < range)

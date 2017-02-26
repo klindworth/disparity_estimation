@@ -182,8 +182,8 @@ std::pair<disparity_map, disparity_map> segment_based_disparity_it(stereo_task& 
 	{
 		//typedef sliding_sad refinement_metric;
 		typedef sliding_sncc refinement_metric;
-		//disparity_function = calculate_region_generic<sncc_disparitywise_calculator>;
-		disparity_function = calculate_relaxed_region_generic<sncc_disparitywise_calculator>;
+		disparity_function = calculate_region_generic<sncc_disparitywise_calculator>;
+		//disparity_function = calculate_relaxed_region_generic<sncc_disparitywise_calculator>;
 		task.algoLeft = task.leftGray;
 		task.algoRight = task.rightGray;
 		ref_func = refine_initial_disparity<refinement_metric>;

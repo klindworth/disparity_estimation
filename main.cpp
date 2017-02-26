@@ -147,13 +147,13 @@ int main(int argc, char *argv[])
 	//folder_testset testset("tasks/kitti-training1");
 	//folder_testset testset("tasks/kitti-training1-valid");
 	//folder_testset testset("tasks/kitti-training_small-valid");
-	//folder_testset testset("tasks/kitti-training_debug");
+	folder_testset testset("tasks/kitti-training_debug");
 	//stereo_task testset("tasks/kit3"); //5, 3 neuer problemfall?
 	//TaskTestSet testset("tasks/rgbset");
 
 	//simulated (hard) tasks
 	//stereo_task testset("tasks/2im2");
-	TaskTestSet testset("tasks/smallset2");
+	//TaskTestSet testset("tasks/smallset2");
 
 	//vl/ir
 	//stereo_task testset("tasks/ir-vl");
@@ -174,10 +174,10 @@ int main(int argc, char *argv[])
 	//std::string configfile = "tasks/config-big-msslic-refine.yml";
 	//std::string configfile = "tasks/config-big-msslic.yml";
 	//std::string configfile = "tasks/config-small-msslic-current-sncc.yml";
-	std::string configfile = "tasks/config-small-msslic.yml";
+	//std::string configfile = "tasks/config-small-msslic.yml";
 	//std::string configfile = "tasks/config-debug.yml";
 	//std::string configfile = "tasks/config-kit-refine2.yml";
-	//std::string configfile = "tasks/config-kit2.yml";
+	std::string configfile = "tasks/config-kit2.yml";
 	//std::string configfile = "tasks/config-kit-it.yml";
 	//std::string configfile = "tasks/config-rgb-slic.yml";
 	//std::string configfile = "tasks/config-small-woopt.yml";
@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
 	config.optimizer.prop_eval = prop_eval;
 	config.optimizer.prop_eval2 = prop_eval2;
 	//config.optimization_rounds = 3;
-	//config.verbose = true;
+	config.verbose = true;
 	//config.enable_refinement = false;
 
 	refinement_config refconfig;
@@ -224,7 +224,7 @@ int main(int argc, char *argv[])
 		optimizer = std::make_shared<ml_region_optimizer>();
 	initial_disparity_algo algo(config, refconfig, optimizer);
 
-	/*bool training = false;
+	bool training = true;
 	if(training)
 	{
 		algo.train(testset.tasks);
@@ -233,10 +233,10 @@ int main(int argc, char *argv[])
 	{
 		for(stereo_task& ctask : testset.tasks)
 			algo(ctask);
-	}*/
+	}
 
 	//algo(testset);
-	logged_run(testset, config, refconfig);
+	//logged_run(testset, config, refconfig);
 
 	ImageStore imviewer;
 	imviewer.refreshList(matstore);
