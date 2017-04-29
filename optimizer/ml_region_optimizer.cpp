@@ -212,14 +212,14 @@ void ml_region_optimizer::reset_internal()
 	samples_left.clear();
 	samples_right.clear();
 
-	const int crange = 256 ;
-	int dims = crange * vector_size_per_disp*2+vector_size;
+	range = 256;
+	int dims = range * vector_size_per_disp*2+vector_size;
 	//int nvector = ml_region_optimizer::vector_size_per_disp + ml_region_optimizer::vector_size;
 	int nvector = ml_region_optimizer::vector_size_per_disp;
 	int pass = ml_region_optimizer::vector_size;
-	nnet = std::unique_ptr<network<double>>(new network<double>(dims));
+	nnet = std::make_unique<network<double>>(dims);
 
-	init_network(*nnet, crange, nvector, pass);
+	init_network(*nnet, range, nvector, pass);
 }
 
 ml_region_optimizer::ml_region_optimizer()
@@ -243,10 +243,8 @@ void ml_region_optimizer::reset(const region_container& /*left*/, const region_c
 	reset_internal();
 }
 
-void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename, neural_network::training_settings settings)
+void training_internal(std::vector<std::vector<double>>& samples, std::vector<short>& samples_gt, const std::string& filename, neural_network::training_settings settings, int crange)
 {
-	int crange = 256;
-
 	std::cout << "start actual training" << std::endl;
 
 	data_normalizer<double> normalizer(ml_region_optimizer::vector_size_per_disp, ml_region_optimizer::vector_size);
@@ -286,8 +284,8 @@ void training_internal(std::vector<std::vector<double>>& samples, std::vector<sh
 
 void ml_region_optimizer::training()
 {
-	training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + ".txt", _settings);
-	training_internal(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + ".txt", _settings);
+	training_internal(samples_left, samples_gt_left, filename_left_prefix + std::to_string(training_iteration) + ".txt", _settings, range);
+	training_internal(samples_right, samples_gt_right, filename_right_prefix + std::to_string(training_iteration) + ".txt", _settings, range);
 }
 
 void ml_feature_calculator::update_result_vector(std::vector<float>& result_vector, const disparity_region& baseRegion, const disparity_range& drange)
@@ -298,7 +296,7 @@ void ml_feature_calculator::update_result_vector(std::vector<float>& result_vect
 	const neighbor_values neigh = get_neighbor_values(baseRegion, drange);
 
 	//	float costs, occ_avg, neighbor_pot, lr_pot ,neighbor_color_pot;
-	int feature_vector_size = range*ml_region_optimizer::vector_size_per_disp+ml_region_optimizer::vector_size;
+	std::size_t feature_vector_size = range*ml_region_optimizer::vector_size_per_disp+ml_region_optimizer::vector_size;
 	result_vector.resize(feature_vector_size);
 	const float org_size = baseRegion.size();
 	float *result_ptr = result_vector.data();

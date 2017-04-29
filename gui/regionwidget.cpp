@@ -167,7 +167,7 @@ void RegionWidget::mutualDisparity(disparity_region& baseRegion, region_containe
 
 void RegionWidget::optimizationViewer(disparity_region& baseRegion, region_container& base, region_container& match, QTreeWidget *tree, int dispMin)
 {
-	std::vector<disparity_region>& other_regions = match.regions;
+	//std::vector<disparity_region>& other_regions = match.regions;
 
 	tree->clear();
 	QStringList header;

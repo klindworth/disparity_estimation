@@ -94,6 +94,9 @@ protected:
 	virtual void prepare_training_sample(std::vector<short>& dst_gt, std::vector<std::vector<double>>& dst_data, const std::vector<std::vector<float>>& base_optimization_vectors, const std::vector<std::vector<float>>& match_optimization_vectors, const region_container& base, const region_container& match, int delta) = 0;
 	virtual void optimize_ml(region_container& base, const region_container& match, std::vector<std::vector<float>>& optimization_vectors_base, std::vector<std::vector<float>>& optimization_vectors_match, int delta, const std::string& filename) = 0;
 	virtual void reset_internal() = 0;
+	void set_range(int prange) {range = prange; }
+
+	int range;
 };
 
 class ml_region_optimizer : public ml_region_optimizer_base
